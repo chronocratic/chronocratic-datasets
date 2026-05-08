@@ -27,7 +27,7 @@ convention = "google"
 [lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "notebooks/**/*.ipynb" = ["D", "E402", "T201"]
-"tests/**/*.py" = ["D", "PLR2004", "S101"]
+"tests/**/*.py" = ["ANN", "D", "PLC0415", "PLR2004", "S101"]
 
 [lint.isort]
 # Combine "as" imports into a single line
