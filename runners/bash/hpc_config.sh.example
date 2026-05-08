@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# hpc_config.sh — HPC cluster configuration.
+#
+# Copy this file to hpc_config.sh and set the variables below.
+# Do NOT commit hpc_config.sh (it is gitignored).
+#
+
+# Single source of truth for HPC storage path (required).
+# All experiment outputs go under this directory.
+HPC_OUTPUT_ROOT=""
+
+# SLURM partition (e.g., "Kathleen", "c23ms")
+HPC_PARTITION="Kathleen"
+
+# SLURM account
+HPC_ACCOUNT=""
+
+# Time limit (SLURM format: D-HH:MM:SS)
+HPC_TIME="2-00:00:00"
+
+# Memory per CPU
+HPC_MEM_PER_CPU="16G"
+
+# CPUs per task
+HPC_CPUS_PER_TASK=4
+
+# Maximum concurrent array tasks
+HPC_MAX_CONCURRENT=128
+
+# QoS level
+HPC_QOS="medium"
+
+# Delete job files after submission (true/false)
+DELETE_JOB_FILES=false
+
+# Retry backoff in seconds for QoS limit hits (default: 10)
+# Overrides runner_config.sh HPC_RETRY_BACKOFF
+# HPC_RETRY_BACKOFF=10
+
+# Maximum retry attempts per submission (default: 3)
+# Overrides runner_config.sh HPC_RETRY_MAX_ATTEMPTS
+# HPC_RETRY_MAX_ATTEMPTS=3
+
+# Seconds to pause between job submissions (default: 0.5)
+# Overrides runner_config.sh HPC_SUBMIT_PAUSE
+# HPC_SUBMIT_PAUSE=0.5

@@ -1,0 +1,267 @@
+{
+  "phase": "03-pipeline-hardening",
+  "generated_at": "2026-05-05T17:00:00Z",
+  "stats": {
+    "total": 9,
+    "answered": 0,
+    "chat_more": 0,
+    "remaining": 9
+  },
+  "sections": [
+    {
+      "id": "checkpoint-design",
+      "title": "Checkpoint Design",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Checkpoint granularity",
+          "context": "The pipeline has these logical phases: train -> encode_clean (per task) -> attack (per task) -> evaluate (per task) -> analysis. Currently only training has reuse via `reuse_trained_checkpoint` flag (core.py:198). There can be multiple downstream tasks per run.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Coarse-grained (5 phases)",
+              "description": "Track: training, encoding, attacks, evaluation, analysis. Simple state file, fewer I/O operations. If encoding for task 2 of 3 fails, restarts encoding all tasks — but encoding is the cheapest phase anyway."
+            },
+            {
+              "id": "b",
+              "label": "Per-task granularity (Recommended)",
+              "description": "Track completion per (step, task_name) pair. E.g., {'encoding': ['classification'], 'attacks': ['classification']}. More precise recovery with minimal complexity cost. State file is still a small JSON."
+            },
+            {
+              "id": "c",
+              "label": "Checkpoint on exit, never partial",
+              "description": "No step-level state. On crash, always restart from beginning but reuse existing artifacts (checkpoint file, representation NPZs). Simpler to implement but wastes time re-encoding."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        },
+        {
+          "id": "Q-02",
+          "title": "State file location and format",
+          "context": "The run directory is `output_dir/run_name/` (config.py:224-226). Current artifacts go into `checkpoints/`, `representations/`, `metrics/`, `analysis/`. The state file needs to survive interruptions.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Inside run directory (Recommended)",
+              "description": "`run_dir/.pipeline_state.json` — self-contained, travels with the run. Hidden file so it doesn't clutter `ls`. Contains: steps_completed dict, timestamps, config hash for integrity verification."
+            },
+            {
+              "id": "b",
+              "label": "Alongside checkpoint",
+              "description": "`run_dir/checkpoints/.pipeline_state.json` — colocated with model weights. Makes sense if state is tightly coupled to checkpoint identity."
+            },
+            {
+              "id": "c",
+              "label": "Project-level state registry",
+              "description": "`output_dir/.pipeline_registry.json` — tracks all runs globally. Overkill for this use case but enables cross-run queries."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        }
+      ]
+    },
+    {
+      "id": "output-structure",
+      "title": "Output Structure",
+      "questions": [
+        {
+          "id": "Q-03",
+          "title": "Run directory hierarchy",
+          "context": "Current: `output_dir/{experiment_id}_{dataset_name}/`. Reference (autotsaugment): `output_dir/{hashed_experiment_folder}/seed_{seed}/{dataset_name}/`. The reference structure shares experiment folder across datasets and seeds. Currently each run is a flat directory.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Keep flat, improve naming (Recommended)",
+              "description": "`output_dir/{experiment_id}/seed_{seed}/{dataset_name}/` — hierarchical but readable. Experiment artifacts are grouped by ID, then seed, then dataset. Deterministic and human-scannable."
+            },
+            {
+              "id": "b",
+              "label": "Reference-style with hash",
+              "description": "Adopt autotsaugment pattern: hash-based experiment folder. Guarantees uniqueness but hurts readability. Useful when same experiment config is slightly perturbed."
+            },
+            {
+              "id": "c",
+              "label": "Minimal change — add seed to path",
+              "description": "`output_dir/{experiment_id}_{dataset_name}_seed{seed}/` — adds seed disambiguation to existing flat structure. Lowest change, but doesn't group runs by experiment."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        },
+        {
+          "id": "Q-04",
+          "title": "Experiment metadata files",
+          "context": "The reference runner saves metadata at run start. Currently `results_summary.json` is written at the very end (core.py:170-179), which means crashed runs lose their config.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Config at start, summary at end (Recommended)",
+              "description": "Write `experiment_config.json` at run start (model params, attack params, seed, dataset, trainer kwargs). Write `results_summary.json` at end with metrics. Crash-safe config means you can always reconstruct what was attempted."
+            },
+            {
+              "id": "b",
+              "label": "Single consolidated file at end",
+              "description": "One `run_manifest.json` at the end with config + results + timing. Simpler but requires the state file to preserve config for crash reconstruction."
+            },
+            {
+              "id": "c",
+              "label": "Config at start, incremental updates",
+              "description": "Write config at start, append results/analysis as each phase completes. Most crash-resilient but file grows over time."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        }
+      ]
+    },
+    {
+      "id": "runner-interface",
+      "title": "Runner Interface",
+      "questions": [
+        {
+          "id": "Q-05",
+          "title": "Dataset selection for HPC compatibility",
+          "context": "Current runner uses `--dataset_name` (string). The reference uses `--dataset_index` (integer) with SLURM array `$SLURM_ARRAY_TASK_ID`. HPC array jobs need integer indices to look up dataset names from a registry. A `get_all_datasets()` equivalent exists in `data_setup.py`.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Add --dataset_index, deprecate --dataset_name (Recommended)",
+              "description": "Primary interface: `--dataset_index` for HPC. Keep `--dataset_name` as a convenience alias for local testing. Mutually exclusive. Maps index to name via dataset registry."
+            },
+            {
+              "id": "b",
+              "label": "Both first-class, auto-detect",
+              "description": "Accept both, require exactly one. `if dataset_index: name = registry[index]` elif dataset_name: use directly. No deprecation — both are equally valid."
+            },
+            {
+              "id": "c",
+              "label": "Keep --dataset_name only",
+              "description": "HPC scripts pass names directly. Works but requires the SLURM script to build a name array from indices. Extra indirection in the bash layer."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        },
+        {
+          "id": "Q-06",
+          "title": "Progress logging and structure",
+          "context": "Current runner prints a summary then 'Running experiment...' with no intermediate feedback. The pipeline can run hours on large datasets. tqdm is already used inside `encode()` and `_compute_sliding_representations()`. No structured logging exists.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Structured logging with tqdm (Recommended)",
+              "description": "Use Python's `logging` module with INFO-level step transitions ('Starting training...', 'Training complete, checkpoint at...', 'Encoding clean representations for classification...'). Keep tqdm for inner loops. Logs to both stdout and `run_dir/experiment.log`."
+            },
+            {
+              "id": "b",
+              "label": "Human-readable progress only",
+              "description": "Print formatted progress to stdout with timestamps. No logging module, no log files. Simple but less queryable."
+            },
+            {
+              "id": "c",
+              "label": "JSON-structured logging",
+              "description": "Every step emits a JSON line. Machine-parseable but noisy for human readers. Good for CI/CD pipelines, overkill for research code."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Resume flag behavior",
+          "context": "The `reuse_trained_checkpoint` flag (config.py:147) only affects training. A general resume mechanism needs a clear trigger. Should resume be opt-in or automatic?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Automatic resume (Recommended)",
+              "description": "If `.pipeline_state.json` exists in the run directory, pipeline automatically resumes from last completed step. `--force` flag to override and start fresh. This is the HPC-friendly default — crashed jobs just continue."
+            },
+            {
+              "id": "b",
+              "label": "Explicit --resume flag",
+              "description": "Resume is opt-in via `--resume`. Safer for local development where you want clean runs, but requires HPC scripts to always pass the flag."
+            },
+            {
+              "id": "c",
+              "label": "Auto-resume encoding+, explicit for training",
+              "description": "Always reuse existing checkpoint and representations if found. Only training requires explicit `--resume`. Hybrid approach."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        }
+      ]
+    },
+    {
+      "id": "error-handling",
+      "title": "Error Handling",
+      "questions": [
+        {
+          "id": "Q-08",
+          "title": "Failure recovery policy",
+          "context": "When a step fails mid-pipeline (e.g., OOM during encoding, attack crashes), the state file may be incomplete. The reference runner has no recovery — SLURM just kills the job.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Atomic state writes with crash recovery (Recommended)",
+              "description": "Write state to `.pipeline_state.json.tmp` then rename (atomic on POSIX). On resume, verify state file integrity with config hash. Failed steps are simply not marked complete — they re-run on next invocation."
+            },
+            {
+              "id": "b",
+              "label": "Write state on success, clear on failure",
+              "description": "Clear state file when any step fails. Forces full restart. Simple but defeats the purpose of resume for flaky steps."
+            },
+            {
+              "id": "c",
+              "label": "State + retry with backoff",
+              "description": "On step failure, retry N times with exponential backoff before giving up. Adds complexity but handles transient failures (network, GPU memory fragmentation)."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        }
+      ]
+    },
+    {
+      "id": "naming",
+      "title": "Naming and Identifiers",
+      "questions": [
+        {
+          "id": "Q-09",
+          "title": "Unique filename generation",
+          "context": "The reference uses SHA-256 hashes of serialized model params to generate unique experiment folder names (autotsaugment runner.py:64-95). This guarantees uniqueness across parameter combinations but produces unreadable folder names like `b1_ts2vec_crop-shift_compNo_a3f2b7...`.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Named experiment IDs only (Recommended)",
+              "description": "Use `experiment_id` from the registry as the unique identifier. No hashing — the registry guarantees uniqueness. Folder names are human-readable: `ts2vec_fgsm`, `autotcl_pgd`."
+            },
+            {
+              "id": "b",
+              "label": "Short hash appendix",
+              "description": "`{experiment_id}_{short_hash}` where hash is first 8 chars of SHA-256 of model params. Catches parameter drift while staying readable."
+            },
+            {
+              "id": "c",
+              "label": "Full reference-style hashing",
+              "description": "Adopt the autotsaugment approach: full hash of model + augmentation params. Maximum safety against parameter collisions but verbose."
+            }
+          ],
+          "answer": null,
+          "chat_more": "",
+          "status": "unanswered"
+        }
+      ]
+    }
+  ]
+}
