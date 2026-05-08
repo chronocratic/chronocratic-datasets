@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# config.sh — Bash runner configuration.
+#
+# Copy this file to config.sh and set the variables below.
+# Do NOT commit config.sh (it is gitignored).
+#
+
+# Root directory containing all dataset files (required).
+# Classification: DATA_ROOT/ucr_classification_univariate/{dataset}/
+# Forecasting:    DATA_ROOT/ett/{dataset}.csv
+DATA_ROOT=""
+
+# Default output directory for experiment results (optional).
+# Defaults to 'outputs' if not set.
+# OUTPUT_DIR="outputs"
+
+# Default seed (optional, overrides runner_config.sh DEFAULT_SEED=42)
+# SEED=42

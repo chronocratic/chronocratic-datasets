@@ -1,0 +1,55 @@
+"""Experiment pipeline orchestration for robust representation studies."""
+
+from src.rbspaper.pipeline.config import (
+    AttackMetadataConfig,
+    AttackRunConfig,
+    AttackScopeConfig,
+    AttackScopePolicy,
+    AttackTargetingConfig,
+    DataConfig,
+    DatasetTaskProfile,
+    DownstreamTaskConfig,
+    ExperimentPipelineConfig,
+    ExperimentPipelineResults,
+    PipelineArtifactConfig,
+    QueryBudgetConfig,
+    QueryBudgetPolicy,
+    RepresentationAnalysisConfig,
+    RepresentationEncodingConfig,
+    SurrogateAttackConfig,
+    TargetSelectionStrategy,
+    TrainingConfig,
+)
+from src.rbspaper.pipeline.core import run_experiment_pipeline
+from src.rbspaper.pipeline.state import (
+    compute_config_hash,
+    from_dict,
+    PipelineState,
+    to_dict,
+)
+
+__all__ = [
+    'AttackMetadataConfig',
+    'AttackRunConfig',
+    'AttackScopeConfig',
+    'AttackScopePolicy',
+    'AttackTargetingConfig',
+    'DataConfig',
+    'DatasetTaskProfile',
+    'DownstreamTaskConfig',
+    'ExperimentPipelineConfig',
+    'ExperimentPipelineResults',
+    'PipelineArtifactConfig',
+    'PipelineState',
+    'QueryBudgetConfig',
+    'QueryBudgetPolicy',
+    'RepresentationAnalysisConfig',
+    'RepresentationEncodingConfig',
+    'SurrogateAttackConfig',
+    'TargetSelectionStrategy',
+    'TrainingConfig',
+    'compute_config_hash',
+    'from_dict',
+    'run_experiment_pipeline',
+    'to_dict',
+]

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 3: Pipeline Hardening — Discussion Questions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .subtitle { color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem; }
+  .stats-bar { display: flex; gap: 1.5rem; align-items: center; padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 1.5rem; font-size: 0.875rem; }
+  .stats-bar .stat { display: flex; align-items: center; gap: 0.4rem; }
+  .stats-bar .stat-value { font-weight: 700; }
+  .stats-bar .answered { color: #16a34a; }
+  .stats-bar .remaining { color: #ea580c; }
+  .progress-container { flex: 1; min-width: 150px; }
+  .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #22c55e; border-radius: 4px; transition: width 0.3s ease; }
+  .progress-label { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+  .save-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  .save-btn { background: #2563eb; color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.875rem; }
+  .save-btn:hover { background: #1d4ed8; }
+  .save-hint { font-size: 0.8rem; color: #64748b; }
+  .section { margin-bottom: 1.5rem; }
+  .section-header { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .section-header:hover { background: #f8fafc; }
+  .section-header .arrow { transition: transform 0.2s; }
+  .section-header.collapsed .arrow { transform: rotate(-90deg); }
+  .section-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; padding-top: 0.75rem; }
+  .section-body.hidden { display: none; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; transition: border-color 0.2s, background-color 0.2s; }
+  .card.answered { border: 2px solid #22c55e; background: #f0fdf4; margin: -1px; }
+  .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .card-id { background: #e2e8f0; color: #475569; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .card-title { font-weight: 600; font-size: 0.9rem; }
+  .card-context { font-size: 0.8rem; color: #64748b; font-style: italic; margin-bottom: 0.75rem; line-height: 1.4; border-left: 2px solid #e2e8f0; padding-left: 0.5rem; }
+  .option { margin-bottom: 0.5rem; }
+  .option label { display: flex; align-items: flex-start; gap: 0.4rem; cursor: pointer; font-size: 0.85rem; }
+  .option input[type="radio"] { margin-top: 3px; flex-shrink: 0; }
+  .option .opt-label { font-weight: 600; }
+  .option .opt-desc { color: #475569; font-size: 0.8rem; line-height: 1.35; margin-top: 2px; padding-left: 1.2rem; }
+  .chat-more { margin-top: 0.75rem; }
+  .chat-more textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.5rem; font-size: 0.8rem; font-family: inherit; resize: vertical; min-height: 50px; }
+  .chat-more textarea:focus { outline: none; border-color: #2563eb; }
+  .chat-more textarea.has-content { border: 2px solid #f97316; margin: -1px; }
+  .chat-more label { font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.25rem; }
+  .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Phase 3: Pipeline Hardening — Discussion Questions</h1>
+<p class="subtitle">Generated 2026-05-05 &middot; Pipeline checkpointing, output structure, runner interface</p>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-value" id="stat-total">9</span> total</div>
+  <div class="stat answered"><span class="stat-value" id="stat-answered">0</span> answered</div>
+  <div class="stat remaining"><span class="stat-value" id="stat-remaining">9</span> remaining</div>
+  <div class="progress-container">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+    <div class="progress-label" id="progress-label">0% complete</div>
+  </div>
+</div>
+
+<div class="save-bar">
+  <button class="save-btn" onclick="saveAnswers()">Save answers</button>
+  <span class="save-hint">After answering, click "Save answers" &middot; Then return to Claude and say <strong>"refresh"</strong> or <strong>"finalize"</strong></span>
+</div>
+
+<div id="sections-container"></div>
+
+<div class="footer">
+  Phase 3: Pipeline Hardening &middot; Power Mode Discussion &middot; JSON state: <code>03-QUESTIONS.json</code>
+</div>
+
+<script>
+const data = {"phase":"03-pipeline-hardening","generated_at":"2026-05-05T17:00:00Z","stats":{"total":9,"answered":0,"chat_more":0,"remaining":9},"sections":[{"id":"checkpoint-design","title":"Checkpoint Design","questions":[{"id":"Q-01","title":"Checkpoint granularity","context":"The pipeline has these logical phases: train -> encode_clean (per task) -> attack (per task) -> evaluate (per task) -> analysis. Currently only training has reuse via reuse_trained_checkpoint flag (core.py:198). There can be multiple downstream tasks per run.","options":[{"id":"a","label":"Coarse-grained (5 phases)","description":"Track: training, encoding, attacks, evaluation, analysis. Simple state file, fewer I/O operations. If encoding for task 2 of 3 fails, restarts encoding all tasks — but encoding is the cheapest phase anyway."},{"id":"b","label":"Per-task granularity (Recommended)","description":"Track completion per (step, task_name) pair. E.g., {"encoding": ["classification"], "attacks": ["classification"]}. More precise recovery with minimal complexity cost. State file is still a small JSON."},{"id":"c","label":"Checkpoint on exit, never partial","description":"No step-level state. On crash, always restart from beginning but reuse existing artifacts (checkpoint file, representation NPZs). Simpler to implement but wastes time re-encoding."}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-02","title":"State file location and format","context":"The run directory is output_dir/run_name/ (config.py:224-226). Current artifacts go into checkpoints/, representations/, metrics/, analysis/. The state file needs to survive interruptions.","options":[{"id":"a","label":"Inside run directory (Recommended)","description":"run_dir/.pipeline_state.json — self-contained, travels with the run. Hidden file so it doesn’t clutter ls. Contains: steps_completed dict, timestamps, config hash for integrity verification."},{"id":"b","label":"Alongside checkpoint","description":"run_dir/checkpoints/.pipeline_state.json — colocated with model weights. Makes sense if state is tightly coupled to checkpoint identity."},{"id":"c","label":"Project-level state registry","description":"output_dir/.pipeline_registry.json — tracks all runs globally. Overkill for this use case but enables cross-run queries."}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"output-structure","title":"Output Structure","questions":[{"id":"Q-03","title":"Run directory hierarchy","context":"Current: output_dir/{experiment_id}_{dataset_name}/. Reference (autotsaugment): output_dir/{hashed_experiment_folder}/seed_{seed}/{dataset_name}/. The reference structure shares experiment folder across datasets and seeds. Currently each run is a flat directory.","options":[{"id":"a","label":"Keep flat, improve naming (Recommended)","description":"output_dir/{experiment_id}/seed_{seed}/{dataset_name}/ — hierarchical but readable. Experiment artifacts are grouped by ID, then seed, then dataset. Deterministic and human-scannable."},{"id":"b","label":"Reference-style with hash","description":"Adopt autotsaugment pattern: hash-based experiment folder. Guarantees uniqueness but hurts readability. Useful when same experiment config is slightly perturbed."},{"id":"c","label":"Minimal change — add seed to path","description":"output_dir/{experiment_id}_{dataset_name}_seed{seed}/ — adds seed disambiguation to existing flat structure. Lowest change, but doesn’t group runs by experiment."}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-04","title":"Experiment metadata files","context":"The reference runner saves metadata at run start. Currently results_summary.json is written at the very end (core.py:170-179), which means crashed runs lose their config.","options":[{"id":"a","label":"Config at start, summary at end (Recommended)","description":"Write experiment_config.json at run start (model params, attack params, seed, dataset, trainer kwargs). Write results_summary.json at end with metrics. Crash-safe config means you can always reconstruct what was attempted."},{"id":"b","label":"Single consolidated file at end","description":"One run_manifest.json at the end with config + results + timing. Simpler but requires the state file to preserve config for crash reconstruction."},{"id":"c","label":"Config at start, incremental updates","description":"Write config at start, append results/analysis as each phase completes. Most crash-resilient but file grows over time."}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"runner-interface","title":"Runner Interface","questions":[{"id":"Q-05","title":"Dataset selection for HPC compatibility","context":"Current runner uses --dataset_name (string). The reference uses --dataset_index (integer) with SLURM array $SLURM_ARRAY_TASK_ID. HPC array jobs need integer indices to look up dataset names from a registry.","options":[{"id":"a","label":"Add --dataset_index, deprecate --dataset_name (Recommended)","description":"Primary interface: --dataset_index for HPC. Keep --dataset_name as a convenience alias for local testing. Mutually exclusive. Maps index to name via dataset registry."},{"id":"b","label":"Both first-class, auto-detect","description":"Accept both, require exactly one. if dataset_index: name = registry[index] elif dataset_name: use directly. No deprecation — both are equally valid."},{"id":"c","label":"Keep --dataset_name only","description":"HPC scripts pass names directly. Works but requires the SLURM script to build a name array from indices. Extra indirection in the bash layer."}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-06","title":"Progress logging and structure","context":"Current runner prints a summary then ‘Running experiment...’ with no intermediate feedback. The pipeline can run hours on large datasets. tqdm is already used inside encode() and _compute_sliding_representations(). No structured logging exists.","options":[{"id":"a","label":"Structured logging with tqdm (Recommended)","description":"Use Python’s logging module with INFO-level step transitions. Keep tqdm for inner loops. Logs to both stdout and run_dir/experiment.log."},{"id":"b","label":"Human-readable progress only","description":"Print formatted progress to stdout with timestamps. No logging module, no log files. Simple but less queryable."},{"id":"c","label":"JSON-structured logging","description":"Every step emits a JSON line. Machine-parseable but noisy for human readers. Good for CI/CD, overkill for research code."}],"answer":null,"chat_more":"","status":"unanswered"},{"id":"Q-07","title":"Resume flag behavior","context":"The reuse_trained_checkpoint flag (config.py:147) only affects training. A general resume mechanism needs a clear trigger. Should resume be opt-in or automatic?","options":[{"id":"a","label":"Automatic resume (Recommended)","description":"If .pipeline_state.json exists in the run directory, pipeline automatically resumes from last completed step. --force flag to override and start fresh. HPC-friendly default — crashed jobs just continue."},{"id":"b","label":"Explicit --resume flag","description":"Resume is opt-in via --resume. Safer for local development where you want clean runs, but requires HPC scripts to always pass the flag."},{"id":"c","label":"Auto-resume encoding+, explicit for training","description":"Always reuse existing checkpoint and representations if found. Only training requires explicit --resume. Hybrid approach."}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"error-handling","title":"Error Handling","questions":[{"id":"Q-08","title":"Failure recovery policy","context":"When a step fails mid-pipeline (e.g., OOM during encoding, attack crashes), the state file may be incomplete. The reference runner has no recovery — SLURM just kills the job.","options":[{"id":"a","label":"Atomic state writes with crash recovery (Recommended)","description":"Write state to .pipeline_state.json.tmp then rename (atomic on POSIX). On resume, verify state file integrity with config hash. Failed steps are simply not marked complete — they re-run on next invocation."},{"id":"b","label":"Write state on success, clear on failure","description":"Clear state file when any step fails. Forces full restart. Simple but defeats the purpose of resume for flaky steps."},{"id":"c","label":"State + retry with backoff","description":"On step failure, retry N times with exponential backoff before giving up. Adds complexity but handles transient failures (network, GPU memory fragmentation)."}],"answer":null,"chat_more":"","status":"unanswered"}]},{"id":"naming","title":"Naming and Identifiers","questions":[{"id":"Q-09","title":"Unique filename generation","context":"The reference uses SHA-256 hashes of serialized model params to generate unique experiment folder names (autotsaugment runner.py:64-95). This guarantees uniqueness across parameter combinations but produces unreadable folder names.","options":[{"id":"a","label":"Named experiment IDs only (Recommended)","description":"Use experiment_id from the registry as the unique identifier. No hashing — the registry guarantees uniqueness. Folder names are human-readable: ts2vec_fgsm, autotcl_pgd."},{"id":"b","label":"Short hash appendix","description":"{experiment_id}_{short_hash} where hash is first 8 chars of SHA-256 of model params. Catches parameter drift while staying readable."},{"id":"c","label":"Full reference-style hashing","description":"Adopt the autotsaugment approach: full hash of model + augmentation params. Maximum safety against parameter collisions but verbose."}],"answer":null,"chat_more":"","status":"unanswered"}]}]};
+
+function render() {
+  const container = document.getElementById('sections-container');
+  container.innerHTML = '';
+  let qIdx = 0;
+  data.sections.forEach((section, sIdx) => {
+    const sectionDiv = document.createElement('div');
+    sectionDiv.className = 'section';
+    const header = document.createElement('div');
+    header.className = 'section-header';
+    const sAnswered = section.questions.filter(q => q.answer).length;
+    header.innerHTML = `<span><span class="arrow">&#9660;</span> ${section.title} (${section.questions.length} questions)</span><span style="font-weight:400;color:#64748b">${sAnswered}/${section.questions.length} answered</span>`;
+    header.onclick = () => { header.classList.toggle('collapsed'); body.classList.toggle('hidden'); };
+    const body = document.createElement('div');
+    body.className = 'section-body';
+    section.questions.forEach((q, qIdx) => {
+      const card = document.createElement('div');
+      card.className = 'card' + (q.answer ? ' answered' : '');
+      card.id = 'card-' + q.id;
+      let optsHtml = '';
+      q.options.forEach(opt => {
+        const checked = q.answer === opt.id ? 'checked' : '';
+        optsHtml += `<div class="option"><label><input type="radio" name="${q.id}" value="${opt.id}" ${checked} onchange="setAnswer('${q.id}','${opt.id}')"><span class="opt-label">${opt.label}</span></label><div class="opt-desc">${opt.description}</div></div>`;
+      });
+      const chatMoreClass = q.chat_more ? ' has-content' : '';
+      card.innerHTML = `<div class="card-header"><span class="card-id">${q.id}</span><span class="card-title">${q.title}</span></div><div class="card-context">${q.context}</div>${optsHtml}<div class="chat-more"><label>Clarifications (optional)</label><textarea class="${chatMoreClass}" placeholder="Add context, nuance, or clarification for this question..." oninput="setChatMore('${q.id}', this)" data-orig="${q.chat_more || ''}">${q.chat_more || ''}</textarea></div>`;
+      body.appendChild(card);
+      qIdx++;
+    });
+    sectionDiv.appendChild(header);
+    sectionDiv.appendChild(body);
+    container.appendChild(sectionDiv);
+  });
+  updateStats();
+}
+
+function setAnswer(qId, optId) {
+  data.sections.forEach(s => s.questions.forEach(q => { if (q.id === qId) { q.answer = optId; q.status = 'answered'; } }));
+  document.getElementById('card-' + qId).classList.add('answered');
+  updateStats();
+}
+
+function setChatMore(qId, el) {
+  data.sections.forEach(s => s.questions.forEach(q => { if (q.id === qId) { q.chat_more = el.value; q.status = q.answer ? 'answered' : (el.value ? 'chat-more' : 'unanswered'); } }));
+  el.classList.toggle('has-content', el.value.length > 0);
+  updateStats();
+}
+
+function updateStats() {
+  let total = 0, answered = 0, chatMore = 0;
+  data.sections.forEach(s => s.questions.forEach(q => { total++; if (q.answer && q.answer !== '') answered++; if (q.chat_more && q.chat_more.trim()) chatMore++; }));
+  const remaining = total - answered;
+  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-answered').textContent = answered;
+  document.getElementById('stat-remaining').textContent = remaining;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = pct + '% complete';
+  data.stats = { total, answered, chat_more: chatMore, remaining };
+}
+
+function saveAnswers() {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '03-QUESTIONS.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>
