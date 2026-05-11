@@ -190,9 +190,9 @@ class ClassificationStrategyMultipleFiles(SequenceHandlingStrategyMultipleFiles)
         counts: list[int] = []
         for ts in data:
             num_samples_ts = get_num_samples_from_ts(ts)
-            possible_steps = list(range(num_samples_ts - seq_len, 0, -step))
+            possible_steps = list(range(num_samples_ts - seq_len, -1, -step))
             possible_ends = [x + seq_len for x in possible_steps]
-            counts.append(len([e for e in possible_ends if e < num_samples_ts]))
+            counts.append(len([e for e in possible_ends if e <= num_samples_ts]))
         return counts
 
     def get_num_sequences(
