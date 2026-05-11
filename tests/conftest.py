@@ -40,3 +40,81 @@ def synthetic_multivariate_data():
     5 samples, 30 timesteps, 4 features — UEA-style multivariate classification data.
     """
     return np.random.default_rng().standard_normal((5, 30, 4)).astype(np.float32)
+
+
+# ----------------------------------------------------------------------- #
+# Config fixtures                                                          #
+# ----------------------------------------------------------------------- #
+
+
+@pytest.fixture
+def sample_classification_config():
+    """Return a valid ClassificationConfig instance for testing.
+
+    Uses UCR-style settings: regular data form, two classes, ARFF-based
+    file patterns.
+    """
+    from tscollection.datasets.config.base import (
+        ArffFilePattern,
+        ClassificationConfig,
+        ClassificationFilePatterns,
+    )
+    from tscollection.datasets.enums import DatasetFamily
+
+    return ClassificationConfig(
+        name='TestDataset',
+        family=DatasetFamily.UCR,
+        url='https://example.com/test.zip',
+        num_classes=2,
+        data_form='regular',
+        target_col_name='Class',
+        file_patterns=ClassificationFilePatterns(
+            train=ArffFilePattern(arff='{dataset_name}_train.arff'),
+            test=ArffFilePattern(arff='{dataset_name}_test.arff'),
+        ),
+        tasks=('classification', 'representation'),
+    )
+
+
+@pytest.fixture
+def sample_forecasting_config():
+    """Return a valid ForecastingConfig instance with indexed splits.
+
+    Uses ETT-style settings: absolute row indices for train/valid/test
+    boundaries (8640, 11520, 14400).
+    """
+    from tscollection.datasets.config.base import ForecastingConfig
+    from tscollection.datasets.enums import DatasetFamily, SplitMode
+
+    return ForecastingConfig(
+        name='TestForecast',
+        family=DatasetFamily.ETT,
+        url='https://example.com/test.csv',
+        split_mode=SplitMode.INDEXED,
+        split_bounds=(8640, 11520, 14400),
+        default_seq_len=128,
+        default_horizon=96,
+        tasks=('forecasting', 'representation'),
+    )
+
+
+@pytest.fixture
+def sample_fractional_config():
+    """Return a valid ForecastingConfig instance with fractional splits.
+
+    Uses Electricity-style settings: 60/20/20 proportional split
+    fractions.
+    """
+    from tscollection.datasets.config.base import ForecastingConfig
+    from tscollection.datasets.enums import DatasetFamily, SplitMode
+
+    return ForecastingConfig(
+        name='TestFractional',
+        family=DatasetFamily.ELECTRICITY,
+        url='https://example.com/test.csv',
+        split_mode=SplitMode.FRACTIONAL,
+        split_bounds=(0.6, 0.2, 0.2),
+        default_seq_len=128,
+        default_horizon=24,
+        tasks=('forecasting', 'representation'),
+    )
