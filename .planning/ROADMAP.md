@@ -84,16 +84,25 @@ Phase 7: Tests                 [==== TST-01..04 ====]  depends on Phases 1-6
 
 **Requirements:** CFG-01, CFG-02, CFG-03
 
+**Plans:** 4 plans
+
+**Plan list:**
+- [ ] 03-01-PLAN.md — DatasetFamily/SplitMode enums, config hierarchy (DatasetConfig, ClassificationConfig, ForecastingConfig), test fixtures
+- [ ] 03-02-PLAN.md — Classification configs: UCRConfig (3 instances) + UEAConfig (2 instances)
+- [ ] 03-03-PLAN.md — Forecasting configs: ETTConfig (4 instances) + ElectricityConfig + WeatherConfig
+- [ ] 03-04-PLAN.md — Factory registry (CONFIGS dict, get_config, list_configs) + export chain
+
 **Deliverables:**
 - `src/tscollection/datasets/enums/data.py`
   - `TimeSeriesDatasetMode` (without_labels / with_labels / forecasting)
   - `ScalingMethod` (none / minmax / standard)
   - `SplittingStrategy` (as_defined / manual)
   - `ForecastingMode` (univariate / multivariate)
-  - `DatasetFamily` (ucr / uea / ett / electricity / weather)
+  - `DatasetFamily` (ucr / uea / ett / electricity / weather / exchange / traffic / illness)
+  - `SplitMode` (indexed / fractional)
 - `src/tscollection/datasets/config/base.py` — abstract `DatasetConfig` base class with common fields (name, family, url, num_classes, data_form, etc.)
-- `src/tscollection/datasets/config/ucr.py` — `UCRConfig` class + instances (`UCR_COFFEE`, `UCR_ECG200`, ...)
-- `src/tscollection/datasets/config/uea.py` — `UEAConfig` class + instances
+- `src/tscollection/datasets/config/ucr.py` — `UCRConfig` class + instances (`UCR_COFFEE`, `UCR_ECG200`, `UCR_FACE_FOUR`)
+- `src/tscollection/datasets/config/uea.py` — `UEAConfig` class + instances (`UEA_BASIC_MOTIONS`, `UEA_ATRIAL_FIBRILLATION`)
 - `src/tscollection/datasets/config/ett.py` — `ETTConfig` class + `ETT_H1`, `ETT_H2`, `ETT_M1`, `ETT_M2`
 - `src/tscollection/datasets/config/electricity.py` — `ElectricityConfig` + `ELECTRICITY_LOAD`
 - `src/tscollection/datasets/config/weather.py` — `WeatherConfig` + `WEATHER`
