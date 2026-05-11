@@ -1,3 +1,19 @@
 """Abstract base classes for time series datasets."""
 
-__all__ = []  # Populated in Phase 2
+from tscollection.datasets.datasets.classes.strategies import (
+    ClassificationStrategyMultipleFiles,
+    ClassificationStrategySingleFile,
+    ForecastingStrategySingleFile,
+    SequenceHandlingStrategy,
+    SequenceHandlingStrategyMultipleFiles,
+    SequenceHandlingStrategySingleFile,
+)
+
+__all__ = [
+    'ClassificationStrategyMultipleFiles',
+    'ClassificationStrategySingleFile',
+    'ForecastingStrategySingleFile',
+    'SequenceHandlingStrategy',
+    'SequenceHandlingStrategyMultipleFiles',
+    'SequenceHandlingStrategySingleFile',
+]
