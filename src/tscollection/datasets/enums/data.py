@@ -38,3 +38,23 @@ class DistanceMetric(StrEnum):
     MANHATTAN = 'manhattan'
     SOFT_DTW = 'soft_dtw'
     COSINE = 'cosine'
+
+
+class DatasetFamily(StrEnum):
+    """Dataset family identifier for registry classification."""
+
+    UCR = 'ucr'
+    UEA = 'uea'
+    ETT = 'ett'
+    ELECTRICITY = 'electricity'
+    WEATHER = 'weather'
+    EXCHANGE = 'exchange'
+    TRAFFIC = 'traffic'
+    ILLNESS = 'illness'
+
+
+class SplitMode(StrEnum):
+    """Mode for defining train/valid/test split boundaries."""
+
+    INDEXED = 'indexed'
+    FRACTIONAL = 'fractional'
