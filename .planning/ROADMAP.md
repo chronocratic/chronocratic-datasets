@@ -48,7 +48,7 @@ Phase 7: Tests                 [==== TST-01..04 ====]  depends on Phases 1-6
 
 **Plan list:**
 - [x] 02-00-PLAN.md — Utility modules (transformations, common) and test infrastructure
-- [ ] 02-01-PLAN.md — Strategy pattern (SequenceHandlingStrategy + 3 concrete)
+- [x] 02-01-PLAN.md — Strategy pattern (SequenceHandlingStrategy + 3 concrete)
 - [ ] 02-02-PLAN.md — Fixed and flexible dataset ABCs with seq_len property
 - [ ] 02-03-PLAN.md — Concrete wrappers (UCR, UEA, ETT) and export wiring
 
