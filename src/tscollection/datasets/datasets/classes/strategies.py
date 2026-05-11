@@ -127,7 +127,7 @@ class ForecastingStrategySingleFile(SequenceHandlingStrategySingleFile):
         arr = cast('np.ndarray', data) if not isinstance(data, list) else data[0]
         num_samples_ts = get_num_samples_from_ts(arr)
         possible_steps = list(
-            range(num_samples_ts - seq_len - self._forecast_horizon + 1, 0, -step)
+            range(num_samples_ts - seq_len - self._forecast_horizon + 1, -1, -step)
         )
         possible_ends = [x + seq_len for x in possible_steps]
         valid_ends = [e for e in possible_ends if e + self._forecast_horizon <= num_samples_ts]
