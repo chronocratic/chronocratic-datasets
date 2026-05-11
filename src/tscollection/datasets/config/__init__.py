@@ -12,6 +12,7 @@ from tscollection.datasets.config.base import (
     ClassificationFilePatterns,
     DatasetConfig,
     ForecastingConfig,
+    TaskType,
 )
 
 # Factory registry
@@ -64,6 +65,7 @@ __all__ = [
     'ClassificationFilePatterns',
     'DatasetConfig',
     'ForecastingConfig',
+    'TaskType',
     # Config classes
     'ElectricityConfig',
     'ETTConfig',

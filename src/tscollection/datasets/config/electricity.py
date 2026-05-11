@@ -9,7 +9,7 @@ Split boundaries are derived from rbspaper's electricity_load_datamodule:
 - 60/20/20 fractional split (train, valid, test)
 """
 
-from tscollection.datasets.config.base import ForecastingConfig
+from tscollection.datasets.config.base import ForecastingConfig, TaskType
 from tscollection.datasets.enums import DatasetFamily, SplitMode
 
 __all__ = [
@@ -61,5 +61,5 @@ ELECTRICITY_LOAD: ElectricityConfig = ElectricityConfig(
     csv_decimal=',',
     default_seq_len=128,
     default_horizon=24,
-    tasks=('forecasting', 'representation'),
+    tasks=(TaskType.FORECASTING, TaskType.REPRESENTATION),
 )

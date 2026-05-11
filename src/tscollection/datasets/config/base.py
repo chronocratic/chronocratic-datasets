@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import abc
 import re
+from enum import StrEnum
 
 from pydantic import (
     BaseModel,
@@ -37,9 +38,27 @@ __all__ = [
     'ClassificationFilePatterns',
     'DatasetConfig',
     'ForecastingConfig',
+    'TaskType',
 ]
 
 _SHA256_PATTERN = re.compile(r'^[0-9a-f]{64}$')
+
+
+class TaskType(StrEnum):
+    """Supported task types for dataset configurations.
+
+    Using a StrEnum ensures type safety while maintaining string
+    compatibility for serialization and comparison.
+
+    Values:
+        CLASSIFICATION: Univariate/multivariate time series classification.
+        FORECASTING: Time series forecasting (single/multi-step).
+        REPRESENTATION: Representation learning on time series data.
+    """
+
+    CLASSIFICATION = 'classification'
+    FORECASTING = 'forecasting'
+    REPRESENTATION = 'representation'
 
 
 class ArffFilePattern(BaseModel):
@@ -98,7 +117,7 @@ class DatasetConfig(BaseModel, abc.ABC):  # type: ignore[misc]
     sha256: str | None = None
     num_classes: int = Field(default=0, ge=0)
     data_form: str | None = None
-    tasks: tuple[str, ...]
+    tasks: tuple[TaskType, ...]
 
     @field_validator('sha256')
     @classmethod

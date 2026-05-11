@@ -15,6 +15,7 @@ from tscollection.datasets.config.base import (
     ArffFilePattern,
     ClassificationConfig,
     ClassificationFilePatterns,
+    TaskType,
 )
 from tscollection.datasets.enums.data import DatasetFamily
 
@@ -55,7 +56,7 @@ class UEAConfig(ClassificationConfig):
     family: DatasetFamily = DatasetFamily.UEA
     num_classes: int = Field(ge=1)
     data_form: str = 'nested'
-    tasks: tuple[str, ...] = ('classification', 'representation')
+    tasks: tuple[TaskType, ...] = (TaskType.CLASSIFICATION, TaskType.REPRESENTATION)
 
 
 # -- Dataset instances -----------------------------------------------------

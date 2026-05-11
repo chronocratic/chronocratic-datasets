@@ -11,7 +11,7 @@ Split boundaries are derived from rbspaper's ETT datamodule:
 
 from pydantic import Field
 
-from tscollection.datasets.config.base import ForecastingConfig
+from tscollection.datasets.config.base import ForecastingConfig, TaskType
 from tscollection.datasets.enums import DatasetFamily, SplitMode
 
 __all__ = [
@@ -75,7 +75,7 @@ ETT_H1: ETTConfig = ETTConfig(
     num_features=7,
     default_seq_len=128,
     default_horizon=24,
-    tasks=('forecasting', 'representation'),
+    tasks=(TaskType.FORECASTING, TaskType.REPRESENTATION),
 )
 
 ETT_H2: ETTConfig = ETTConfig(
@@ -88,7 +88,7 @@ ETT_H2: ETTConfig = ETTConfig(
     num_features=7,
     default_seq_len=128,
     default_horizon=24,
-    tasks=('forecasting', 'representation'),
+    tasks=(TaskType.FORECASTING, TaskType.REPRESENTATION),
 )
 
 ETT_M1: ETTConfig = ETTConfig(
@@ -101,7 +101,7 @@ ETT_M1: ETTConfig = ETTConfig(
     num_features=7,
     default_seq_len=128,
     default_horizon=96,
-    tasks=('forecasting', 'representation'),
+    tasks=(TaskType.FORECASTING, TaskType.REPRESENTATION),
 )
 
 ETT_M2: ETTConfig = ETTConfig(
@@ -114,5 +114,5 @@ ETT_M2: ETTConfig = ETTConfig(
     num_features=7,
     default_seq_len=128,
     default_horizon=96,
-    tasks=('forecasting', 'representation'),
+    tasks=(TaskType.FORECASTING, TaskType.REPRESENTATION),
 )

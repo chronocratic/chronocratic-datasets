@@ -14,6 +14,7 @@ from tscollection.datasets.config.base import (
     ArffFilePattern,
     ClassificationConfig,
     ClassificationFilePatterns,
+    TaskType,
 )
 from tscollection.datasets.enums.data import DatasetFamily
 
@@ -54,7 +55,7 @@ class UCRConfig(ClassificationConfig):
     family: DatasetFamily = DatasetFamily.UCR
     num_classes: int = Field(ge=1)
     data_form: str = 'regular'
-    tasks: tuple[str, ...] = ('classification', 'representation')
+    tasks: tuple[TaskType, ...] = (TaskType.CLASSIFICATION, TaskType.REPRESENTATION)
 
 
 # -- Dataset instances -----------------------------------------------------
