@@ -35,6 +35,9 @@ def convert_numpy_to_tensor(data: np.ndarray, dtype: str = 'float') -> torch.Ten
         'int': torch.int,
         'double': torch.double,
     }
+    if dtype not in dtype_map:
+        msg = f'Unsupported dtype "{dtype}". Choose from {list(dtype_map.keys())}.'
+        raise ValueError(msg)
     return torch.from_numpy(data).to(dtype=dtype_map[dtype])
 
 
