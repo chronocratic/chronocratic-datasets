@@ -1,6 +1,69 @@
-"""Tests for fixed-length dataset classes (DST-01, DST-03)."""
+"""Tests for fixed-length dataset classes (DST-01, DST-03).
+
+Verifies that TimeSeriesDataset dispatches correctly by mode,
+FixedTimeSeriesDataset exposes seq_len as a read-only property,
+and univariate/multivariate subclasses return data in the expected format.
+"""
+
+import numpy as np
+import pandas as pd
+import pytest
+import torch
+
+from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 
-def test_placeholder():
-    """Placeholder until fixed dataset tests are implemented."""
-    pass
+# --- Task 1 RED-phase tests (will fail until fixed.py is implemented) ---
+
+
+def test_fixed_yields_data_label():
+    """DST-01: FixedTimeSeriesDatasetUnivariate yields (torch.Tensor, int) in WITH_LABELS mode."""
+    from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
+
+    data = pd.DataFrame(np.random.randn(10, 50).astype(np.float32))
+    labels = pd.Series([0, 1] * 5)
+    ds = FixedTimeSeriesDatasetUnivariate(
+        data=data,
+        labels=labels,
+        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        expand_dims_axis=1,
+        transformations_sequence=(torch.from_numpy,),
+    )
+    sample, label = ds[0]
+    assert isinstance(sample, (np.ndarray, torch.Tensor))
+    assert isinstance(label, (int, np.integer))
+
+
+def test_fixed_seq_len_property():
+    """DST-03: FixedTimeSeriesDataset.seq_len returns int from data shape (read-only)."""
+    from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
+
+    data = pd.DataFrame(np.random.randn(10, 50).astype(np.float32))
+    labels = pd.Series([0, 1] * 5)
+    ds = FixedTimeSeriesDatasetUnivariate(
+        data=data,
+        labels=labels,
+        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        expand_dims_axis=1,
+        transformations_sequence=(torch.from_numpy,),
+    )
+    assert ds.seq_len == 50
+    # Verify read-only (no setter)
+    with pytest.raises(AttributeError):
+        ds.seq_len = 10  # type: ignore
+
+
+def test_fixed_length():
+    """FixedTimeSeriesDataset.__len__ returns number of samples."""
+    from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
+
+    data = pd.DataFrame(np.random.randn(10, 50).astype(np.float32))
+    labels = pd.Series([0, 1] * 5)
+    ds = FixedTimeSeriesDatasetUnivariate(
+        data=data,
+        labels=labels,
+        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        expand_dims_axis=1,
+        transformations_sequence=(torch.from_numpy,),
+    )
+    assert len(ds) == 10
