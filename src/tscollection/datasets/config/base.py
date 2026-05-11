@@ -193,7 +193,7 @@ class ForecastingConfig(DatasetConfig):
     """
 
     split_mode: SplitMode
-    split_bounds: tuple[int, ...] | tuple[float, ...] = ()
+    split_bounds: tuple[int, ...] | tuple[float, ...]
     default_seq_len: int = Field(ge=1, default=128)
     default_horizon: int = Field(ge=1, default=96)
 
@@ -201,29 +201,29 @@ class ForecastingConfig(DatasetConfig):
         """Validate forecasting-specific constraints."""
         pass
 
-    @field_validator('split_bounds')
-    @classmethod
-    def validate_split_bounds_length(
-        cls, v: tuple[int, ...] | tuple[float, ...]
-    ) -> tuple[int, ...] | tuple[float, ...]:
-        """Ensure split_bounds has exactly three elements."""
-        if len(v) != 3:
-            raise ValueError(
-                f'split_bounds must have exactly 3 elements, got {len(v)}'
-            )
-        return v
-
     @model_validator(mode='after')
     def validate_split_consistency(self) -> ForecastingConfig:
-        """Validate split_bounds type consistency with split_mode.
+        """Validate split_bounds structure and consistency with split_mode.
 
-        For FRACTIONAL mode the values must sum to approximately 1.0.
-        For INDEXED mode the values must be integers.
+        The length check is here (in a model_validator) rather than in a
+        field_validator because field_validators do not run on default
+        values in Pydantic v2. This ensures the constraint is enforced
+        even when subclasses provide a default.
+
+        Checks enforced:
+        - split_bounds must have exactly 3 elements.
+        - For FRACTIONAL mode: values must sum to ~1.0.
+        - For INDEXED mode: values must all be integers.
 
         Raises:
-            ValueError: If the split bounds are inconsistent with the
-                split mode.
+            ValueError: If the split bounds are invalid or inconsistent
+                with the split mode.
         """
+        if len(self.split_bounds) != 3:
+            raise ValueError(
+                f'split_bounds must have exactly 3 elements, '
+                f'got {len(self.split_bounds)}'
+            )
         if self.split_mode == SplitMode.FRACTIONAL:
             total = sum(self.split_bounds)  # type: ignore[arg-type]
             if abs(total - 1.0) > 0.01:
