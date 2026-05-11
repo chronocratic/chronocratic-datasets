@@ -136,8 +136,10 @@ class FlexibleTimeSeriesDatasetSingleFile(FlexibleTimeSeriesDataset):
         return get_num_samples_from_ts(self._data)
 
     def _go_to_idx(self, idx: int) -> None:
-        # T-02-02-03: Bounds check
-        if idx >= len(self):
+        # T-02-02-03: Bounds check with negative index normalization
+        if idx < 0:
+            idx = len(self) + idx
+        if idx < 0 or idx >= len(self):
             msg = 'Index out of range'
             raise IndexError(msg)
         self._n = idx
@@ -211,8 +213,10 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
         return [get_num_samples_from_ts(ts) for ts in self._data]
 
     def _go_to_idx(self, idx: int) -> None:
-        # T-02-02-03: Bounds check
-        if idx >= len(self):
+        # T-02-02-03: Bounds check with negative index normalization
+        if idx < 0:
+            idx = len(self) + idx
+        if idx < 0 or idx >= len(self):
             msg = 'Index out of range'
             raise IndexError(msg)
         file_num = bisect(self._accumulated_num_sequences_per_file, idx)
