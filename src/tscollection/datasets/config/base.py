@@ -180,7 +180,7 @@ class ForecastingConfig(DatasetConfig):
     horizon.
 
     Attributes:
-        split_mode: How train/valid/test boundaries are expressed —
+        split_mode: How train/valid/test boundaries are expressed --
             ``INDEXED`` for absolute row positions, ``FRACTIONAL`` for
             proportional splits.
         split_bounds: Tuple of three values defining the boundaries.
