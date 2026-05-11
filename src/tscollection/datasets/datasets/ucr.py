@@ -12,6 +12,8 @@ from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetU
 from tscollection.datasets.datasets.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import pandas as pd
 
     from tscollection.datasets.enums import TimeSeriesDatasetMode
@@ -40,7 +42,7 @@ class UCRClassificationUnivariateDataset(FixedTimeSeriesDatasetUnivariate):
         labels: pd.Series | pd.DataFrame | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int = 1,
-        transformations_sequence: tuple = (convert_numpy_to_tensor,),
+        transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
     ) -> None:
         super().__init__(
             data=data,

@@ -12,6 +12,8 @@ from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetM
 from tscollection.datasets.datasets.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import numpy as np
     import pandas as pd
 
@@ -41,7 +43,7 @@ class UEAClassificationMultivariateDataset(FixedTimeSeriesDatasetMultivariate):
         labels: pd.Series | pd.DataFrame | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int | None = None,
-        transformations_sequence: tuple = (convert_numpy_to_tensor,),
+        transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
     ) -> None:
         super().__init__(
             data=data,
