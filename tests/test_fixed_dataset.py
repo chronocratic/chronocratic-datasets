@@ -67,3 +67,26 @@ def test_fixed_length():
         transformations_sequence=(torch.from_numpy,),
     )
     assert len(ds) == 10
+
+
+def test_multivariate_get_current_data():
+    """DST-01: FixedTimeSeriesDatasetMultivariate._get_current_data returns 3D slice."""
+    from tscollection.datasets.datasets.classes.fixed import (
+        FixedTimeSeriesDatasetMultivariate,
+    )
+
+    # 5 samples, 30 timesteps, 4 features
+    data = np.random.randn(5, 30, 4).astype(np.float32)
+    labels = pd.Series([0, 1, 0, 1, 0])
+    ds = FixedTimeSeriesDatasetMultivariate(
+        data=data,
+        labels=labels,
+        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        expand_dims_axis=None,
+        transformations_sequence=(torch.from_numpy,),
+    )
+    sample, label = ds[2]
+    assert sample.shape == (30, 4)
+    assert label == 0
+    # Verify seq_len for ndarray
+    assert ds.seq_len == 30
