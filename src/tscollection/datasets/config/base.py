@@ -110,6 +110,17 @@ class DatasetConfig(BaseModel, abc.ABC):  # type: ignore[misc]
             )
         return v
 
+    @field_validator('url')
+    @classmethod
+    def validate_https_only(cls, v: HttpUrl) -> HttpUrl:
+        """Enforce HTTPS-only URLs to prevent MITM attacks on dataset downloads."""
+        if str(v).startswith('http://'):
+            raise ValueError(
+                'URL must use HTTPS scheme (HTTP is not permitted for '
+                'dataset downloads)'
+            )
+        return v
+
     @abc.abstractmethod
     def _config_validate(self) -> None:
         """Abstract validation hook that forces subclasses to be concrete.
