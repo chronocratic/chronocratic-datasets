@@ -23,11 +23,12 @@ def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classifica
     )
     sample, label = ds[0]
 
-    # With expand_dims_axis=1 and convert_numpy_to_tensor then expand,
-    # sample will be a numpy array (expand converts tensor back to numpy)
+    # expand_dims_axis=1 on a (50,) array produces (50, 1).
+    # Note: expand_data_dimensionality converts tensor back to numpy
+    # (Pitfall 3 in research docs).
     assert isinstance(sample, (np.ndarray, torch.Tensor))
-    assert sample.shape[0] == 1  # expanded dimension
-    assert sample.shape[1] == 50  # original timestep count
+    assert sample.shape[0] == 50  # original timestep count
+    assert sample.shape[1] == 1  # expanded dimension at axis=1
     assert isinstance(label, (int, np.integer))
 
 
