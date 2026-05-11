@@ -215,17 +215,13 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
         if idx >= len(self):
             msg = 'Index out of range'
             raise IndexError(msg)
-        if idx in self._accumulated_num_sequences_per_file:
-            self._current_file = self._accumulated_num_sequences_per_file.index(idx)
-            self._n = 0
-        else:
-            file_num = bisect(self._accumulated_num_sequences_per_file, idx)
-            self._current_file = file_num
-            self._n = (
-                idx - self._accumulated_num_sequences_per_file[file_num - 1]
-                if file_num != 0
-                else idx
-            )
+        file_num = bisect(self._accumulated_num_sequences_per_file, idx)
+        self._current_file = file_num
+        self._n = (
+            idx - self._accumulated_num_sequences_per_file[file_num - 1]
+            if file_num != 0
+            else idx
+        )
 
     def _get_current_label(self) -> np.ndarray | None:
         return self._sequence_handling_strategy.get_current_label(
