@@ -142,11 +142,18 @@ class DatasetConfig(BaseModel, abc.ABC):  # type: ignore[misc]
 
     @abc.abstractmethod
     def _config_validate(self) -> None:
-        """Abstract validation hook that forces subclasses to be concrete.
+        """Abstract method to prevent direct instantiation of DatasetConfig.
 
-        This method makes DatasetConfig truly abstract, preventing direct
-        instantiation. Subclasses should call ``super()._config_validate()``
-        if they add their own validation logic.
+        This method exists solely to make DatasetConfig abstract via the
+        ABC pattern, preventing accidental direct instantiation (e.g.,
+        ``DatasetConfig(name='x', ...)``).
+
+        This method is NOT called automatically during model construction.
+        Actual validation is handled by Pydantic's ``@field_validator`` and
+        ``@model_validator`` decorators on subclasses.
+
+        Subclasses must override this method (even with ``pass``) to satisfy
+        the ABC requirement and become instantiable.
         """
 
     @property
@@ -179,7 +186,11 @@ class ClassificationConfig(DatasetConfig):
     split_strategy: SplittingStrategy = SplittingStrategy.AS_DEFINED
 
     def _config_validate(self) -> None:
-        """Validate classification-specific constraints."""
+        """Satisfy ABC requirement to make ClassificationConfig instantiable.
+
+        Actual classification-specific validation is handled by
+        ``validate_classification_fields`` model_validator.
+        """
         pass
 
     @model_validator(mode='after')
@@ -210,7 +221,7 @@ class ForecastingConfig(DatasetConfig):
     horizon.
 
     Attributes:
-        split_mode: How train/valid/test boundaries are expressed --
+        split_mode: How train/valid/test boundaries are expressed —
             ``INDEXED`` for absolute row positions, ``FRACTIONAL`` for
             proportional splits.
         split_bounds: Tuple of three values defining the boundaries.
@@ -235,7 +246,12 @@ class ForecastingConfig(DatasetConfig):
     default_horizon: int = Field(ge=1, default=96)
 
     def _config_validate(self) -> None:
-        """Validate forecasting-specific constraints."""
+        """Satisfy ABC requirement to make ForecastingConfig instantiable.
+
+        Actual forecasting-specific validation is handled by
+        ``validate_no_booleans_in_bounds`` field_validator and
+        ``validate_split_consistency`` model_validator.
+        """
         pass
 
     @field_validator('split_bounds', mode='before')
