@@ -57,7 +57,7 @@ def convert_data_to_np_array(data: list | tuple, dtype: str = 'float') -> np.nda
 
 def expand_data_dimensionality(
     data: np.ndarray | torch.Tensor | list | tuple, expand_dims_axis: int
-) -> np.ndarray:
+) -> np.ndarray | torch.Tensor:
     """Expand data dimensionality by one along a specified axis.
 
     Args:
@@ -65,12 +65,14 @@ def expand_data_dimensionality(
         expand_dims_axis: Axis along which to expand.
 
     Returns:
-        NumPy array with an additional dimension.
+        Array with an additional dimension, preserving the input type
+        (torch.Tensor or np.ndarray).
 
     Raises:
         ValueError: If expand_dims_axis is out of range for the input array.
     """
-    if isinstance(data, torch.Tensor):
+    was_tensor = isinstance(data, torch.Tensor)
+    if was_tensor:
         data = data.numpy()
     if not isinstance(data, np.ndarray):
         data = np.asarray(data)
@@ -84,4 +86,5 @@ def expand_data_dimensionality(
         raise ValueError(
             msg
         )
-    return np.expand_dims(data, axis=expand_dims_axis)
+    result = np.expand_dims(data, axis=expand_dims_axis)
+    return torch.from_numpy(result) if was_tensor else result
