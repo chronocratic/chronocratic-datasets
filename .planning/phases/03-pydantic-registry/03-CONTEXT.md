@@ -97,6 +97,7 @@ Typed configuration — one Pydantic class per family, frozen instances per data
 - Dynamic class generation from registry — Phase 6 (factory API)
 - Conda package distribution — v2 requirement
 - Full UCR archive (120+ datasets) — v2 requirement
+- Multi-GPU splitting pattern — Phase 5: `setup()` vs `prepare_data()` for train/val/test splits. See `.planning/phases/05-data-modules/NOTE-splitting-pattern.md`
 
 ---
 
