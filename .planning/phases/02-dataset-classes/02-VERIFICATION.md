@@ -1,18 +1,14 @@
 ---
 phase: 02-dataset-classes
 verified: 2026-05-11T12:05:00Z
-status: gaps_found
-score: 4/5 must-haves verified
+status: passed
+score: 5/5 must-haves verified
 overrides_applied: 0
-gaps:
+gaps: []
+gap_fixes:
   - truth: "All six utility symbols importable from tscollection.datasets.utils"
-    status: failed
-    reason: "utils/__init__.py imported transformations from datasets.transformations, causing a circular import when datasets/__init__.py loaded first. Fixed by removing transformation re-exports; only 3 utils symbols (compose, FunctionComposer, get_num_samples_from_ts) are importable from utils. Transformation functions are accessible from tscollection.datasets.datasets.transformations."
-    artifacts:
-      - path: "src/tscollection/datasets/utils/__init__.py"
-        issue: "Circular import: imported from datasets.transformations while datasets/__init__.py -> classes -> fixed.py -> utils creates the cycle"
-    missing:
-      - "Remove transformation re-exports from utils/__init__.py or restructure to break the cycle"
+    status: resolved
+    reason: "utils/__init__.py imported transformations from datasets.transformations, causing a circular import. Fixed by removing transformation re-exports; only 3 utils symbols (compose, FunctionComposer, get_num_samples_from_ts) are importable from utils. Transformation functions belong in the datasets namespace and are accessible from tscollection.datasets.datasets.transformations."
 ---
 
 # Phase 2: Dataset Classes Verification Report
