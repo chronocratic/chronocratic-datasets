@@ -245,7 +245,7 @@ class ForecastingConfig(DatasetConfig):
 
         Checks enforced:
         - split_bounds must have exactly 3 elements.
-        - For FRACTIONAL mode: values must sum to ~1.0.
+        - For FRACTIONAL mode: values must sum to ~1.0 and each >= 0.05.
         - For INDEXED mode: values must all be integers.
 
         Raises:
@@ -262,6 +262,11 @@ class ForecastingConfig(DatasetConfig):
             if abs(total - 1.0) > 0.01:
                 raise ValueError(
                     f'Fractional split_bounds must sum to 1.0, got {total}'
+                )
+            if any(b < 0.05 for b in self.split_bounds):  # type: ignore[union-attr]
+                raise ValueError(
+                    'Each fractional split component must be >= 0.05 '
+                    f'(got {self.split_bounds})'
                 )
         elif self.split_mode == SplitMode.INDEXED:
             if not all(isinstance(b, int) for b in self.split_bounds):
