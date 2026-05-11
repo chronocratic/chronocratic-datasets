@@ -23,7 +23,7 @@ Zero-config, ready-to-use time series datasets that plug directly into Lightning
 - [ ] Use rbspaper `data/` as primary source (better docstrings, defensive code, registry)
 - [ ] Convert `src.rbspaper` imports to `tscollection.datasets` relative imports
 - [ ] Pydantic-based registry — one config class per family, instances per dataset
-- [ ] Auto-download + caching in `~/.cache/tsdatasets/` with SHA256 validation (torchtime pattern)
+- [ ] Auto-download + caching in `~/.cache/tscollection/` with SHA256 validation (torchtime pattern)
 - [ ] Modules auto-download data in `prepare_data()` — no file paths required from user
 - [ ] Factory API: `tscollection.datasets.get_module("Coffee")`, `get_dataset("Coffee")`, `list_modules(family="ucr")`
 - [ ] Family-prefixed imports: `from tscollection.datasets.modules import UCRCoffeeModule`

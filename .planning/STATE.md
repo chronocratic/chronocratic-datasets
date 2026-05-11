@@ -41,7 +41,7 @@ Current session: 2026-05-11 — Renamed tsdatasets → tscollection.datasets (PE
 | 2026-05-08 | Family-prefixed imports | UCRCoffeeModule disambiguates across families |
 | 2026-05-08 | Classification seq_len from data | Intrinsic property, computed in prepare_data(), read-only |
 | 2026-05-08 | Forecasting seq_len user-configurable | With registry default, flexible for different use cases |
-| 2026-05-08 | Cache-only download | Raw data in ~/.cache/tsdatasets/, SHA256 validated, avoids legal issues |
+| 2026-05-08 | Cache-only download | Raw data in ~/.cache/tscollection/, SHA256 validated, avoids legal issues |
 | 2026-05-08 | One config class per family | UCRConfig with instances per dataset, not one class per dataset |
 | 2026-05-08 | Enums for typed params | ScalingMethod, SplittingStrategy, ForecastingMode — no raw strings |
 | 2026-05-08 | Modules return LightningDataModule | Not DataLoader, needed for Trainer integration |
