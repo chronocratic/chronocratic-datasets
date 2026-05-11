@@ -82,3 +82,54 @@ def test_flexible_bounds_check():
     )
     with pytest.raises(IndexError):
         _ = ds[len(ds)]
+
+
+def test_flexible_multifile_boundary_indices():
+    """FlexibleTimeSeriesDatasetMultipleFiles maps boundary indices correctly.
+
+    Verify that global indices at file boundaries return data from the
+    correct file, not the adjacent one (regression test for CR-04).
+    """
+    from tscollection.datasets.datasets.classes.flexible import (
+        FlexibleTimeSeriesDatasetMultipleFiles,
+    )
+    from tscollection.datasets.datasets.classes.strategies import (
+        ClassificationStrategyMultipleFiles,
+    )
+
+    # File 0: 100 samples, seq_len=50, step=10 -> 6 windows (indices 0..5)
+    # File 1: 200 samples, seq_len=50, step=10 -> 16 windows (indices 6..21)
+    data_list = [
+        np.arange(100.0).astype(np.float32),
+        np.arange(200.0).astype(np.float32) + 1000,  # offset to distinguish files
+    ]
+    strategy = ClassificationStrategyMultipleFiles()
+    ds = FlexibleTimeSeriesDatasetMultipleFiles(
+        data=data_list,
+        labels=None,
+        seq_len=50,
+        step=10,
+        mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
+        sequence_handling_strategy=strategy,
+        expand_dims_axis=None,
+        transformations_sequence=(torch.from_numpy,),
+    )
+
+    # Total: 6 + 16 = 22 sequences
+    assert len(ds) == 22
+
+    # Index 0: first window of file 0 -> data[0:50] of file 0 (values 0..49)
+    sample = ds[0]
+    np.testing.assert_array_equal(sample.numpy(), np.arange(50.0))
+
+    # Index 5: last window of file 0 -> data[50:100] of file 0 (values 50..99)
+    sample = ds[5]
+    np.testing.assert_array_equal(sample.numpy(), np.arange(50.0, 100.0))
+
+    # Index 6: first window of file 1 -> data[0:50] of file 1 (values 1000..1049)
+    sample = ds[6]
+    np.testing.assert_array_equal(sample.numpy(), np.arange(1000.0, 1050.0))
+
+    # Index 21: last window of file 1 -> data[150:200] of file 1 (values 1150..1199)
+    sample = ds[21]
+    np.testing.assert_array_equal(sample.numpy(), np.arange(1150.0, 1200.0))
