@@ -12,7 +12,6 @@ import torch
 
 from tscollection.datasets.enums import TimeSeriesDatasetMode
 
-
 # --- Task 1 RED-phase tests (will fail until fixed.py is implemented) ---
 
 
@@ -20,7 +19,7 @@ def test_fixed_yields_data_label():
     """DST-01: FixedTimeSeriesDatasetUnivariate yields (torch.Tensor, int) in WITH_LABELS mode."""
     from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
 
-    data = pd.DataFrame(np.random.randn(10, 50).astype(np.float32))
+    data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
     ds = FixedTimeSeriesDatasetUnivariate(
         data=data,
@@ -38,7 +37,7 @@ def test_fixed_seq_len_property():
     """DST-03: FixedTimeSeriesDataset.seq_len returns int from data shape (read-only)."""
     from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
 
-    data = pd.DataFrame(np.random.randn(10, 50).astype(np.float32))
+    data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
     ds = FixedTimeSeriesDatasetUnivariate(
         data=data,
@@ -50,14 +49,14 @@ def test_fixed_seq_len_property():
     assert ds.seq_len == 50
     # Verify read-only (no setter)
     with pytest.raises(AttributeError):
-        ds.seq_len = 10  # type: ignore
+        ds.seq_len = 10  # type: ignore[assignment]
 
 
 def test_fixed_length():
     """FixedTimeSeriesDataset.__len__ returns number of samples."""
     from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
 
-    data = pd.DataFrame(np.random.randn(10, 50).astype(np.float32))
+    data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
     ds = FixedTimeSeriesDatasetUnivariate(
         data=data,
@@ -76,7 +75,7 @@ def test_multivariate_get_current_data():
     )
 
     # 5 samples, 30 timesteps, 4 features
-    data = np.random.randn(5, 30, 4).astype(np.float32)
+    data = np.random.default_rng().standard_normal((5, 30, 4)).astype(np.float32)
     labels = pd.Series([0, 1, 0, 1, 0])
     ds = FixedTimeSeriesDatasetMultivariate(
         data=data,

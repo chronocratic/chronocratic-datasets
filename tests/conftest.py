@@ -15,7 +15,7 @@ def synthetic_classification_df():
 
     10 samples, 50 timesteps — typical UCR-style univariate classification data.
     """
-    return pd.DataFrame(np.random.randn(10, 50).astype(np.float32))
+    return pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def synthetic_forecast_data():
 
     200 timesteps, 7 features — ETTh1-style multivariate forecasting data.
     """
-    return np.random.randn(200, 7).astype(np.float32)
+    return np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
 
 
 @pytest.fixture
@@ -39,4 +39,4 @@ def synthetic_multivariate_data():
 
     5 samples, 30 timesteps, 4 features — UEA-style multivariate classification data.
     """
-    return np.random.randn(5, 30, 4).astype(np.float32)
+    return np.random.default_rng().standard_normal((5, 30, 4)).astype(np.float32)

@@ -6,12 +6,16 @@ defaults for UEA-style multivariate time series classification tasks.
 
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
+from typing import TYPE_CHECKING
 
 from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetMultivariate
 from tscollection.datasets.datasets.transformations import convert_numpy_to_tensor
-from tscollection.datasets.enums import TimeSeriesDatasetMode
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+
+    from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 __all__ = ['UEAClassificationMultivariateDataset']
 

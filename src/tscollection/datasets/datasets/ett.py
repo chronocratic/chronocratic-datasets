@@ -7,7 +7,7 @@ multivariate forecasting tasks.
 
 from __future__ import annotations
 
-import numpy as np
+from typing import TYPE_CHECKING
 
 from tscollection.datasets.datasets.classes.flexible import FlexibleTimeSeriesDatasetSingleFile
 from tscollection.datasets.datasets.classes.strategies import ForecastingStrategySingleFile
@@ -16,6 +16,9 @@ from tscollection.datasets.datasets.transformations import (
     convert_numpy_to_tensor,
 )
 from tscollection.datasets.enums import TimeSeriesDatasetMode
+
+if TYPE_CHECKING:
+    import numpy as np
 
 __all__ = ['ETTDataset']
 
@@ -48,8 +51,9 @@ class ETTDataset(FlexibleTimeSeriesDatasetSingleFile):
     ) -> None:
         # T-02-03-02: Validate forecast_horizon > 0
         if forecast_horizon <= 0:
+            msg = f'forecast_horizon must be positive, got {forecast_horizon}'
             raise ValueError(
-                f'forecast_horizon must be positive, got {forecast_horizon}'
+                msg
             )
         super().__init__(
             data=data,

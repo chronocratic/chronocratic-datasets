@@ -5,10 +5,7 @@ FlexibleTimeSeriesDatasetSingleFile, injects ForecastingStrategySingleFile,
 and yields (input_tensor, target_tensor) tuples with correct shapes.
 """
 
-import numpy as np
-import torch
 
-from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 
 def test_ett_yields_input_target(synthetic_forecast_data):

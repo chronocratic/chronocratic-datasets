@@ -14,7 +14,6 @@ from tscollection.datasets.datasets.classes.strategies import (
 )
 from tscollection.datasets.enums import TimeSeriesDatasetMode
 
-
 # --- Task 2 RED-phase tests (will fail until flexible.py is implemented) ---
 
 
@@ -24,7 +23,7 @@ def test_flexible_accepts_seq_len_step():
         FlexibleTimeSeriesDatasetSingleFile,
     )
 
-    data = np.random.randn(200, 7).astype(np.float32)
+    data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
     ds = FlexibleTimeSeriesDatasetSingleFile(
         data=data,
@@ -46,7 +45,7 @@ def test_flexible_yields_windows():
         FlexibleTimeSeriesDatasetSingleFile,
     )
 
-    data = np.random.randn(200, 7).astype(np.float32)
+    data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
     ds = FlexibleTimeSeriesDatasetSingleFile(
         data=data,
@@ -69,7 +68,7 @@ def test_flexible_bounds_check():
         FlexibleTimeSeriesDatasetSingleFile,
     )
 
-    data = np.random.randn(200, 7).astype(np.float32)
+    data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
     ds = FlexibleTimeSeriesDatasetSingleFile(
         data=data,

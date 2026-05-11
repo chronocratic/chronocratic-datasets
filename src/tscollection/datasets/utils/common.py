@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING
 
-import numpy as np
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import numpy as np
 
 __all__ = ['FunctionComposer', 'compose', 'get_num_samples_from_ts']
 
 
-def get_num_samples_from_ts(ts: np.ndarray) -> int:
+def get_num_samples_from_ts(ts: np.ndarray | list[np.ndarray]) -> int:
     """Get number of samples from a time series.
 
     Args:
-        ts: A time series array.
+        ts: A time series array or list of arrays.
 
     Returns:
         Number of samples (length) of the time series.
@@ -35,7 +37,8 @@ class FunctionComposer:
     def __init__(self, functions: list[Callable]) -> None:
         self.functions = [f for f in functions if f is not None]
 
-    def __call__(self, data: Any) -> Any:
+    def __call__(self, data: object) -> object:
+        """Apply composed functions to data in order."""
         result = data
         for f in self.functions:
             result = f(result)

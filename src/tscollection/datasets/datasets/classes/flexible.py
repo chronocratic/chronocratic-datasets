@@ -8,21 +8,24 @@ from __future__ import annotations
 
 from abc import ABC
 from bisect import bisect
-from collections.abc import Callable
 from itertools import accumulate
-from typing import Any
-
-import numpy as np
+from typing import TYPE_CHECKING
 
 from tscollection.datasets.datasets.classes.fixed import TimeSeriesDataset
-from tscollection.datasets.datasets.classes.strategies import (
-    SequenceHandlingStrategy,
-    SequenceHandlingStrategyMultipleFiles,
-    SequenceHandlingStrategySingleFile,
-)
 from tscollection.datasets.datasets.transformations import convert_numpy_to_tensor
-from tscollection.datasets.enums import TimeSeriesDatasetMode
 from tscollection.datasets.utils import get_num_samples_from_ts
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import numpy as np
+
+    from tscollection.datasets.datasets.classes.strategies import (
+        SequenceHandlingStrategy,
+        SequenceHandlingStrategyMultipleFiles,
+        SequenceHandlingStrategySingleFile,
+    )
+    from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 __all__ = [
     'FlexibleTimeSeriesDataset',
@@ -47,6 +50,9 @@ class FlexibleTimeSeriesDataset(TimeSeriesDataset, ABC):
         expand_dims_axis: Dimension to expand.
         transformations_sequence: Post-processing callables.
     """
+
+    _data: np.ndarray | list[np.ndarray]
+    _labels: np.ndarray | list[np.ndarray] | None
 
     def __init__(
         self,
@@ -75,6 +81,7 @@ class FlexibleTimeSeriesDataset(TimeSeriesDataset, ABC):
         self._num_sequences = self._get_num_sequences()
 
     def __len__(self) -> int:
+        """Return the number of sliding-window sequences."""
         return self._num_sequences
 
     def _get_num_sequences(self) -> int:
@@ -96,6 +103,9 @@ class FlexibleTimeSeriesDatasetSingleFile(FlexibleTimeSeriesDataset):
         expand_dims_axis: Dimension to expand.
         transformations_sequence: Post-processing callables.
     """
+
+    _data: np.ndarray
+    _labels: np.ndarray | None
 
     def __init__(
         self,
@@ -128,7 +138,8 @@ class FlexibleTimeSeriesDatasetSingleFile(FlexibleTimeSeriesDataset):
     def _go_to_idx(self, idx: int) -> None:
         # T-02-02-03: Bounds check
         if idx >= len(self):
-            raise IndexError('Index out of range')
+            msg = 'Index out of range'
+            raise IndexError(msg)
         self._n = idx
 
     def _get_current_label(self) -> np.ndarray | None:
@@ -157,6 +168,9 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
         expand_dims_axis: Dimension to expand.
         transformations_sequence: Post-processing callables.
     """
+
+    _data: list[np.ndarray]
+    _labels: list[np.ndarray] | None
 
     def __init__(
         self,
@@ -199,7 +213,8 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
     def _go_to_idx(self, idx: int) -> None:
         # T-02-02-03: Bounds check
         if idx >= len(self):
-            raise IndexError('Index out of range')
+            msg = 'Index out of range'
+            raise IndexError(msg)
         if idx in self._accumulated_num_sequences_per_file:
             self._current_file = self._accumulated_num_sequences_per_file.index(idx)
             self._n = 0

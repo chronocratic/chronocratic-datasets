@@ -12,10 +12,7 @@ from tscollection.datasets.datasets.classes.strategies import (
     ClassificationStrategySingleFile,
     ForecastingStrategySingleFile,
     SequenceHandlingStrategy,
-    SequenceHandlingStrategyMultipleFiles,
-    SequenceHandlingStrategySingleFile,
 )
-
 
 # --------------------------------------------------------------------------- #
 # ForecastingStrategySingleFile tests                                          #
@@ -28,7 +25,7 @@ def test_forecasting_num_sequences() -> None:
     For a (200, 7) array with seq_len=96, step=1, forecast_horizon=24,
     exactly 80 valid windows exist: (200 - 96 - 24) = 80.
     """
-    data = np.random.randn(200, 7).astype(np.float32)
+    data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
     count = strategy.get_num_sequences(data=data, seq_len=96, step=1)
     assert count == 80
@@ -62,7 +59,7 @@ def test_classification_num_sequences() -> None:
     possible_ends = [200, 190, ..., 60]
     valid_ends = [e for e in possible_ends if e < 200] = [190, ..., 60] = 14
     """
-    data = np.random.randn(200).astype(np.float32)
+    data = np.random.default_rng().standard_normal((200,)).astype(np.float32)
     strategy = ClassificationStrategySingleFile()
     count = strategy.get_num_sequences(data=data, seq_len=50, step=10)
     assert count == 14
@@ -100,12 +97,13 @@ def test_multifile_num_sequences() -> None:
     Two arrays: one with 100 samples, one with 200 samples.
     seq_len=50, step=10.
     Array 1: range(100-50, 0, -10) = range(50, 0, -10) -> ends=[100,90,80,70,60] -> valid < 100 -> 4
-    Array 2: range(200-50, 0, -10) = range(150, 0, -10) -> ends=[200,190,...,60] -> valid < 200 -> 14
+    Array 2: range(200-50, 0, -10) = range(150, 0, -10) ->
+    ends=[200,190,...,60] -> valid < 200 -> 14
     Total: 4 + 14 = 18
     """
     data_list = [
-        np.random.randn(100).astype(np.float32),
-        np.random.randn(200).astype(np.float32),
+        np.random.default_rng().standard_normal((100,)).astype(np.float32),
+        np.random.default_rng().standard_normal((200,)).astype(np.float32),
     ]
     strategy = ClassificationStrategyMultipleFiles()
     count = strategy.get_num_sequences(
@@ -121,8 +119,8 @@ def test_multifile_per_file_counts() -> None:
     Array 1: 4 valid windows, Array 2: 14 valid windows.
     """
     data_list = [
-        np.random.randn(100).astype(np.float32),
-        np.random.randn(200).astype(np.float32),
+        np.random.default_rng().standard_normal((100,)).astype(np.float32),
+        np.random.default_rng().standard_normal((200,)).astype(np.float32),
     ]
     strategy = ClassificationStrategyMultipleFiles()
     counts = strategy.get_num_sequences_per_file(

@@ -1,8 +1,8 @@
 """Utility functions for data processing."""
 
 from tscollection.datasets.utils.common import (
-    FunctionComposer,
     compose,
+    FunctionComposer,
     get_num_samples_from_ts,
 )
 

@@ -9,20 +9,24 @@ time series.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from functools import partial
-from typing import Any
+from typing import Any, ClassVar, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 
 from tscollection.datasets.datasets.transformations import (
-    convert_numpy_to_tensor,
     expand_data_dimensionality,
 )
 from tscollection.datasets.enums import TimeSeriesDatasetMode
 from tscollection.datasets.utils import compose
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+MIN_DIM_FOR_SEQ_LEN: int = 2
+"""Minimum array dimensions required to derive sequence length."""
 
 __all__ = [
     'FixedTimeSeriesDataset',
@@ -49,16 +53,19 @@ class TimeSeriesDataset(Dataset[Any], ABC):
         transformations_sequence: Post-processing callables.
     """
 
-    _get_sample_fun_map = {
+    _get_sample_fun_map: ClassVar[dict[TimeSeriesDatasetMode, str]] = {
         TimeSeriesDatasetMode.WITHOUT_LABELS: '_get_sample_1',
         TimeSeriesDatasetMode.WITH_LABELS: '_get_sample_2',
         TimeSeriesDatasetMode.FORECASTING: '_get_sample_3',
     }
 
+    _data: np.ndarray | list[np.ndarray] | pd.DataFrame
+    _labels: np.ndarray | list[np.ndarray] | pd.Series | pd.DataFrame | None
+
     def __init__(
         self,
-        data: Any,
-        labels: Any,
+        data: np.ndarray | list[np.ndarray] | pd.DataFrame,
+        labels: np.ndarray | list[np.ndarray] | pd.Series | pd.DataFrame | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int | None,
         transformations_sequence: list[Callable] | tuple[Callable, ...] | None = None,
@@ -102,27 +109,29 @@ class TimeSeriesDataset(Dataset[Any], ABC):
             )
         self._transform = compose(*sequence)
 
-    def _get_sample_1(self) -> Any:
+    def _get_sample_1(self) -> object:
         """Return transformed data (WITHOUT_LABELS mode)."""
         return self._transform(self._get_current_data())
 
-    def _get_sample_2(self) -> tuple[Any, Any]:
+    def _get_sample_2(self) -> tuple[object, object]:
         """Return (transformed_data, label) (WITH_LABELS mode)."""
         sample = self._transform(self._get_current_data())
         label = self._get_current_label()
         return (sample, label)
 
-    def _get_sample_3(self) -> tuple[Any, Any]:
+    def _get_sample_3(self) -> tuple[object, object]:
         """Return (transformed_input, transformed_target) (FORECASTING mode)."""
         sample = self._transform(self._get_current_data())
         label = self._transform(self._get_current_label())
         return (sample, label)
 
-    def __getitem__(self, index: int) -> Any:
+    def __getitem__(self, index: int) -> object:
+        """Return the sample at the given index."""
         self._go_to_idx(index)
         return self._get_sample()
 
     def __len__(self) -> int:
+        """Return the number of samples."""
         raise NotImplementedError
 
 
@@ -143,6 +152,9 @@ class FixedTimeSeriesDataset(TimeSeriesDataset, ABC):
         ValueError: If *data* has fewer than 2 dimensions.
     """
 
+    _data: np.ndarray | pd.DataFrame
+    _labels: pd.Series | pd.DataFrame | None
+
     def __init__(
         self,
         data: np.ndarray | pd.DataFrame,
@@ -153,16 +165,19 @@ class FixedTimeSeriesDataset(TimeSeriesDataset, ABC):
     ) -> None:
         # T-02-02-01: Type-check data
         if not isinstance(data, (np.ndarray, pd.DataFrame)):
+            msg = f'data must be np.ndarray or pd.DataFrame, got {type(data).__name__}'
             raise TypeError(
-                f'data must be np.ndarray or pd.DataFrame, got {type(data).__name__}'
+                msg
             )
         # T-02-02-02: Validate minimum dimensions for seq_len
-        if isinstance(data, np.ndarray) and data.ndim < 2:
+        if isinstance(data, np.ndarray) and data.ndim < MIN_DIM_FOR_SEQ_LEN:
+            msg = f'data must have at least 2 dimensions for seq_len, got {data.ndim}D'
             raise ValueError(
-                f'data must have at least 2 dimensions for seq_len, got {data.ndim}D'
+                msg
             )
         if isinstance(data, pd.DataFrame) and data.shape[1] < 1:
-            raise ValueError('data DataFrame must have at least 1 column for seq_len')
+            msg = 'data DataFrame must have at least 1 column for seq_len'
+            raise ValueError(msg)
         super().__init__(
             data=data,
             labels=labels,
@@ -188,6 +203,7 @@ class FixedTimeSeriesDataset(TimeSeriesDataset, ABC):
         return len(self._data.iloc[0])
 
     def __len__(self) -> int:
+        """Return the number of samples."""
         return len(self._data)
 
     def _go_to_idx(self, idx: int) -> None:
@@ -212,6 +228,8 @@ class FixedTimeSeriesDatasetUnivariate(FixedTimeSeriesDataset, ABC):
         transformations_sequence: Post-processing callables.
     """
 
+    _data: pd.DataFrame
+
     def __init__(
         self,
         data: pd.DataFrame,
@@ -230,7 +248,7 @@ class FixedTimeSeriesDatasetUnivariate(FixedTimeSeriesDataset, ABC):
         self._n = 0
 
     def _get_current_data(self) -> np.ndarray:
-        return self._data.iloc[self._n].values
+        return self._data.iloc[self._n].to_numpy()
 
 
 class FixedTimeSeriesDatasetMultivariate(FixedTimeSeriesDataset, ABC):
@@ -245,6 +263,8 @@ class FixedTimeSeriesDatasetMultivariate(FixedTimeSeriesDataset, ABC):
         expand_dims_axis: Dimension to expand.
         transformations_sequence: Post-processing callables.
     """
+
+    _data: np.ndarray
 
     def __init__(
         self,

@@ -6,7 +6,6 @@ FixedTimeSeriesDatasetUnivariate, applies default transforms, and yields
 """
 
 import numpy as np
-import pandas as pd
 import torch
 
 from tscollection.datasets.enums import TimeSeriesDatasetMode

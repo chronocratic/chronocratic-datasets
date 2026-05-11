@@ -6,11 +6,15 @@ defaults for UCR-style time series classification tasks.
 
 from __future__ import annotations
 
-import pandas as pd
+from typing import TYPE_CHECKING
 
 from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
 from tscollection.datasets.datasets.transformations import convert_numpy_to_tensor
-from tscollection.datasets.enums import TimeSeriesDatasetMode
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+    from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 __all__ = ['UCRClassificationUnivariateDataset']
 

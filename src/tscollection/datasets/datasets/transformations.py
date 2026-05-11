@@ -22,9 +22,12 @@ def convert_numpy_to_tensor(data: np.ndarray, dtype: str = 'float') -> torch.Ten
         TypeError: If data is not a numpy array.
     """
     if not isinstance(data, np.ndarray):
-        raise TypeError(
+        msg = (
             f'Expected np.ndarray, got {type(data).__name__}. '
             'Use convert_data_to_np_array() for list/tuple inputs.'
+        )
+        raise TypeError(
+            msg
         )
     dtype_map = {
         'float': torch.float,
@@ -71,8 +74,11 @@ def expand_data_dimensionality(
 
     ndim = data.ndim
     if expand_dims_axis < 0 or expand_dims_axis > ndim:
-        raise ValueError(
+        msg = (
             f'expand_dims_axis={expand_dims_axis} is out of range '
             f'for input with {ndim} dimensions. Must be in [0, {ndim}].'
+        )
+        raise ValueError(
+            msg
         )
     return np.expand_dims(data, axis=expand_dims_axis)

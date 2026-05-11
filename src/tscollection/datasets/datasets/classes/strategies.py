@@ -8,7 +8,7 @@ they count sequences and extract labels.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import cast
 
 import numpy as np
 
@@ -34,7 +34,9 @@ class SequenceHandlingStrategy(ABC):
     """
 
     @abstractmethod
-    def get_num_sequences(self, data: np.ndarray, seq_len: int, step: int) -> int:
+    def get_num_sequences(
+        self, data: np.ndarray | list[np.ndarray], seq_len: int, step: int
+    ) -> int:
         """Return total number of sliding-window sequences.
 
         Args:
@@ -49,11 +51,11 @@ class SequenceHandlingStrategy(ABC):
     @abstractmethod
     def get_current_label(
         self,
-        data: np.ndarray,
-        labels: np.ndarray | None,
+        data: np.ndarray | list[np.ndarray],
+        labels: np.ndarray | list[np.ndarray] | None,
         n: int,
         seq_len: int,
-        **kwargs: Any,
+        **_kwargs: object,
     ) -> np.ndarray | None:
         """Return the label for the n-th sequence window.
 
@@ -118,8 +120,12 @@ class ForecastingStrategySingleFile(SequenceHandlingStrategySingleFile):
     def __init__(self, forecast_horizon: int) -> None:
         self._forecast_horizon = forecast_horizon
 
-    def get_num_sequences(self, data: np.ndarray, seq_len: int, step: int) -> int:
-        num_samples_ts = get_num_samples_from_ts(data)
+    def get_num_sequences(
+        self, data: np.ndarray | list[np.ndarray], seq_len: int, step: int
+    ) -> int:
+        """Return number of forecasting windows."""
+        arr = cast('np.ndarray', data) if not isinstance(data, list) else data[0]
+        num_samples_ts = get_num_samples_from_ts(arr)
         possible_steps = list(
             range(num_samples_ts - seq_len - self._forecast_horizon + 1, 0, -step)
         )
@@ -129,19 +135,25 @@ class ForecastingStrategySingleFile(SequenceHandlingStrategySingleFile):
 
     def get_current_label(
         self,
-        data: np.ndarray,
-        labels: np.ndarray | None,
+        data: np.ndarray | list[np.ndarray],
+        labels: np.ndarray | list[np.ndarray] | None,
         n: int,
         seq_len: int,
-        **kwargs: Any,
+        **_kwargs: object,
     ) -> np.ndarray:
-        return data[n + seq_len : n + seq_len + self._forecast_horizon]
+        """Return forecast target segment after the input window."""
+        _ = labels
+        arr = cast('np.ndarray', data) if not isinstance(data, list) else data[0]
+        return arr[n + seq_len : n + seq_len + self._forecast_horizon]
 
 
 class ClassificationStrategySingleFile(SequenceHandlingStrategySingleFile):
     """Sliding-window strategy for single-series classification."""
 
-    def get_num_sequences(self, data: np.ndarray, seq_len: int, step: int) -> int:
+    def get_num_sequences(
+        self, data: np.ndarray | list[np.ndarray], seq_len: int, step: int
+    ) -> int:
+        """Return number of classification windows."""
         num_samples_ts = get_num_samples_from_ts(data)
         possible_steps = list(range(num_samples_ts - seq_len, 0, -step))
         possible_ends = [x + seq_len for x in possible_steps]
@@ -149,15 +161,18 @@ class ClassificationStrategySingleFile(SequenceHandlingStrategySingleFile):
 
     def get_current_label(
         self,
-        data: np.ndarray,
-        labels: np.ndarray | None,
+        data: np.ndarray | list[np.ndarray],
+        labels: np.ndarray | list[np.ndarray] | None,
         n: int,
         seq_len: int,
-        **kwargs: Any,
+        **_kwargs: object,
     ) -> np.ndarray | None:
+        """Return label slice for the classification window."""
+        _ = data
         if labels is None:
             return None
-        return labels[n : n + seq_len]
+        arr = cast('np.ndarray', labels) if not isinstance(labels, list) else labels[0]
+        return arr[n : n + seq_len]
 
 
 class ClassificationStrategyMultipleFiles(SequenceHandlingStrategyMultipleFiles):
@@ -171,6 +186,7 @@ class ClassificationStrategyMultipleFiles(SequenceHandlingStrategyMultipleFiles)
     def get_num_sequences_per_file(
         self, data: list[np.ndarray], seq_len: int, step: int
     ) -> list[int]:
+        """Return per-file classification window counts."""
         counts: list[int] = []
         for ts in data:
             num_samples_ts = get_num_samples_from_ts(ts)
@@ -182,10 +198,10 @@ class ClassificationStrategyMultipleFiles(SequenceHandlingStrategyMultipleFiles)
     def get_num_sequences(
         self, data: np.ndarray | list[np.ndarray], seq_len: int, step: int
     ) -> int:
-        # data may be typed as np.ndarray but is really List[np.ndarray]
+        """Return total classification windows across all files."""
         data_list: list[np.ndarray] = (
-            data if isinstance(data, list) else [data]
-        )  # ty: ignore[invalid-assignment] isinstance narrowing on ndarray | list[ndarray] is a known ty limitation
+            [data] if isinstance(data, np.ndarray) else data
+        )
         return sum(self.get_num_sequences_per_file(data_list, seq_len, step))
 
     def get_current_label(
@@ -194,11 +210,13 @@ class ClassificationStrategyMultipleFiles(SequenceHandlingStrategyMultipleFiles)
         labels: np.ndarray | list[np.ndarray] | None,
         n: int,
         seq_len: int,
-        **kwargs: Any,
+        **_kwargs: object,
     ) -> np.ndarray | None:
+        """Return label slice for multi-file classification window."""
+        _ = data
         if labels is None:
             return None
-        current_file = kwargs.get('current_file', 0)
+        current_file: int = cast('int', _kwargs.get('current_file', 0))
         if isinstance(labels, list):
             return labels[current_file][n : n + seq_len]
         return labels[n : n + seq_len]
