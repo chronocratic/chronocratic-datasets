@@ -11,13 +11,12 @@ from typing import TYPE_CHECKING
 
 from tscollection.datasets.datasets.classes.flexible import FlexibleTimeSeriesDatasetSingleFile
 from tscollection.datasets.datasets.classes.strategies import ForecastingStrategySingleFile
-from tscollection.datasets.datasets.transformations import (
-    convert_data_to_np_array,
-    convert_numpy_to_tensor,
-)
+from tscollection.datasets.datasets.transformations import convert_numpy_to_tensor
 from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import numpy as np
 
 __all__ = ['ETTDataset']
@@ -47,7 +46,7 @@ class ETTDataset(FlexibleTimeSeriesDatasetSingleFile):
         seq_len: int,
         step: int,
         forecast_horizon: int,
-        transformations_sequence: tuple = (convert_numpy_to_tensor, convert_data_to_np_array),
+        transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
     ) -> None:
         # T-02-03-02: Validate forecast_horizon > 0
         if forecast_horizon <= 0:
