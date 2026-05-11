@@ -7,13 +7,8 @@ data_form='nested' default.
 
 import pytest
 
-from tscollection.datasets.config.uea import (
-    UEAConfig,
-    UEA_ATRIAL_FIBRILLATION,
-    UEA_BASIC_MOTIONS,
-)
+from tscollection.datasets.config.uea import UEA_ATRIAL_FIBRILLATION, UEA_BASIC_MOTIONS, UEAConfig
 from tscollection.datasets.enums import DatasetFamily, SplittingStrategy
-
 
 # -- Class structure -------------------------------------------------------
 
@@ -27,10 +22,7 @@ def test_uea_config_inherits_classification_config() -> None:
 
 def test_uea_config_default_family() -> None:
     """UEAConfig must default to DatasetFamily.UEA."""
-    from tscollection.datasets.config.base import (
-        ArffFilePattern,
-        ClassificationFilePatterns,
-    )
+    from tscollection.datasets.config.base import ArffFilePattern, ClassificationFilePatterns
 
     config = UEAConfig(
         name='TestDataset',
@@ -47,10 +39,7 @@ def test_uea_config_default_family() -> None:
 
 def test_uea_config_data_form_default() -> None:
     """UEAConfig.data_form must default to 'nested' (computed value)."""
-    from tscollection.datasets.config.base import (
-        ArffFilePattern,
-        ClassificationFilePatterns,
-    )
+    from tscollection.datasets.config.base import ArffFilePattern, ClassificationFilePatterns
 
     config = UEAConfig(
         name='TestDataset',
@@ -120,10 +109,7 @@ def test_uea_basic_motions_split_strategy() -> None:
 
 def test_uea_basic_motions_file_patterns() -> None:
     """UEA_BASIC_MOTIONS.file_patterns must use nested Pydantic models."""
-    from tscollection.datasets.config.base import (
-        ArffFilePattern,
-        ClassificationFilePatterns,
-    )
+    from tscollection.datasets.config.base import ArffFilePattern, ClassificationFilePatterns
 
     assert isinstance(UEA_BASIC_MOTIONS.file_patterns, ClassificationFilePatterns)
     assert isinstance(UEA_BASIC_MOTIONS.file_patterns.train, ArffFilePattern)
