@@ -201,6 +201,28 @@ class ForecastingConfig(DatasetConfig):
         """Validate forecasting-specific constraints."""
         pass
 
+    @field_validator('split_bounds', mode='before')
+    @classmethod
+    def validate_no_booleans_in_bounds(
+        cls, v: tuple[int, ...] | tuple[float, ...]
+    ) -> tuple[int, ...] | tuple[float, ...]:
+        """Reject boolean values in split_bounds.
+
+        In Python, bool is a subclass of int, so isinstance(True, int)
+        returns True. This validator explicitly rejects booleans to prevent
+        accidental coercion (e.g., split_bounds=(True, False, True)
+        becoming (1, 0, 1)).
+
+        Raises:
+            ValueError: If any element is a boolean.
+        """
+        if any(isinstance(b, bool) for b in v):
+            raise ValueError(
+                'split_bounds must not contain boolean values '
+                '(bool is a subclass of int in Python)'
+            )
+        return v
+
     @model_validator(mode='after')
     def validate_split_consistency(self) -> ForecastingConfig:
         """Validate split_bounds structure and consistency with split_mode.
