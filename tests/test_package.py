@@ -3,7 +3,7 @@
 import importlib
 import pathlib
 
-PACKAGE_ROOT = pathlib.Path(__file__).parent.parent / 'src' / 'tsdatasets'
+PACKAGE_ROOT = pathlib.Path(__file__).parent.parent / 'src' / 'tscollection' / 'datasets'
 EXPECTED_INIT_FILES = [
     PACKAGE_ROOT / '__init__.py',
     PACKAGE_ROOT / 'datasets' / '__init__.py',
@@ -19,22 +19,22 @@ EXPECTED_INIT_FILES = [
 
 def test_version_defined():
     """PKG-02: Package exposes __version__."""
-    import tsdatasets
+    import tscollection.datasets
 
-    assert hasattr(tsdatasets, '__version__')
-    assert tsdatasets.__version__ == '0.1.0'
+    assert hasattr(tscollection.datasets, '__version__')
+    assert tscollection.datasets.__version__ == '0.1.0'
 
 
-def test_import_tsdatasets():
-    """PKG-02: import tsdatasets resolves without errors."""
-    ts = importlib.import_module('tsdatasets')
+def test_import_tscollection_datasets():
+    """PKG-02: import tscollection.datasets resolves without errors."""
+    ts = importlib.import_module('tscollection.datasets')
     assert hasattr(ts, '__all__')
     assert '__version__' in ts.__all__
 
 
 def test_enum_exports_in_root():
     """PKG-02: Enum types are exported from package root."""
-    from tsdatasets import (
+    from tscollection.datasets import (
         DistanceMetric,
         ForecastingMode,
         ScalingMethod,
@@ -58,14 +58,14 @@ def test_init_files_exist():
 def test_submodule_all_declarations():
     """PKG-03: Each submodule __init__.py has an __all__ declaration."""
     submodules = [
-        'tsdatasets.datasets',
-        'tsdatasets.datasets.classes',
-        'tsdatasets.modules',
-        'tsdatasets.modules.classes',
-        'tsdatasets.download',
-        'tsdatasets.config',
-        'tsdatasets.enums',
-        'tsdatasets.utils',
+        'tscollection.datasets.datasets',
+        'tscollection.datasets.datasets.classes',
+        'tscollection.datasets.modules',
+        'tscollection.datasets.modules.classes',
+        'tscollection.datasets.download',
+        'tscollection.datasets.config',
+        'tscollection.datasets.enums',
+        'tscollection.datasets.utils',
     ]
     for module_name in submodules:
         mod = importlib.import_module(module_name)

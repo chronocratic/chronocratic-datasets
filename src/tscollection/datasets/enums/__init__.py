@@ -1,10 +1,6 @@
-"""tsdatasets -- Zero-config time series datasets for PyTorch Lightning."""
+"""Typed enumerations for dataset parameters."""
 
-from __future__ import annotations
-
-__version__ = '0.1.0'
-
-from tsdatasets.enums import (
+from tscollection.datasets.enums.data import (
     DistanceMetric,
     ForecastingMode,
     ScalingMethod,
@@ -18,5 +14,4 @@ __all__ = [
     'ScalingMethod',
     'SplittingStrategy',
     'TimeSeriesDatasetMode',
-    '__version__',
 ]

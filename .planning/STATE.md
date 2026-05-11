@@ -1,7 +1,7 @@
 # State: tsdatasets
 
-**Current Phase:** 1 (Phase 1 complete — Package Foundation)
-**Last Updated:** 2026-05-08
+**Current Phase:** 2 (Phase 2 not started — Dataset Classes)
+**Last Updated:** 2026-05-11
 
 ## Planning Artifacts
 
@@ -11,6 +11,24 @@
 | REQUIREMENTS.md | Complete (29 v1 requirements) |
 | ROADMAP.md | Complete (7 phases) |
 | CLAUDE.md | Complete (project guidelines) |
+
+## Progress
+
+```
+Phase 1: Package Foundation    [████████] Done
+Phase 2: Dataset Classes       [        ] Not started
+Phase 3: Pydantic Registry     [        ] Not started
+Phase 4: Download & Caching    [        ] Not started
+Phase 5: Data Modules          [        ] Not started
+Phase 6: Factory API           [        ] Not started
+Phase 7: Tests                 [        ] Not started
+```
+
+## Session Continuity
+
+Last session: 2026-05-08
+Stopped at: Phase 1 complete, all 5 tasks done (commit 61524ef)
+Resume: Ready to plan Phase 2
 
 ## Decisions Log
 
@@ -29,4 +47,4 @@
 
 ## Next Steps
 
-Run `/gsd-plan-phase 2` to start Phase 2: Dataset Classes.
+Phase 2 has no CONTEXT.md yet — discuss phase vision or plan directly.
