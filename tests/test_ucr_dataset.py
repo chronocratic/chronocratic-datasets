@@ -1,6 +1,56 @@
-"""Tests for UCR univariate classification wrapper."""
+"""Tests for UCR univariate classification wrapper (DST-01, DST-05).
+
+Verifies that UCRClassificationUnivariateDataset correctly inherits from
+FixedTimeSeriesDatasetUnivariate, applies default transforms, and yields
+(data, label) tuples in WITH_LABELS mode.
+"""
+
+import numpy as np
+import pandas as pd
+import torch
+
+from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 
-def test_placeholder():
-    """Placeholder until UCR dataset tests are implemented."""
-    pass
+def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classification_labels):
+    """DST-01: UCRClassificationUnivariateDataset yields (Tensor, int) in WITH_LABELS mode."""
+    from tscollection.datasets.datasets.ucr import UCRClassificationUnivariateDataset
+
+    ds = UCRClassificationUnivariateDataset(
+        data=synthetic_classification_df,
+        labels=synthetic_classification_labels,
+        mode=TimeSeriesDatasetMode.WITH_LABELS,
+    )
+    sample, label = ds[0]
+
+    # With expand_dims_axis=1 and convert_numpy_to_tensor then expand,
+    # sample will be a numpy array (expand converts tensor back to numpy)
+    assert isinstance(sample, (np.ndarray, torch.Tensor))
+    assert sample.shape[0] == 1  # expanded dimension
+    assert sample.shape[1] == 50  # original timestep count
+    assert isinstance(label, (int, np.integer))
+
+
+def test_ucr_without_labels(synthetic_classification_df):
+    """UCR yields single array in WITHOUT_LABELS mode."""
+    from tscollection.datasets.datasets.ucr import UCRClassificationUnivariateDataset
+
+    ds = UCRClassificationUnivariateDataset(
+        data=synthetic_classification_df,
+        labels=None,
+        mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
+    )
+    result = ds[0]
+    assert not isinstance(result, tuple)
+
+
+def test_ucr_length(synthetic_classification_df, synthetic_classification_labels):
+    """UCR dataset length equals number of rows in DataFrame."""
+    from tscollection.datasets.datasets.ucr import UCRClassificationUnivariateDataset
+
+    ds = UCRClassificationUnivariateDataset(
+        data=synthetic_classification_df,
+        labels=synthetic_classification_labels,
+        mode=TimeSeriesDatasetMode.WITH_LABELS,
+    )
+    assert len(ds) == len(synthetic_classification_df)
