@@ -44,6 +44,14 @@ Phase 7: Tests                 [==== TST-01..04 ====]  depends on Phases 1-6
 
 **Requirements:** DST-01, DST-02, DST-03, DST-04, DST-05
 
+**Plans:** 4 plans
+
+**Plan list:**
+- [ ] 02-00-PLAN.md — Utility modules (transformations, common) and test infrastructure
+- [ ] 02-01-PLAN.md — Strategy pattern (SequenceHandlingStrategy + 3 concrete)
+- [ ] 02-02-PLAN.md — Fixed and flexible dataset ABCs with seq_len property
+- [ ] 02-03-PLAN.md — Concrete wrappers (UCR, UEA, ETT) and export wiring
+
 **Deliverables:**
 - `src/tscollection/datasets/datasets/classes/fixed.py`
   - `FixedTimeSeriesDataset` (abstract base)
@@ -204,10 +212,10 @@ These are small, self-contained extracts from rbspaper and can be landed early:
 
 | Module | Source | Phase |
 |--------|--------|-------|
-| `utils/arff.py` | `rbspaper/data/utils/arff.py` | Phase 2 |
+| `utils/arff.py` | `rbspaper/data/utils/arff.py` | Phase 5 |
 | `utils/scaling.py` | `rbspaper/data/utils/scaling.py` | Phase 5 |
 | `utils/features.py` | `rbspaper/data/utils/features.py` | Phase 5 |
-| `utils/general.py` | `rbspaper/data/utils/general.py` | Phase 2 |
+| `utils/general.py` | `rbspaper/data/utils/general.py` | Phase 5 |
 
 ## Dependency Graph
 
