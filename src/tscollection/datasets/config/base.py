@@ -220,10 +220,17 @@ class ForecastingConfig(DatasetConfig):
         default_seq_len: Default input window length for sliding-window
             datasets. Must be >= 1.
         default_horizon: Default prediction horizon. Must be >= 1.
+        num_classes: Explicitly 0 for forecasting datasets. Classification
+            datasets override this to >= 1. A value of 0 signals to
+            downstream code that label loading is not applicable.
     """
 
     split_mode: SplitMode
     split_bounds: tuple[int, ...] | tuple[float, ...]
+    num_classes: int = Field(default=0, ge=0, description=(
+        'Number of classes is not applicable for forecasting datasets. '
+        'Always 0 to signal downstream code to skip label loading.'
+    ))
     default_seq_len: int = Field(ge=1, default=128)
     default_horizon: int = Field(ge=1, default=96)
 
