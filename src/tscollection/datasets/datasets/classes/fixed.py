@@ -122,8 +122,11 @@ class TimeSeriesDataset(Dataset[Any], ABC):
     def _get_sample_3(self) -> tuple[object, object]:
         """Return (transformed_input, transformed_target) (FORECASTING mode)."""
         sample = self._transform(self._get_current_data())
-        label = self._transform(self._get_current_label())
-        return (sample, label)
+        label = self._get_current_label()
+        if label is None:
+            msg = 'FORECASTING mode requires labels; _get_current_label returned None'
+            raise RuntimeError(msg)
+        return (sample, self._transform(label))
 
     def __getitem__(self, index: int) -> object:
         """Return the sample at the given index."""
