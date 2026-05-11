@@ -5,19 +5,12 @@ from __future__ import annotations
 import pytest
 
 from tscollection.datasets.config.base import DatasetConfig
+from tscollection.datasets.config.factory import (
+    CONFIGS,
+    get_config,
+    list_configs,
+)
 from tscollection.datasets.enums.data import DatasetFamily
-
-
-# Import factory after config instances are created
-# (imports will fail during RED phase — expected)
-try:
-    from tscollection.datasets.config.factory import (
-        CONFIGS,
-        get_config,
-        list_configs,
-    )
-except ImportError:
-    pytest.skip("factory.py not yet implemented", allow_module_level=True)
 
 
 class TestConfigsRegistry:
