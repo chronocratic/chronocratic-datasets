@@ -23,12 +23,12 @@ def test_forecasting_num_sequences() -> None:
     """DST-05: ForecastingStrategySingleFile returns correct window count.
 
     For a (200, 7) array with seq_len=96, step=1, forecast_horizon=24,
-    exactly 80 valid windows exist: (200 - 96 - 24) = 80.
+    exactly 81 valid windows exist: indices 0..80 => 200 - 96 - 24 + 1 = 81.
     """
     data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
     count = strategy.get_num_sequences(data=data, seq_len=96, step=1)
-    assert count == 80
+    assert count == 81
 
 
 def test_forecasting_label_slice() -> None:
@@ -55,14 +55,14 @@ def test_classification_num_sequences() -> None:
     """DST-05: ClassificationStrategySingleFile returns correct window count.
 
     For a (200,) array with seq_len=50 and step=10, count the valid windows.
-    range(200 - 50, 0, -10) = range(150, 0, -10) = [150, 140, ..., 10]
-    possible_ends = [200, 190, ..., 60]
-    valid_ends = [e for e in possible_ends if e < 200] = [190, ..., 60] = 14
+    range(200 - 50, -1, -10) = range(150, -1, -10) = [150, 140, ..., 10, 0]
+    possible_ends = [200, 190, ..., 60, 50]
+    valid_ends = [e for e in possible_ends if e <= 200] = [200, 190, ..., 50] = 16
     """
     data = np.random.default_rng().standard_normal((200,)).astype(np.float32)
     strategy = ClassificationStrategySingleFile()
     count = strategy.get_num_sequences(data=data, seq_len=50, step=10)
-    assert count == 14
+    assert count == 16
 
 
 def test_classification_label_with_labels() -> None:
@@ -96,10 +96,9 @@ def test_multifile_num_sequences() -> None:
 
     Two arrays: one with 100 samples, one with 200 samples.
     seq_len=50, step=10.
-    Array 1: range(100-50, 0, -10) = range(50, 0, -10) -> ends=[100,90,80,70,60] -> valid < 100 -> 4
-    Array 2: range(200-50, 0, -10) = range(150, 0, -10) ->
-    ends=[200,190,...,60] -> valid < 200 -> 14
-    Total: 4 + 14 = 18
+    Array 1: range(100-50, -1, -10) -> ends=[100,90,...,50] -> valid <= 100 -> 6
+    Array 2: range(200-50, -1, -10) -> ends=[200,190,...,50] -> valid <= 200 -> 16
+    Total: 6 + 16 = 22
     """
     data_list = [
         np.random.default_rng().standard_normal((100,)).astype(np.float32),
@@ -109,14 +108,14 @@ def test_multifile_num_sequences() -> None:
     count = strategy.get_num_sequences(
         data=data_list, seq_len=50, step=10
     )
-    assert count == 18
+    assert count == 22
 
 
 def test_multifile_per_file_counts() -> None:
     """DST-05: get_num_sequences_per_file returns per-file integer list.
 
     Same inputs as test_multifile_num_sequences.
-    Array 1: 4 valid windows, Array 2: 14 valid windows.
+    Array 1: 6 valid windows, Array 2: 16 valid windows.
     """
     data_list = [
         np.random.default_rng().standard_normal((100,)).astype(np.float32),
@@ -126,7 +125,7 @@ def test_multifile_per_file_counts() -> None:
     counts = strategy.get_num_sequences_per_file(
         data=data_list, seq_len=50, step=10
     )
-    assert counts == [4, 14]
+    assert counts == [6, 16]
 
 
 # --------------------------------------------------------------------------- #

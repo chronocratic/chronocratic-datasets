@@ -42,8 +42,8 @@ def test_ett_length(synthetic_forecast_data):
         forecast_horizon=24,
     )
     assert len(ds) > 0
-    # The strategy counts sequences; verify it's within expected range
-    assert len(ds) <= 81
+    # The strategy counts sequences; verify it matches the corrected count
+    assert len(ds) == 81
 
 
 def test_ett_forecast_horizon(synthetic_forecast_data):
