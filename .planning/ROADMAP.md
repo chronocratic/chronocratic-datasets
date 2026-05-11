@@ -87,7 +87,7 @@ Phase 7: Tests                 [==== TST-01..04 ====]  depends on Phases 1-6
 **Plans:** 4 plans
 
 **Plan list:**
-- [ ] 03-01-PLAN.md — DatasetFamily/SplitMode enums, config hierarchy (DatasetConfig, ClassificationConfig, ForecastingConfig), test fixtures
+- [x] 03-01-PLAN.md — DatasetFamily/SplitMode enums, config hierarchy (DatasetConfig, ClassificationConfig, ForecastingConfig), test fixtures
 - [ ] 03-02-PLAN.md — Classification configs: UCRConfig (3 instances) + UEAConfig (2 instances)
 - [ ] 03-03-PLAN.md — Forecasting configs: ETTConfig (4 instances) + ElectricityConfig + WeatherConfig
 - [ ] 03-04-PLAN.md — Factory registry (CONFIGS dict, get_config, list_configs) + export chain
