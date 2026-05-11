@@ -155,9 +155,9 @@ class ClassificationStrategySingleFile(SequenceHandlingStrategySingleFile):
     ) -> int:
         """Return number of classification windows."""
         num_samples_ts = get_num_samples_from_ts(data)
-        possible_steps = list(range(num_samples_ts - seq_len, 0, -step))
+        possible_steps = list(range(num_samples_ts - seq_len, -1, -step))
         possible_ends = [x + seq_len for x in possible_steps]
-        return len([e for e in possible_ends if e < num_samples_ts])
+        return len([e for e in possible_ends if e <= num_samples_ts])
 
     def get_current_label(
         self,
