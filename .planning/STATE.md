@@ -29,6 +29,7 @@ Phase 7: Tests                 [        ] Not started
 Last session: 2026-05-08
 Stopped at: Phase 1 complete, all 5 tasks done (commit 61524ef)
 Resume: Ready to plan Phase 2
+Current session: 2026-05-11 — Renamed tsdatasets → tscollection.datasets (PEP 420 namespace)
 
 ## Decisions Log
 
