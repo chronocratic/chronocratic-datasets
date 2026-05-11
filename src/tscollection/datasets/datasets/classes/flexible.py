@@ -198,9 +198,6 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
             transformations_sequence=transformations_sequence,
         )
         self._current_file = 0
-        self._seq_len = seq_len
-        self._step = step
-        self._n = 0
         self._num_samples_per_file = self._get_num_samples_per_file()
         self._num_sequences_per_file = sequence_handling_strategy.get_num_sequences_per_file(
             data=self._data, seq_len=self._seq_len, step=self._step
