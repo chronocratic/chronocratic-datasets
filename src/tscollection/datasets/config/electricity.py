@@ -26,7 +26,7 @@ class ElectricityConfig(ForecastingConfig):
     univariate mode. Uses fractional split boundaries (D-03) of 60/20/20.
 
     Attributes:
-        name: Dataset name (e.g., 'electricity').
+        name: Dataset name (e.g., 'Electricity').
         family: Always DatasetFamily.ELECTRICITY.
         url: Download URL for the CSV file.
         sha256: SHA256 checksum, or None if not yet available.
@@ -52,7 +52,7 @@ class ElectricityConfig(ForecastingConfig):
 # ----------------------------------------------------------------------- #
 
 ELECTRICITY_LOAD: ElectricityConfig = ElectricityConfig(
-    name='electricity',
+    name='Electricity',
     url='https://raw.githubusercontent.com/rashmitrivedi/NeuralForecast/master/dataset/electricity/electricity.csv',
     sha256=None,
     split_bounds=(0.6, 0.2, 0.2),

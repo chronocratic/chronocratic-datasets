@@ -55,7 +55,7 @@ class TestConfigsRegistry:
         assert 'ETTh2' in CONFIGS
         assert 'ETTm1' in CONFIGS
         assert 'ETTm2' in CONFIGS
-        assert 'electricity' in CONFIGS
+        assert 'Electricity' in CONFIGS
         assert 'weather' in CONFIGS
 
 
@@ -77,10 +77,10 @@ class TestGetConfig:
         assert result is ETT_H1
 
     def test_get_config_electricity_returns_instance(self) -> None:
-        """get_config('electricity') must return the ELECTRICITY_LOAD instance."""
+        """get_config('Electricity') must return the ELECTRICITY_LOAD instance."""
         from tscollection.datasets.config.electricity import ELECTRICITY_LOAD
 
-        result = get_config(name='electricity')
+        result = get_config(name='Electricity')
         assert result is ELECTRICITY_LOAD
 
     def test_get_config_weather_returns_instance(self) -> None:

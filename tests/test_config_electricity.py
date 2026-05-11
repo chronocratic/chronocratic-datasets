@@ -47,7 +47,7 @@ class TestELECTRICITY_LOAD:
         """CFG-02: ELECTRICITY_LOAD has correct name."""
         from tscollection.datasets.config.electricity import ELECTRICITY_LOAD
 
-        assert ELECTRICITY_LOAD.name == 'electricity'
+        assert ELECTRICITY_LOAD.name == 'Electricity'
 
     def test_split_bounds_fractional(self) -> None:
         """CFG-02: ELECTRICITY_LOAD uses 60/20/20 fractional splits."""

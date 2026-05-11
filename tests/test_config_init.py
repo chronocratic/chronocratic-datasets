@@ -30,7 +30,7 @@ class TestConfigInitAll:
         assert ETT_H2.name == 'ETTh2'
         assert ETT_M1.name == 'ETTm1'
         assert ETT_M2.name == 'ETTm2'
-        assert ELECTRICITY_LOAD.name == 'electricity'
+        assert ELECTRICITY_LOAD.name == 'Electricity'
         assert WEATHER.name == 'weather'
 
     def test_factory_functions_importable(self) -> None:
