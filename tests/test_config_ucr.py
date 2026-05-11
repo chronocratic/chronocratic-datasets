@@ -7,14 +7,8 @@ computed property.
 
 import pytest
 
-from tscollection.datasets.config.ucr import (
-    UCRConfig,
-    UCR_COFFEE,
-    UCR_ECG200,
-    UCR_FACE_FOUR,
-)
+from tscollection.datasets.config.ucr import UCR_COFFEE, UCR_ECG200, UCR_FACE_FOUR, UCRConfig
 from tscollection.datasets.enums import DatasetFamily, SplittingStrategy
-
 
 # -- Class structure -------------------------------------------------------
 
@@ -28,8 +22,7 @@ def test_ucr_config_inherits_classification_config() -> None:
 
 def test_ucr_config_default_family() -> None:
     """UCRConfig must default to DatasetFamily.UCR."""
-    from tscollection.datasets.config.base import ClassificationFilePatterns
-    from tscollection.datasets.config.base import ArffFilePattern
+    from tscollection.datasets.config.base import ArffFilePattern, ClassificationFilePatterns
 
     config = UCRConfig(
         name='TestDataset',
@@ -45,10 +38,9 @@ def test_ucr_config_default_family() -> None:
     assert config.family == DatasetFamily.UCR
 
 
-def test_ucr_config_data_form_property() -> None:
-    """UCRConfig.data_form must return 'regular' as a computed property."""
-    from tscollection.datasets.config.base import ClassificationFilePatterns
-    from tscollection.datasets.config.base import ArffFilePattern
+def test_ucr_config_data_form_default() -> None:
+    """UCRConfig.data_form must default to 'regular' (computed value)."""
+    from tscollection.datasets.config.base import ArffFilePattern, ClassificationFilePatterns
 
     config = UCRConfig(
         name='TestDataset',
@@ -198,8 +190,7 @@ def test_ucr_coffee_model_copy() -> None:
 
 def test_file_patterns_are_nested_pydantic_models() -> None:
     """file_patterns must use nested Pydantic models, not dicts."""
-    from tscollection.datasets.config.base import ClassificationFilePatterns
-    from tscollection.datasets.config.base import ArffFilePattern
+    from tscollection.datasets.config.base import ArffFilePattern, ClassificationFilePatterns
 
     assert isinstance(UCR_COFFEE.file_patterns, ClassificationFilePatterns)
     assert isinstance(UCR_COFFEE.file_patterns.train, ArffFilePattern)
