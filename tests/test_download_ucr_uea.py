@@ -117,3 +117,33 @@ class TestDownloadUcrUea:
 
             # Download count should not increase on cache hit
             assert call_count_after_second <= call_count_after_first + 1
+
+
+class TestHttpsValidator:
+    """Tests for the HTTPS-only URL validator on DatasetConfig."""
+
+    def test_rejects_http_url(self) -> None:
+        """CR-02: ClassificationConfig rejects HTTP URLs at construction."""
+        from pydantic import ValidationError
+
+        from tscollection.datasets.config.base import (
+            ArffFilePattern,
+            ClassificationConfig,
+            ClassificationFilePatterns,
+        )
+        from tscollection.datasets.enums import DatasetFamily
+
+        with pytest.raises(ValidationError):
+            ClassificationConfig(
+                name='TestHttpReject',
+                family=DatasetFamily.UCR,
+                url='http://example.com/test.zip',
+                num_classes=2,
+                data_form='regular',
+                target_col_name='Class',
+                file_patterns=ClassificationFilePatterns(
+                    train=ArffFilePattern(arff='{dataset_name}_train.arff'),
+                    test=ArffFilePattern(arff='{dataset_name}_test.arff'),
+                ),
+                tasks=('classification',),
+            )
