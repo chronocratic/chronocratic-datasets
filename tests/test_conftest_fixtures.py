@@ -8,15 +8,7 @@ import os
 
 import numpy as np
 import pandas as pd
-import pytest
 import requests
-
-from tscollection.datasets.config.base import (
-    ArffFilePattern,
-    ClassificationConfig,
-    ClassificationFilePatterns,
-)
-from tscollection.datasets.enums import DatasetFamily
 
 
 def test_classification_df_shape(synthetic_classification_df):
@@ -53,8 +45,8 @@ class TestMockHttpServer:
         self, mock_http_server
     ) -> None:
         """DL-01: mock_http_server serves a known file at a predictable URL."""
-        base_url, file_hashes = mock_http_server
-        response = requests.get(f'{base_url}/test_file.csv')
+        base_url, _file_hashes = mock_http_server
+        response = requests.get(f'{base_url}/test_file.csv', timeout=5)
         assert response.status_code == 200
         assert len(response.content) > 0
 
@@ -62,15 +54,15 @@ class TestMockHttpServer:
         self, mock_http_server
     ) -> None:
         """DL-01: mock_http_server returns correct Content-Length header."""
-        base_url, file_hashes = mock_http_server
-        response = requests.get(f'{base_url}/test_file.zip')
+        base_url, _file_hashes = mock_http_server
+        response = requests.get(f'{base_url}/test_file.zip', timeout=5)
         assert int(response.headers['Content-Length']) == len(response.content)
 
     def test_file_hashes_provided(
         self, mock_http_server
     ) -> None:
         """DL-01: mock_http_server yields SHA256 hashes for all test files."""
-        base_url, file_hashes = mock_http_server
+        _base_url, file_hashes = mock_http_server
         assert 'test_file.zip' in file_hashes
         assert 'test_file.csv' in file_hashes
         assert 'bad_file.zip' in file_hashes
