@@ -219,3 +219,6 @@ __marimo__/
 
 # _sources
 _sources/
+
+# planning
+/.planning/
