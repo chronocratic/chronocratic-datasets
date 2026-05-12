@@ -88,18 +88,22 @@ def download_ucr_uea(
     train_path = extract_dir / train_pattern
     test_path = extract_dir / test_pattern
 
-    # Fallback: search recursively (handles nested subdirectories in UEA)
+    # Fallback: search recursively for nested archives (e.g., UEA)
     if not train_path.exists() or not test_path.exists():
         logger.info(
             'Expected ARFF paths not found directly; searching recursively in %s',
             extract_dir,
         )
-        arff_files = list(extract_dir.rglob('*.arff'))
-        for arff_file in arff_files:
-            if 'train' in arff_file.name.lower() and not train_path.exists():
-                train_path = arff_file
-            if 'test' in arff_file.name.lower() and not test_path.exists():
-                test_path = arff_file
+        found_train = train_path if train_path.exists() else None
+        found_test = test_path if test_path.exists() else None
+        for arff_file in extract_dir.rglob('*.arff'):
+            name_lower = arff_file.name.lower()
+            if found_train is None and '_train' in name_lower:
+                found_train = arff_file
+            if found_test is None and '_test' in name_lower:
+                found_test = arff_file
+        train_path = found_train or train_path
+        test_path = found_test or test_path
 
     logger.info(
         'UCR/UEA dataset %s ready — train: %s, test: %s',
