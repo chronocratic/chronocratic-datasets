@@ -43,10 +43,17 @@ class TestGetCacheDir:
         import os
 
         new_dir = tmp_path / 'new_cache_dir'
-        os.environ['TSCOLLECTION_CACHE_DIR'] = str(new_dir)
-        result = get_cache_dir()
-        assert result.exists()
-        assert result.is_dir()
+        old_value = os.environ.get('TSCOLLECTION_CACHE_DIR')
+        try:
+            os.environ['TSCOLLECTION_CACHE_DIR'] = str(new_dir)
+            result = get_cache_dir()
+            assert result.exists()
+            assert result.is_dir()
+        finally:
+            if old_value is None:
+                os.environ.pop('TSCOLLECTION_CACHE_DIR', None)
+            else:
+                os.environ['TSCOLLECTION_CACHE_DIR'] = old_value
 
 
 class TestDownloadFile:
@@ -144,16 +151,20 @@ class TestDownloadFile:
         )
         assert result.exists()
 
-        # Second download should skip (cache hit)
-        with patch('requests.get') as mock_get:
-            mock_get.side_effect = RuntimeError('HTTP should not be called')
+        # Second download: force network path to fail, verify cache is used
+        with patch(
+            'tscollection.datasets.download.cache._create_session',
+            side_effect=RuntimeError('network should not be called on cache hit'),
+        ):
             result2 = download_file(
                 url=url,
                 sha256=expected_hash,
                 cache_dir=tmp_cache_dir,
                 filename='test_file.zip',
+                overwrite_cache=False,
             )
-            assert result2.exists()
+        assert result2.exists()
+
 
     def test_overwrite_cache_forces_redownload(
         self,
