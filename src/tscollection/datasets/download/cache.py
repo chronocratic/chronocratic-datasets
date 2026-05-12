@@ -179,21 +179,40 @@ def file_exists_in_cache(
     *,
     cache_dir: Path,
     sha256: str | None,
+    filename: str | None = None,
 ) -> bool:
     """Check whether a cached archive exists in the given directory.
 
-    Searches for ``*.zip`` and ``*.csv`` files in ``cache_dir``. If
+    If ``filename`` is provided, checks that specific file. Otherwise
+    searches for ``*.zip`` and ``*.csv`` files in ``cache_dir``. If
     ``sha256`` is provided, validates the hash of found archives.
+
+    Warning:
+        When both ``filename`` and ``sha256`` are None, this function
+        returns True if ANY .zip or .csv file exists in ``cache_dir``,
+        regardless of which dataset it belongs to. Always provide
+        ``filename`` when checking a shared cache root to avoid false
+        positives.
 
     Args:
         cache_dir: Directory to search for cached archives.
         sha256: Expected SHA256 hex digest, or None to skip hash validation.
+        filename: Optional specific filename to check. Narrows the search
+            to a single file instead of globbing for any archive.
 
     Returns:
         True if a matching archive is found, False otherwise.
     """
     if not cache_dir.is_dir():
         return False
+
+    if filename is not None:
+        target = cache_dir / filename
+        if not target.exists():
+            return False
+        if sha256 is not None and _compute_file_hash(target) != sha256:
+            return False
+        return True
 
     archives = list(cache_dir.glob('*.zip')) + list(cache_dir.glob('*.csv'))
     if not archives:
