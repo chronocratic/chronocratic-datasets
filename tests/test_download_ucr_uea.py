@@ -53,10 +53,16 @@ class TestDownloadUcrUea:
             update={'url': base_url + '/test_file.zip'}
         )
 
-        with patch(
-            'tscollection.datasets.download.ucr_uea.download_file'
-        ) as mock_download:
+        with (
+            patch(
+                'tscollection.datasets.download.ucr_uea.download_file'
+            ) as mock_download,
+            patch(
+                'tscollection.datasets.download.ucr_uea.extract_archive'
+            ) as mock_extract,
+        ):
             mock_download.return_value = Path('/cache/test_file.zip')
+            mock_extract.return_value = Path('/cache/TestDataset/extracted')
             download_ucr_uea(
                 config=cfg,
                 overwrite_cache=False,
@@ -85,10 +91,16 @@ class TestDownloadUcrUea:
             update={'url': base_url + '/test_file.zip'}
         )
 
-        with patch(
-            'tscollection.datasets.download.ucr_uea.download_file'
-        ) as mock_download:
+        with (
+            patch(
+                'tscollection.datasets.download.ucr_uea.download_file'
+            ) as mock_download,
+            patch(
+                'tscollection.datasets.download.ucr_uea.extract_archive'
+            ) as mock_extract,
+        ):
             mock_download.return_value = Path('/cache/test_file.zip')
+            mock_extract.return_value = Path('/cache/TestDataset/extracted')
             # First call
             download_ucr_uea(
                 config=cfg,
