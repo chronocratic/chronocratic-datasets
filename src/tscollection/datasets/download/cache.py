@@ -5,16 +5,12 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING
 from zipfile import ZipFile
 
 import requests
 from requests.adapters import HTTPAdapter
 from tqdm import tqdm
 from urllib3.util.retry import Retry
-
-if TYPE_CHECKING:
-    pass
 
 __all__ = [
     'clear_cache_dir',
