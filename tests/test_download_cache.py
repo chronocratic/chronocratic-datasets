@@ -10,6 +10,8 @@ These tests fail on import until the cache module is implemented
 
 from __future__ import annotations
 
+import logging
+import os
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -40,8 +42,6 @@ class TestGetCacheDir:
 
     def test_creates_directory(self, tmp_path: Path) -> None:
         """DL-01: get_cache_dir creates directory if it does not exist."""
-        import os
-
         new_dir = tmp_path / 'new_cache_dir'
         old_value = os.environ.get('TSCOLLECTION_CACHE_DIR')
         try:
@@ -118,8 +118,6 @@ class TestDownloadFile:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """DL-02: download_file logs warning when sha256=None."""
-        import logging
-
         base_url, _file_hashes = mock_http_server
         url = f'{base_url}/test_file.zip'
         with caplog.at_level(logging.WARNING):
