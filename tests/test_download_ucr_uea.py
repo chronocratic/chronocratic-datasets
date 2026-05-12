@@ -116,7 +116,32 @@ class TestDownloadUcrUea:
             call_count_after_second = mock_download.call_count
 
             # Download count should not increase on cache hit
-            assert call_count_after_second <= call_count_after_first + 1
+            assert call_count_after_second == call_count_after_first
+
+    def test_calls_clear_cache_on_overwrite(
+        self,
+        sample_classification_config,
+    ) -> None:
+        """DL-04: download_ucr_uea calls clear_cache_dir when overwrite=True."""
+        cfg = sample_classification_config.model_copy(
+            update={'url': 'https://example.com/test.zip'}
+        )
+
+        with (
+            patch(
+                'tscollection.datasets.download.ucr_uea.clear_cache_dir'
+            ) as mock_clear,
+            patch(
+                'tscollection.datasets.download.ucr_uea.download_file'
+            ) as mock_download,
+            patch(
+                'tscollection.datasets.download.ucr_uea.extract_archive'
+            ) as mock_extract,
+        ):
+            mock_download.return_value = Path('/cache/test_file.zip')
+            mock_extract.return_value = Path('/cache/TestDataset/extracted')
+            download_ucr_uea(config=cfg, overwrite_cache=True)
+            mock_clear.assert_called_once_with(dataset_name=cfg.name)
 
 
 class TestHttpsValidator:
