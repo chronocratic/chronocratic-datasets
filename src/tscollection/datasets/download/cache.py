@@ -109,7 +109,16 @@ def download_file(
         requests.HTTPError: If download fails after retries.
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
-    destination = cache_dir / filename
+    cache_dir_resolved = cache_dir.resolve()
+    destination = (cache_dir / filename).resolve()
+
+    # Ensure destination stays within cache_dir (prevent path traversal)
+    try:
+        destination.relative_to(cache_dir_resolved)
+    except ValueError:
+        raise ValueError(
+            f"Filename '{filename}' escapes cache directory"
+        ) from None
 
     # Cache hit check
     if destination.exists() and not overwrite_cache:
