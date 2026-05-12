@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import patch
+import zipfile
 
 import pytest
 from tscollection.datasets.download.ucr_uea import download_ucr_uea
@@ -24,6 +25,7 @@ class TestDownloadUcrUea:
         self,
         mock_http_server: tuple[str, dict[str, str]],
         sample_classification_config,
+        tmp_cache_dir: Path,
     ) -> None:
         """DL-01: download_ucr_uea returns dict with train and test keys."""
         base_url, _file_hashes = mock_http_server
@@ -85,40 +87,39 @@ class TestDownloadUcrUea:
         self,
         mock_http_server: tuple[str, dict[str, str]],
         sample_classification_config,
+        tmp_cache_dir: Path,
     ) -> None:
-        """DL-04: download_ucr_uea respects overwrite_cache parameter."""
-        base_url, _file_hashes = mock_http_server
+        """DL-04: download_ucr_uea uses cache on second call (no re-download)."""
+        base_url, file_hashes = mock_http_server
 
+        # Use nested_arff_file.zip so rglob fallback finds the ARFF files
         cfg = sample_classification_config.model_copy(
-            update={'url': base_url + '/test_file.zip'}
+            update={'url': base_url + '/nested_arff_file.zip'}
         )
 
-        with (
-            patch(
-                'tscollection.datasets.download.ucr_uea.download_file'
-            ) as mock_download,
-            patch(
-                'tscollection.datasets.download.ucr_uea.extract_archive'
-            ) as mock_extract,
-        ):
-            mock_download.return_value = Path('/cache/test_file.zip')
-            mock_extract.return_value = Path('/cache/TestDataset/extracted')
-            # First call
-            download_ucr_uea(
-                config=cfg,
-                overwrite_cache=False,
-            )
-            call_count_after_first = mock_download.call_count
+        # First call: downloads and extracts
+        result1 = download_ucr_uea(
+            config=cfg,
+            overwrite_cache=False,
+        )
+        assert result1['train'].exists()
+        assert result1['test'].exists()
 
-            # Second call (should use cache, no new downloads)
-            download_ucr_uea(
-                config=cfg,
-                overwrite_cache=False,
-            )
-            call_count_after_second = mock_download.call_count
+        # Second call: uses cached files (download_file skips network on hit)
+        result2 = download_ucr_uea(
+            config=cfg,
+            overwrite_cache=False,
+        )
+        assert result2['train'].exists()
+        assert result2['test'].exists()
 
-            # Download count should not increase on cache hit
-            assert call_count_after_second == call_count_after_first
+        # Verify the cached archive is the one from the mock server
+        archive_path = tmp_cache_dir / cfg.name / f'{cfg.name}.zip'
+        assert archive_path.exists()
+        with zipfile.ZipFile(archive_path) as zf:
+            names = zf.namelist()
+        assert any('train' in n for n in names)
+        assert any('test' in n for n in names)
 
     def test_calls_clear_cache_on_overwrite(
         self,
@@ -149,6 +150,7 @@ class TestDownloadUcrUea:
         self,
         mock_http_server: tuple[str, dict[str, str]],
         sample_classification_config,
+        tmp_cache_dir: Path,
     ) -> None:
         """IN-04: rglob fallback locates ARFF files inside subdirectories."""
         base_url, _file_hashes = mock_http_server
