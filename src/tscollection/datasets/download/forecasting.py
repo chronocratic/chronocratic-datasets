@@ -63,6 +63,12 @@ def download_forecasting(
     parsed = urlparse(str(config.url))
     filename = Path(parsed.path).name
 
+    if not filename:
+        raise ValueError(
+            f"Cannot extract filename from URL '{config.url}'. "
+            "URL must end with a filename component."
+        )
+
     csv_path = download_file(
         url=str(config.url),
         sha256=config.sha256,
