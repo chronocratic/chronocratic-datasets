@@ -145,6 +145,29 @@ class TestDownloadUcrUea:
             download_ucr_uea(config=cfg, overwrite_cache=True)
             mock_clear.assert_called_once_with(dataset_name=cfg.name)
 
+    def test_arff_rglob_fallback_finds_nested_files(
+        self,
+        mock_http_server: tuple[str, dict[str, str]],
+        sample_classification_config,
+    ) -> None:
+        """IN-04: rglob fallback locates ARFF files inside subdirectories."""
+        base_url, _file_hashes = mock_http_server
+
+        # Use nested_arff_file.zip which has files in a subdirectory
+        cfg = sample_classification_config.model_copy(
+            update={'url': base_url + '/nested_arff_file.zip'}
+        )
+
+        result = download_ucr_uea(
+            config=cfg,
+            overwrite_cache=False,
+        )
+        assert isinstance(result, dict)
+        assert 'train' in result
+        assert 'test' in result
+        assert result['train'].exists()
+        assert result['test'].exists()
+
 
 class TestHttpsValidator:
     """Tests for the HTTPS-only URL validator on DatasetConfig."""

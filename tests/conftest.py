@@ -204,9 +204,33 @@ def mock_http_server(
         )
     (tmp_path / 'arff_file.zip').write_bytes(arff_zip_buffer.getvalue())
 
+    # nested_arff_file.zip — ZIP with ARFF files in a subdirectory
+    # for testing the rglob fallback path in download_ucr_uea
+    nested_arff_zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(
+        nested_arff_zip_buffer, 'w', zipfile.ZIP_DEFLATED
+    ) as zf:
+        zf.writestr(
+            'TestDataset/TestDataset_train.arff',
+            '@RELATION train\n@ATTRIBUTE x NUMERIC\n@DATA\n1\n',
+        )
+        zf.writestr(
+            'TestDataset/TestDataset_test.arff',
+            '@RELATION test\n@ATTRIBUTE x NUMERIC\n@DATA\n2\n',
+        )
+    (tmp_path / 'nested_arff_file.zip').write_bytes(
+        nested_arff_zip_buffer.getvalue()
+    )
+
     # Compute SHA256 hashes for all files
     file_hashes: dict[str, str] = {}
-    for filename in ('test_file.zip', 'test_file.csv', 'bad_file.zip', 'arff_file.zip'):
+    for filename in (
+        'test_file.zip',
+        'test_file.csv',
+        'bad_file.zip',
+        'arff_file.zip',
+        'nested_arff_file.zip',
+    ):
         file_hashes[filename] = _compute_sha256(tmp_path / filename)
 
     # Start the HTTP server
