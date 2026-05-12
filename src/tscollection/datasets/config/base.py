@@ -129,6 +129,23 @@ class DatasetConfig(BaseModel, abc.ABC):  # type: ignore[misc]
             )
         return v
 
+    @field_validator('name')
+    @classmethod
+    def validate_name_safe(cls, v: str) -> str:
+        """Reject names that could cause path traversal.
+
+        Ensures the name is non-empty, trimmed, and does not contain
+        path separators (/, backslash), traversal sequences (..), or other
+        characters that could escape the intended cache subdirectory.
+        """
+        if not v or v != v.strip():
+            raise ValueError(f'name must be non-empty and trimmed, got {v!r}')
+        if '/' in v or '\\' in v or '..' in v:
+            raise ValueError(
+                f'name must not contain path traversal components, got {v!r}'
+            )
+        return v
+
     @field_validator('url')
     @classmethod
     def validate_https_only(cls, v: HttpUrl) -> HttpUrl:
