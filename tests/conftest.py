@@ -189,9 +189,24 @@ def mock_http_server(
         zf.writestr('bad.txt', 'this is different content\n')
     (tmp_path / 'bad_file.zip').write_bytes(bad_zip_buffer.getvalue())
 
+    # arff_file.zip — valid ZIP with ARFF files for UCR/UEA tests
+    arff_zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(
+        arff_zip_buffer, 'w', zipfile.ZIP_DEFLATED
+    ) as zf:
+        zf.writestr(
+            'TestDataset_train.arff',
+            '@RELATION train\n@ATTRIBUTE x NUMERIC\n@DATA\n1\n',
+        )
+        zf.writestr(
+            'TestDataset_test.arff',
+            '@RELATION test\n@ATTRIBUTE x NUMERIC\n@DATA\n2\n',
+        )
+    (tmp_path / 'arff_file.zip').write_bytes(arff_zip_buffer.getvalue())
+
     # Compute SHA256 hashes for all files
     file_hashes: dict[str, str] = {}
-    for filename in ('test_file.zip', 'test_file.csv', 'bad_file.zip'):
+    for filename in ('test_file.zip', 'test_file.csv', 'bad_file.zip', 'arff_file.zip'):
         file_hashes[filename] = _compute_sha256(tmp_path / filename)
 
     # Start the HTTP server

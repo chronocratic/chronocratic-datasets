@@ -28,9 +28,9 @@ class TestDownloadUcrUea:
         """DL-01: download_ucr_uea returns dict with train and test keys."""
         base_url, _file_hashes = mock_http_server
 
-        # Use the mock URL instead of the config's real URL
+        # Use the mock URL with ARFF files instead of the config's real URL
         cfg = sample_classification_config.model_copy(
-            update={'url': base_url + '/test_file.zip'}
+            update={'url': base_url + '/arff_file.zip'}
         )
 
         result = download_ucr_uea(
@@ -40,6 +40,8 @@ class TestDownloadUcrUea:
         assert isinstance(result, dict)
         assert 'train' in result
         assert 'test' in result
+        assert result['train'].exists()
+        assert result['test'].exists()
 
     def test_calls_download_with_config_url(
         self,
