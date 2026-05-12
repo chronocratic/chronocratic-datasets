@@ -122,6 +122,13 @@ Phase 7: Tests                 [==== TST-01..04 ====]  depends on Phases 1-6
 
 **Requirements:** DL-01, DL-02, DL-03, DL-04
 
+**Plans:** 3 plans
+
+**Plan list:**
+- [ ] 04-00-PLAN.md — Test infrastructure: mock HTTP server fixture, failing tests for cache primitives and downloaders
+- [ ] 04-01-PLAN.md — Core download primitives: get_cache_dir, download_file, file_exists_in_cache, extract_archive
+- [ ] 04-02-PLAN.md — Family-specific downloaders: UCR/UEA ZIP extractor, forecasting CSV downloader
+
 **Deliverables:**
 - `src/tscollection/datasets/download/cache.py`
   - `get_cache_dir()` — returns `~/.cache/tscollection/`
