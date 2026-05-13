@@ -555,3 +555,109 @@ class TestETTGoldenPathIntegration:
         assert module._test_data_samples is not None
         assert module.num_features is not None
         assert module.num_time_series_features > 0
+
+
+# ---------------------------------------------------------------------------
+# Forecasting setup() Edge-Case Tests (D-02)
+# ---------------------------------------------------------------------------
+
+
+class TestForecastingSetupEdgeCases:
+    """Unit tests for forecasting setup() edge cases.
+
+    Tests numpy _full_data (no DatetimeIndex), STANDARD scaling,
+    and scale_data=False behavior.
+    """
+
+    def test_setup_numpy_full_data_skips_time_features(self) -> None:
+        """setup() with numpy _full_data produces num_time_series_features == 0.
+
+        Pre-populates module._full_data with a pure numpy array (no
+        DatetimeIndex), sets slices, and calls setup(). Verifies that
+        the no-DatetimeIndex branch (line 165-167 in forecasting.py)
+        is hit.
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        # D-02: pure numpy, no DatetimeIndex
+        rng = np.random.default_rng(42)
+        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+
+        assert module.num_time_series_features == 0
+        assert module._train_data_samples is not None
+        assert module._train_data_samples.shape == (1, 60, 5)
+
+    def test_setup_standard_scaling(self) -> None:
+        """setup() with ScalingMethod.STANDARD uses StandardScaler.
+
+        Verifies the StandardScaler branch (line 214-215 in
+        forecasting.py) is exercised. Pre-populates numpy _full_data,
+        sets slices, and calls setup().
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.STANDARD,
+        )
+        rng = np.random.default_rng(42)
+        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+
+        assert module._train_data_samples is not None
+        # No DatetimeIndex with numpy, so time features == 0
+        assert module.num_time_series_features == 0
+
+    def test_setup_scale_data_false(self) -> None:
+        """setup() with scale_data=False completes without error.
+
+        Tests current behavior: the forecasting setup() always calls
+        _prepare_data_scaler() regardless of scale_data flag. This
+        test verifies setup() completes and produces valid data
+        samples even with scale_data=False.
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=False,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        rng = np.random.default_rng(42)
+        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+
+        assert module._train_data_samples is not None
+        assert module._valid_data_samples is not None
+        assert module._test_data_samples is not None
