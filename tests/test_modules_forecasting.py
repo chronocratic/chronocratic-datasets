@@ -89,7 +89,7 @@ class TestETTDataModuleConstructor:
             batch_size=16,
         )
         assert module.variant == 'ETTh1'
-        assert module.seq_len == 64
+        assert module.sequence_length == 64
         assert module._mode == ForecastingMode.UNIVARIATE
         assert module.batch_size == 16
 
@@ -194,7 +194,7 @@ class TestElectricityLoadModuleConstructor:
             scale_data=True,
             data_scaling_method=ScalingMethod.STANDARD,
         )
-        assert module.seq_len == 64
+        assert module.sequence_length == 64
         assert module._mode == ForecastingMode.MULTIVARIATE
         assert module.batch_size == 32
 
@@ -274,7 +274,7 @@ class TestWeatherModuleConstructor:
             batch_size=64,
             data_scaling_method=ScalingMethod.MINMAX,
         )
-        assert module.seq_len == 96
+        assert module.sequence_length == 96
         assert module._mode == ForecastingMode.UNIVARIATE
         assert module.batch_size == 64
 
