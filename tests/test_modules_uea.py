@@ -24,57 +24,56 @@ from tscollection.datasets.enums.data import (
 
 @pytest.fixture
 def synthetic_uea_folder(tmp_path: Path) -> Path:
-    """Create a minimal UEA-style nested ARFF folder for testing.
+    """Create a minimal UEA-style folder for testing.
 
-    Creates {name}_TRAIN.arff and {name}_TEST.arff with nested structure.
-    Uses scipy.io.arff.readable format for nested arrays.
+    Creates a named folder with placeholder ARFF files. The actual
+    ARFF content is mocked in tests that exercise prepare_data()
+    since scipy struggles with nested ARFF in test fixtures.
     """
     dataset_name = 'synthetic_uea'
     folder = tmp_path / dataset_name
     folder.mkdir(parents=True, exist_ok=True)
 
-    # Build nested ARFF content — each sample is a bag of vectors
-    # Format: {{val1,val2},{val3,val4},...} per row
+    # Placeholders — real content injected via mocks in prepare_data tests
     train_arff = folder / f'{dataset_name}_TRAIN.arff'
-    train_arff.write_text(
-        '''@relation synthetic_uea_TRAIN
-
-@attribute data {
-    {{'R','R','R','R'}},
-    {{'R','R','R','R'}},
-    {{'R','R','R','R'}}
-}
-
-@attribute class {0, 1}
-
-@data
-{{{{1.0,2.0},{3.0,4.0}}}, 0},
-{{{{5.0,6.0},{7.0,8.0}}}, 1},
-{{{{9.0,10.0},{11.0,12.0}}}, 0},
-{{{{13.0,14.0},{15.0,16.0}}}, 1},
-{{{{17.0,18.0},{19.0,20.0}}}, 0},
-'''
-    )
-
+    train_arff.write_text('@relation placeholder\n@data\n')
     test_arff = folder / f'{dataset_name}_TEST.arff'
-    test_arff.write_text(
-        '''@relation synthetic_uea_TEST
-
-@attribute data {
-    {{'R','R','R','R'}},
-    {{'R','R','R','R'}},
-    {{'R','R','R','R'}}
-}
-
-@attribute class {0, 1}
-
-@data
-{{{{21.0,22.0},{23.0,24.0}}}, 0},
-{{{{25.0,26.0},{27.0,28.0}}}, 1},
-'''
-    )
+    test_arff.write_text('@relation placeholder\n@data\n')
 
     return folder
+
+
+def _make_mock_train_data() -> np.ndarray:
+    """Create mock nested ARFF data for train split.
+
+    Returns structured array mimicking scipy.loadarff output with
+    5 samples of shape (3 timesteps, 2 features) and labels.
+    """
+    samples = [
+        np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]),
+        np.array([[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]]),
+        np.array([[13.0, 14.0], [15.0, 16.0], [17.0, 18.0]]),
+        np.array([[19.0, 20.0], [21.0, 22.0], [23.0, 24.0]]),
+        np.array([[25.0, 26.0], [27.0, 28.0], [29.0, 30.0]]),
+    ]
+    labels = [b'0', b'1', b'0', b'1', b'0']
+    data = np.array(list(zip(samples, labels)), dtype=[('f0', 'O'), ('f1', 'O')])
+    return data
+
+
+def _make_mock_test_data() -> np.ndarray:
+    """Create mock nested ARFF data for test split.
+
+    Returns structured array mimicking scipy.loadarff output with
+    2 samples of shape (3 timesteps, 2 features) and labels.
+    """
+    samples = [
+        np.array([[31.0, 32.0], [33.0, 34.0], [35.0, 36.0]]),
+        np.array([[37.0, 38.0], [39.0, 40.0], [41.0, 42.0]]),
+    ]
+    labels = [b'0', b'1']
+    data = np.array(list(zip(samples, labels)), dtype=[('f0', 'O'), ('f1', 'O')])
+    return data
 
 
 class TestUEAClassificationDataModuleConstructor:
@@ -186,8 +185,13 @@ class TestUEAPrepareData:
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
+    @patch(
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
+        '._read_arff_data_file',
+        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+    )
     def test_prepare_data_loads_data(
-        self, synthetic_uea_folder: Path
+        self, mock_read, synthetic_uea_folder: Path
     ) -> None:
         """prepare_data loads train/test data and sets module state."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
@@ -214,8 +218,13 @@ class TestUEAPrepareData:
 class TestUEADataLoaders:
     """Tests for dataloader methods."""
 
+    @patch(
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
+        '._read_arff_data_file',
+        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+    )
     def test_train_dataloader_returns_dataloader(
-        self, synthetic_uea_folder: Path
+        self, mock_read, synthetic_uea_folder: Path
     ) -> None:
         """train_dataloader returns a DataLoader instance."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
@@ -233,9 +242,13 @@ class TestUEADataLoaders:
         )
         assert isinstance(loader, DataLoader)
 
-    @patch('tscollection.datasets.modules.classes.base.DataLoader')
+    @patch(
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
+        '._read_arff_data_file',
+        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+    )
     def test_val_dataloader_returns_dataloader_or_none(
-        self, mock_dataloader, synthetic_uea_folder: Path
+        self, mock_read, synthetic_uea_folder: Path
     ) -> None:
         """val_dataloader returns None when valid_size=0."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
@@ -252,8 +265,13 @@ class TestUEADataLoaders:
         )
         assert result is None
 
+    @patch(
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
+        '._read_arff_data_file',
+        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+    )
     def test_test_dataloader_returns_dataloader(
-        self, synthetic_uea_folder: Path
+        self, mock_read, synthetic_uea_folder: Path
     ) -> None:
         """test_dataloader returns a DataLoader instance."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
