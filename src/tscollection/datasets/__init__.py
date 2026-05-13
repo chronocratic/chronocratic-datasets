@@ -1,4 +1,4 @@
-"""tscollection.datasets -- Zero-config time series datasets for PyTorch Lightning."""
+"""tscollection.datasets -- Time series datasets for PyTorch Lightning."""
 
 from __future__ import annotations
 

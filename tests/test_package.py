@@ -10,8 +10,6 @@ EXPECTED_INIT_FILES = [
     PACKAGE_ROOT / 'datasets' / 'classes' / '__init__.py',
     PACKAGE_ROOT / 'modules' / '__init__.py',
     PACKAGE_ROOT / 'modules' / 'classes' / '__init__.py',
-    PACKAGE_ROOT / 'download' / '__init__.py',
-    PACKAGE_ROOT / 'config' / '__init__.py',
     PACKAGE_ROOT / 'enums' / '__init__.py',
     PACKAGE_ROOT / 'utils' / '__init__.py',
 ]
@@ -62,8 +60,6 @@ def test_submodule_all_declarations():
         'tscollection.datasets.datasets.classes',
         'tscollection.datasets.modules',
         'tscollection.datasets.modules.classes',
-        'tscollection.datasets.download',
-        'tscollection.datasets.config',
         'tscollection.datasets.enums',
         'tscollection.datasets.utils',
     ]
