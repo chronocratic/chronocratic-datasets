@@ -5,24 +5,24 @@ from __future__ import annotations
 __version__ = '0.1.0'
 
 from tscollection.datasets.enums import (
+    ClassificationSplittingStrategy,
     DataForm,
     DatasetFamily,
     DistanceMetric,
     ForecastingMode,
     ScalingMethod,
     SplitMode,
-    SplittingStrategy,
     TimeSeriesDatasetMode,
 )
 
 __all__ = [
+    'ClassificationSplittingStrategy',
     'DataForm',
     'DatasetFamily',
     'DistanceMetric',
     'ForecastingMode',
     'ScalingMethod',
     'SplitMode',
-    'SplittingStrategy',
     'TimeSeriesDatasetMode',
     '__version__',
 ]

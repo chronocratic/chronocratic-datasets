@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pandas as pd
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -14,6 +15,7 @@ __all__ = [
     'compose',
     'flatten_list_of_np_arrays',
     'get_num_samples_from_ts',
+    'separate_target_feature_from_df',
 ]
 
 
@@ -76,3 +78,31 @@ def flatten_list_of_np_arrays(
         A single flattened numpy array.
     """
     return np.concatenate(list_of_np_arrays).ravel()
+
+
+def separate_target_feature_from_df(
+    df: pd.DataFrame, target_feature_name: str
+) -> tuple[pd.DataFrame, pd.Series]:
+    """Separate target feature column from a DataFrame.
+
+    Extracts the specified target column as a Series and returns the
+    remaining columns as a DataFrame.
+
+    Args:
+        df: Source DataFrame containing the target column.
+        target_feature_name: Name of the target column to extract.
+
+    Returns:
+        A tuple of (features DataFrame, target Series).
+
+    Raises:
+        KeyError: If target_feature_name is not in df.columns.
+    """
+    if target_feature_name not in df.columns:
+        raise KeyError(
+            f"Target feature '{target_feature_name}' not found in DataFrame columns. "
+            f"Available columns: {list(df.columns)}"
+        )
+    target_feature = df[target_feature_name]
+    features = df.drop(target_feature_name, axis=1)
+    return features, target_feature

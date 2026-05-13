@@ -9,8 +9,8 @@ class TimeSeriesDatasetMode(StrEnum):
     FORECASTING = 'forecasting'
 
 
-class SplittingStrategy(StrEnum):
-    """Strategy for train/test data splitting."""
+class ClassificationSplittingStrategy(StrEnum):
+    """Strategy for classification train/test data splitting."""
 
     AS_DEFINED = 'as_defined'
     MANUAL = 'manual'

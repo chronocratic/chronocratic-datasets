@@ -9,6 +9,7 @@ from tscollection.datasets.utils.common import (
     flatten_list_of_np_arrays,
     FunctionComposer,
     get_num_samples_from_ts,
+    separate_target_feature_from_df,
 )
 from tscollection.datasets.utils.features import extract_time_features
 from tscollection.datasets.utils.general import (
@@ -30,4 +31,5 @@ __all__ = [
     'process_data_with_varying_sequence_lengths_single',
     'process_df_according_to_dtypes',
     'read_arff_as_df',
+    'separate_target_feature_from_df',
 ]
