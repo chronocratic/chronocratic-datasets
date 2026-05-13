@@ -191,9 +191,9 @@ Phase 6: Factory API            [==== FCT-01..05 ====]  v2  — get_module(), ge
 **Plans:** 3 plans
 
 **Plan list:**
-- [ ] 05-01-PLAN.md — ETT golden-path integration and setup() edge-case tests
-- [ ] 05-02-PLAN.md — Weather/Electricity dataloader smoke tests (fractional-split path)
-- [ ] 05-03-PLAN.md — transformations.py error-path unit tests
+- [x] 05-01-PLAN.md — ETT golden-path integration and setup() edge-case tests
+- [x] 05-02-PLAN.md — Weather/Electricity dataloader smoke tests (fractional-split path)
+- [x] 05-03-PLAN.md — transformations.py error-path unit tests
 
 **Deliverables:**
 - `tests/test_modules_forecasting.py` — ETT/Weather/Electricity integration + edge-case tests
