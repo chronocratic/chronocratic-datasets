@@ -104,10 +104,12 @@ class TestUCRClassificationDataModule:
 0.4,0.5,0.6,1
 0.7,0.8,0.9,0
 """
-        dataset_name = 'synthetic'
-        (tmp_path / f'{dataset_name}_TRAIN.arff').write_text(arff_content)
-        (tmp_path / f'{dataset_name}_TEST.arff').write_text(arff_content)
-        return tmp_path
+        # Create a named subdirectory — the module derives dataset_name from this
+        dataset_dir = tmp_path / 'synthetic'
+        dataset_dir.mkdir()
+        (dataset_dir / 'synthetic_TRAIN.arff').write_text(arff_content)
+        (dataset_dir / 'synthetic_TEST.arff').write_text(arff_content)
+        return dataset_dir
 
     def test_prepare_data_loads_arff(
         self,

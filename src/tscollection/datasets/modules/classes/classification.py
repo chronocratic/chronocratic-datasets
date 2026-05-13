@@ -79,6 +79,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         ),
         test_size: float = 0.5,
         num_workers: int = 0,
+        data_form: DataForm = DataForm.REGULAR,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -90,6 +91,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_scaling_method=data_scaling_method,
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
+            data_form=data_form,
         )
         self.dataset_folder_path = dataset_folder_path
         self.target_column_name = target_column_name
@@ -182,13 +184,15 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
         Processes training, validation, and test data samples using
         :func:`process_data_with_varying_sequence_lengths_single`.
+        Skips validation split when ``_valid_data_samples`` is ``None``.
         """
         self._train_data_samples = process_data_with_varying_sequence_lengths_single(
             data=self._train_data_samples,
         )
-        self._valid_data_samples = process_data_with_varying_sequence_lengths_single(
-            data=self._valid_data_samples,
-        )
+        if self._valid_data_samples is not None:
+            self._valid_data_samples = process_data_with_varying_sequence_lengths_single(
+                data=self._valid_data_samples,
+            )
         self._test_data_samples = process_data_with_varying_sequence_lengths_single(
             data=self._test_data_samples,
         )
