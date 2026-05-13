@@ -1,0 +1,322 @@
+"""Tests for UEAClassificationDataModule.
+
+Covers constructor params, DataForm.NESTED, _process_stacked_data
+byte-decoding and LabelEncoder, FileNotFoundError for missing folder,
+and dataloader methods returning proper DataLoaders.
+"""
+
+from pathlib import Path
+from unittest.mock import patch
+
+import numpy as np
+import pandas as pd
+import pytest
+from sklearn.preprocessing import LabelEncoder
+from torch.utils.data import DataLoader
+
+from tscollection.datasets.enums.data import (
+    ClassificationSplittingStrategy,
+    DataForm,
+    ScalingMethod,
+    TimeSeriesDatasetMode,
+)
+
+
+@pytest.fixture
+def synthetic_uea_folder(tmp_path: Path) -> Path:
+    """Create a minimal UEA-style nested ARFF folder for testing.
+
+    Creates {name}_TRAIN.arff and {name}_TEST.arff with nested structure.
+    Uses scipy.io.arff.readable format for nested arrays.
+    """
+    dataset_name = 'synthetic_uea'
+    folder = tmp_path / dataset_name
+    folder.mkdir(parents=True, exist_ok=True)
+
+    # Build nested ARFF content — each sample is a bag of vectors
+    # Format: {{val1,val2},{val3,val4},...} per row
+    train_arff = folder / f'{dataset_name}_TRAIN.arff'
+    train_arff.write_text(
+        '''@relation synthetic_uea_TRAIN
+
+@attribute data {
+    {{'R','R','R','R'}},
+    {{'R','R','R','R'}},
+    {{'R','R','R','R'}}
+}
+
+@attribute class {0, 1}
+
+@data
+{{{{1.0,2.0},{3.0,4.0}}}, 0},
+{{{{5.0,6.0},{7.0,8.0}}}, 1},
+{{{{9.0,10.0},{11.0,12.0}}}, 0},
+{{{{13.0,14.0},{15.0,16.0}}}, 1},
+{{{{17.0,18.0},{19.0,20.0}}}, 0},
+'''
+    )
+
+    test_arff = folder / f'{dataset_name}_TEST.arff'
+    test_arff.write_text(
+        '''@relation synthetic_uea_TEST
+
+@attribute data {
+    {{'R','R','R','R'}},
+    {{'R','R','R','R'}},
+    {{'R','R','R','R'}}
+}
+
+@attribute class {0, 1}
+
+@data
+{{{{21.0,22.0},{23.0,24.0}}}, 0},
+{{{{25.0,26.0},{27.0,28.0}}}, 1},
+'''
+    )
+
+    return folder
+
+
+class TestUEAClassificationDataModuleConstructor:
+    """Tests for UEAClassificationDataModule constructor."""
+
+    def test_import_uea_module(self) -> None:
+        """UEAClassificationDataModule can be imported from uea module."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        assert UEAClassificationDataModule is not None
+
+    def test_constructor_accepts_params(self, synthetic_uea_folder: Path) -> None:
+        """Constructor accepts dataset_folder_path, target_column_name, and config params."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+            batch_size=16,
+            valid_size=0.2,
+            shuffle=True,
+            scale_data=False,
+            data_scaling_method=ScalingMethod.STANDARD,
+            data_scaling_range=(0, 1),
+            splitting_strategy=ClassificationSplittingStrategy.AS_DEFINED,
+            test_size=0.3,
+            num_workers=2,
+        )
+        assert module.batch_size == 16
+        assert module.valid_size == 0.2
+        assert module.shuffle is True
+        assert module.scale_data is False
+        assert module.data_scaling_method == ScalingMethod.STANDARD
+        assert module.splitting_strategy == ClassificationSplittingStrategy.AS_DEFINED
+        assert module.num_workers == 2
+
+    def test_data_form_is_nested(self, synthetic_uea_folder: Path) -> None:
+        """data_form is hardcoded to DataForm.NESTED (D-02)."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+        )
+        assert module._data_form == DataForm.NESTED
+
+
+class TestUEAProcessStackedData:
+    """Tests for _process_stacked_data method."""
+
+    def test_process_stacked_data_returns_tuple(
+        self, synthetic_uea_folder: Path
+    ) -> None:
+        """_process_stacked_data returns (np.ndarray, np.ndarray) tuple."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+        )
+        # Build mock nested data that scipy.loadarff would return
+        # Structure: each row is (sample_array, label)
+        sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
+        sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
+        mock_data = np.array(
+            [(sample1, b'0'), (sample2, b'1')],
+            dtype=[('f0', 'O'), ('f1', 'O')],
+        )
+
+        samples, labels = module._process_stacked_data(mock_data)
+
+        assert isinstance(samples, np.ndarray)
+        assert isinstance(labels, np.ndarray)
+        # Shape after swapaxes(1,2): (samples, features, timesteps) -> (samples, timesteps, features)
+        assert samples.shape[0] == 2
+
+    def test_process_stacked_data_decodes_bytes(self, synthetic_uea_folder: Path) -> None:
+        """_process_stacked_data handles byte-decoded labels."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+        )
+        sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
+        sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
+        mock_data = np.array(
+            [(sample1, b'A'), (sample2, b'B')],
+            dtype=[('f0', 'O'), ('f1', 'O')],
+        )
+
+        samples, labels = module._process_stacked_data(mock_data)
+
+        # Labels should be encoded integers (0, 1)
+        assert set(labels.tolist()).issubset({0, 1})
+
+
+class TestUEAPrepareData:
+    """Tests for prepare_data method."""
+
+    def test_prepare_data_raises_file_not_found(self) -> None:
+        """prepare_data raises FileNotFoundError for missing folder (D-16)."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=Path('/nonexistent/path'),
+            target_column_name='class',
+        )
+        with pytest.raises(FileNotFoundError):
+            module.prepare_data()
+
+    def test_prepare_data_loads_data(
+        self, synthetic_uea_folder: Path
+    ) -> None:
+        """prepare_data loads train/test data and sets module state."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+            scale_data=False,
+        )
+        module.prepare_data()
+
+        assert module._train_data_samples is not None
+        assert module._test_data_samples is not None
+        assert module._train_data_labels is not None
+        assert module._test_data_labels is not None
+        assert module._num_classes is not None
+        assert module._seq_len is not None
+        assert module._num_features is not None
+        # Labels should be pandas Series with category dtype
+        assert isinstance(module._train_data_labels, pd.Series)
+        assert module._train_data_labels.dtype.name == 'category'
+
+
+class TestUEADataLoaders:
+    """Tests for dataloader methods."""
+
+    def test_train_dataloader_returns_dataloader(
+        self, synthetic_uea_folder: Path
+    ) -> None:
+        """train_dataloader returns a DataLoader instance."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+            scale_data=False,
+        )
+        module.prepare_data()
+        module.setup('fit')
+
+        loader = module.train_dataloader(
+            mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
+        )
+        assert isinstance(loader, DataLoader)
+
+    @patch('tscollection.datasets.modules.classes.base.DataLoader')
+    def test_val_dataloader_returns_dataloader_or_none(
+        self, mock_dataloader, synthetic_uea_folder: Path
+    ) -> None:
+        """val_dataloader returns None when valid_size=0."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+            valid_size=0.0,
+            scale_data=False,
+        )
+        module.prepare_data()
+        result = module.val_dataloader(
+            mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
+        )
+        assert result is None
+
+    def test_test_dataloader_returns_dataloader(
+        self, synthetic_uea_folder: Path
+    ) -> None:
+        """test_dataloader returns a DataLoader instance."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+            scale_data=False,
+        )
+        module.prepare_data()
+        module.setup('fit')
+
+        loader = module.test_dataloader(
+            mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
+        )
+        assert isinstance(loader, DataLoader)
+
+
+class TestUEAUsesScipyLoadarff:
+    """Tests verifying scipy.io.arff.loadarff usage (D-12)."""
+
+    def test_uses_scipy_loadarff(self, synthetic_uea_folder: Path) -> None:
+        """Module uses scipy.io.arff.loadarff directly (not utils/arff.py)."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+            scale_data=False,
+        )
+
+        with patch('scipy.io.arff.loadarff') as mock_load:
+            # Return mock data that _process_stacked_data can handle
+            sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
+            sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
+            train_data = np.array(
+                [(sample1, b'0'), (sample2, b'1')],
+                dtype=[('f0', 'O'), ('f1', 'O')],
+            )
+            mock_load.return_value = (train_data, None)
+
+            module.prepare_data()
+            mock_load.assert_called()
+
+    def test_uses_labelencoder(self, synthetic_uea_folder: Path) -> None:
+        """Module uses sklearn LabelEncoder for label processing."""
+        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+        )
+        # Build mock data with string labels
+        sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
+        sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
+        mock_data = np.array(
+            [(sample1, b'classA'), (sample2, b'classB')],
+            dtype=[('f0', 'O'), ('f1', 'O')],
+        )
+
+        _, labels = module._process_stacked_data(mock_data)
+
+        # LabelEncoder maps strings to integers
+        encoder = LabelEncoder()
+        expected = encoder.fit_transform(['classA', 'classB'])
+        assert list(labels) == list(expected)
