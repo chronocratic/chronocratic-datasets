@@ -142,8 +142,14 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_minmax(self) -> None:
         """_prepare_data_scaler returns MinMaxScaler for ScalingMethod.MINMAX."""
-        # Create a minimal concrete subclass for testing
-        class ConcreteForecasting(module_class):
+        from tscollection.datasets.modules.classes.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def prepare_data(self) -> None:
+                pass
+
             def _set_data_slices(self) -> None:
                 pass
 
@@ -167,7 +173,14 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_standard(self) -> None:
         """_prepare_data_scaler returns StandardScaler for ScalingMethod.STANDARD."""
-        class ConcreteForecasting(module_class):
+        from tscollection.datasets.modules.classes.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def prepare_data(self) -> None:
+                pass
+
             def _set_data_slices(self) -> None:
                 pass
 
@@ -191,7 +204,14 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_invalid_raises(self) -> None:
         """_prepare_data_scaler raises ValueError for unsupported method."""
-        class ConcreteForecasting(module_class):
+        from tscollection.datasets.modules.classes.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def prepare_data(self) -> None:
+                pass
+
             def _set_data_slices(self) -> None:
                 pass
 
