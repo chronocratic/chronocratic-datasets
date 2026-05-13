@@ -5,6 +5,7 @@ and convert_data_to_np_array produce correct output types and shapes.
 """
 
 import numpy as np
+import pytest
 import torch
 
 from tscollection.datasets.datasets.transformations import (
@@ -45,3 +46,44 @@ def test_convert_data_to_np_array():
     assert isinstance(result, np.ndarray)
     assert result.dtype == np.float32
     assert result.shape == (2, 2)
+
+
+def test_convert_numpy_to_tensor_type_error_list():
+    """TST-03: convert_numpy_to_tensor raises TypeError for list input (lines 25-29)."""
+    with pytest.raises(TypeError, match='Expected np.ndarray'):
+        convert_numpy_to_tensor(data=[1, 2, 3], dtype='float')
+
+
+def test_convert_numpy_to_tensor_type_error_dict():
+    """TST-03: convert_numpy_to_tensor raises TypeError for dict input (lines 25-29)."""
+    with pytest.raises(TypeError, match='Expected np.ndarray'):
+        convert_numpy_to_tensor(data={'a': 1}, dtype='float')
+
+
+def test_convert_numpy_to_tensor_unsupported_dtype():
+    """TST-03: convert_numpy_to_tensor raises ValueError for unsupported dtype (lines 39-40)."""
+    data = np.array([1.0])
+    with pytest.raises(ValueError, match='Unsupported dtype'):
+        convert_numpy_to_tensor(data=data, dtype='bool')
+
+
+def test_expand_data_dimensionality_axis_out_of_range():
+    """TST-03: expand_data_dimensionality raises ValueError for axis out of range (lines 82-86)."""
+    data = np.array([1.0, 2.0])  # 1-D array
+    with pytest.raises(ValueError, match='out of range'):
+        expand_data_dimensionality(data, expand_dims_axis=5)
+
+
+def test_expand_data_dimensionality_list_input():
+    """TST-03: expand_data_dimensionality handles list input via np.asarray conversion (line 78)."""
+    result = expand_data_dimensionality(data=[1.0, 2.0], expand_dims_axis=1)
+    assert isinstance(result, np.ndarray)
+    assert result.shape == (2, 1)
+
+
+def test_expand_data_dimensionality_tensor_input_preserves_type():
+    """TST-03: expand_data_dimensionality preserves torch.Tensor type (lines 74-76, 90)."""
+    data = torch.tensor([1.0, 2.0])
+    result = expand_data_dimensionality(data, expand_dims_axis=1)
+    assert isinstance(result, torch.Tensor)
+    assert result.shape == (2, 1)
