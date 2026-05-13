@@ -88,7 +88,7 @@ def test_create_data_scaler_regular_standard() -> None:
 
     assert scaled_train.shape == train.shape
     mean = scaled_train.mean(axis=0)
-    std = scaled_train.std(axis=0, ddof=1)
+    std = scaled_train.std(axis=0, ddof=0)
     np.testing.assert_allclose(mean, [0.0, 0.0], atol=1e-6)
     np.testing.assert_allclose(std, [1.0, 1.0], atol=1e-6)
 

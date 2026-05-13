@@ -30,7 +30,7 @@ def custom_collate_fn(batch: list[Any], *, desired_batch_size: int) -> Any:
     if current_batch_size < desired_batch_size:
         additional_needed = desired_batch_size - current_batch_size
         for i in range(additional_needed):
-            sample_index = -(i % current_batch_size) - 1
+            sample_index = current_batch_size - 1 - (i % current_batch_size)
             batch.append(batch[sample_index])
 
     return default_collate(batch)
