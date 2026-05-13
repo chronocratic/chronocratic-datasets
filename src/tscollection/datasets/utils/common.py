@@ -4,12 +4,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    import numpy as np
-
-__all__ = ['FunctionComposer', 'compose', 'get_num_samples_from_ts']
+__all__ = [
+    'FunctionComposer',
+    'compose',
+    'flatten_list_of_np_arrays',
+    'get_num_samples_from_ts',
+]
 
 
 def get_num_samples_from_ts(ts: np.ndarray | list[np.ndarray]) -> int:
@@ -57,3 +62,17 @@ def compose(*functions: Callable) -> Callable:
         A callable that applies all functions in order.
     """
     return FunctionComposer(list(functions))
+
+
+def flatten_list_of_np_arrays(
+    list_of_np_arrays: list[np.ndarray],
+) -> np.ndarray:
+    """Flatten a list of numpy arrays into a single 1-D array.
+
+    Args:
+        list_of_np_arrays: A list of numpy arrays.
+
+    Returns:
+        A single flattened numpy array.
+    """
+    return np.concatenate(list_of_np_arrays).ravel()

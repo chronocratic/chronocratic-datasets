@@ -1,6 +1,7 @@
 """Typed enumerations for dataset parameters."""
 
 from tscollection.datasets.enums.data import (
+    DataForm,
     DatasetFamily,
     DistanceMetric,
     ForecastingMode,
@@ -11,6 +12,7 @@ from tscollection.datasets.enums.data import (
 )
 
 __all__ = [
+    'DataForm',
     'DatasetFamily',
     'DistanceMetric',
     'ForecastingMode',

@@ -31,6 +31,20 @@ class ForecastingMode(StrEnum):
     MULTIVARIATE = 'multivariate'
 
 
+class DataForm(StrEnum):
+    """Enum for the form (shape) of the data.
+
+    Attributes:
+        REGULAR: 2-D tabular data (samples x features).
+        NESTED: 3-D array data (samples x timesteps x features).
+        MULTI_FILES: List of 1-D arrays from multiple files.
+    """
+
+    REGULAR = 'regular'
+    NESTED = 'nested'
+    MULTI_FILES = 'multi_files'
+
+
 class DistanceMetric(StrEnum):
     """Distance metric for time series comparison."""
 
