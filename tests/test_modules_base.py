@@ -138,9 +138,14 @@ class TestBaseTimeSeriesDataModule:
             torch.randn(10, 5),
             torch.randint(0, 2, (10,)),
         )
-        result = module._process_test_dataloader(dataset_object=real_dataset)
-        assert isinstance(result, DataLoader)
-        assert result.shuffle is False
+        with patch(
+            'tscollection.datasets.modules.classes.base.DataLoader',
+            wraps=DataLoader,
+        ) as mock_loader:
+            module._process_test_dataloader(dataset_object=real_dataset)
+            call_kwargs = mock_loader.call_args[1]
+            assert call_kwargs['shuffle'] is False
+            assert isinstance(call_kwargs['dataset'], TensorDataset)
 
     def test_process_valid_dataloader_returns_none_when_no_valid(
         self, concrete_module_class
