@@ -386,6 +386,138 @@ class TestForecastingSlices:
 
 
 # ---------------------------------------------------------------------------
+# WeatherModule Integration Smoke Tests (D-03)
+# ---------------------------------------------------------------------------
+
+
+class TestWeatherModuleIntegration:
+    """Integration tests for WeatherModule dataloader pipeline.
+
+    Verifies prepare_data() -> setup('fit') -> train_dataloader() using
+    synthetic CSV fixtures with DatetimeIndex. Tests the fractional-split
+    path (60/20/20) vs ETT's absolute-boundary splits.
+    """
+
+    @pytest.fixture
+    def weather_csv_file(self, tmp_path: Path) -> Path:
+        """Create a synthetic Weather CSV with 200 rows and DatetimeIndex.
+
+        Columns: 'date' (DatetimeIndex), 'wbng', 'wbhh', 'wbat', 'sbfg'.
+        Written via df.to_csv(index=False) per D-07.
+        """
+        csv_path = tmp_path / 'weather.csv'
+        dates = pd.date_range('2006-01-01', periods=200, freq='h')
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'wbng': rng.standard_normal(200),
+                'wbhh': rng.standard_normal(200),
+                'wbat': rng.standard_normal(200),
+                'sbfg': rng.standard_normal(200),
+            }
+        )
+        df.to_csv(csv_path, index=False)
+        return csv_path
+
+    def test_weather_golden_path_integration(
+        self, weather_csv_file: Path
+    ) -> None:
+        """Weather golden path: prepare_data + setup produces valid splits.
+
+        Full pipeline with CSV fixture (200 rows, DatetimeIndex,
+        columns ['date', 'wbng', 'wbhh', 'wbat', 'sbfg']),
+        mode=UNIVARIATE. Exercises sklearn scaling, time feature
+        extraction, data transformation, and train/valid/test splitting
+        via the 60/20/20 fractional path.
+        """
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        module = WeatherModule(
+            dataset_file_path=weather_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._train_data_samples is not None
+        assert module._valid_data_samples is not None
+        assert module._test_data_samples is not None
+        assert module.num_features is not None
+        # DatetimeIndex present, so time features should be extracted
+        assert module.num_time_series_features > 0
+
+    def test_weather_fractional_split_bounds(
+        self, weather_csv_file: Path
+    ) -> None:
+        """Weather uses 60/20/20 fractional split (D-03).
+
+        Verifies _train_slice == slice(None, 120), _valid_slice ==
+        slice(120, 160), _test_slice == slice(160, None) for 200-row
+        fixture. Confirms Weather's fractional split pattern differs
+        from ETT's absolute month-boundary splits.
+        """
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        module = WeatherModule(
+            dataset_file_path=weather_csv_file,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        # 60/20/20 of 200 rows: train[:120], valid[120:160], test[160:]
+        assert module._train_slice == slice(None, 120)
+        assert module._valid_slice == slice(120, 160)
+        assert module._test_slice == slice(160, None)
+
+    def test_weather_dataloader_shapes(
+        self, weather_csv_file: Path
+    ) -> None:
+        """Weather dataloaders return DataLoader with correct batch shapes.
+
+        After prepare_data + setup, train_dataloader() must return a
+        DataLoader. Weather's expand_dims(axis=0) transform produces
+        (1, samples, features) shape for _full_data, so _train_data_samples
+        has shape (1, 120, total_features). DataLoader wraps this in
+        TensorDataset.
+        """
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        module = WeatherModule(
+            dataset_file_path=weather_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        # Verify train dataloader
+        train_dl = module.train_dataloader()
+        assert isinstance(train_dl, DataLoader)
+        batch = next(iter(train_dl))
+        # TensorDataset with single tensor yields a list of one tensor
+        assert len(batch) == 1
+        batch_tensor = batch[0]
+        # Feature dimension should match num_features
+        assert batch_tensor.shape[-1] == module.num_features
+
+        # Verify val dataloader
+        val_dl = module.val_dataloader()
+        assert isinstance(val_dl, DataLoader)
+        val_batch = next(iter(val_dl))
+        assert val_batch[0].shape[-1] == module.num_features
+
+        # Verify test dataloader
+        test_dl = module.test_dataloader()
+        assert isinstance(test_dl, DataLoader)
+        test_batch = next(iter(test_dl))
+        assert test_batch[0].shape[-1] == module.num_features
+
+
+# ---------------------------------------------------------------------------
 # ETT Golden-Path Integration Tests (D-01, D-07, D-08)
 # ---------------------------------------------------------------------------
 
