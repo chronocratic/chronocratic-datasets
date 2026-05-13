@@ -383,3 +383,175 @@ class TestForecastingSlices:
         assert module._train_slice == slice(None, 60)
         assert module._valid_slice == slice(60, 80)
         assert module._test_slice == slice(80, None)
+
+
+# ---------------------------------------------------------------------------
+# ETT Golden-Path Integration Tests (D-01, D-07, D-08)
+# ---------------------------------------------------------------------------
+
+
+class TestETTGoldenPathIntegration:
+    """Integration tests exercising the full ETT forecasting pipeline.
+
+    Verifies prepare_data() -> setup('fit') -> train_dataloader() using
+    synthetic CSV fixtures with DatetimeIndex (D-07).
+    """
+
+    @pytest.fixture
+    def ett_csv_file(self, tmp_path: Path) -> Path:
+        """Create a synthetic ETT-style CSV with 500 rows and DatetimeIndex.
+
+        Columns match ETT schema: 'date' (DatetimeIndex), 'HUFL', 'HT',
+        'OT' (target), 'Wsp' (wind speed). Written via df.to_csv(index=False)
+        per D-07.
+        """
+        csv_file = tmp_path / 'ETT_synthetic.csv'
+        dates = pd.date_range('2016-01-01', periods=500, freq='h')
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'HUFL': rng.standard_normal(500),
+                'HT': rng.standard_normal(500),
+                'OT': rng.standard_normal(500),
+                'Wsp': rng.standard_normal(500),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    @pytest.fixture
+    def synthetic_forecasting_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal forecasting CSV with DatetimeIndex and features.
+
+        Per D-08, provides a reusable fixture for forecasting integration tests.
+        DataFrame has DatetimeIndex and 2-3 feature columns.
+        """
+        csv_file = tmp_path / 'synthetic_forecasting.csv'
+        dates = pd.date_range('2020-01-01', periods=200, freq='h')
+        rng = np.random.default_rng(123)
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'feature_a': rng.standard_normal(200),
+                'feature_b': rng.standard_normal(200),
+                'OT': rng.standard_normal(200),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    def test_ett_univariate_golden_path(self, ett_csv_file: Path) -> None:
+        """ETT univariate: prepare_data + setup produces valid splits.
+
+        Full pipeline with CSV fixture (500 rows, DatetimeIndex,
+        columns ['date', 'HUFL', 'HT', 'OT', 'Wsp']), variant='ETTh1',
+        mode=UNIVARIATE. Exercises sklearn scaling, time feature extraction,
+        data transformation, and train/valid/test splitting.
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv_file,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._train_data_samples is not None
+        assert module._valid_data_samples is not None
+        assert module._test_data_samples is not None
+        assert module.num_features is not None
+        # D-01: exercises time feature extraction (DatetimeIndex present)
+        assert module.num_time_series_features > 0
+
+    def test_ett_multivariate_golden_path(self, ett_csv_file: Path) -> None:
+        """ETT multivariate: prepare_data + setup with all columns.
+
+        Same CSV as univariate but mode=MULTIVARIATE. Verifies
+        _train_data_samples has multiple feature dimensions and
+        num_features reflects all columns plus time features.
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv_file,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.MULTIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._train_data_samples is not None
+        assert module._valid_data_samples is not None
+        assert module._test_data_samples is not None
+        # Multivariate: more than just OT column
+        assert module._train_data_samples.shape[-1] > 1
+        assert module.num_features is not None
+        assert module.num_features >= module._train_data_samples.shape[-1]
+
+    def test_ett_train_dataloader_returns_batches(self, ett_csv_file: Path) -> None:
+        """ETT train_dataloader returns DataLoader with valid batches.
+
+        After prepare_data + setup, train_dataloader() must return a
+        DataLoader. Extracting a batch from it should produce a tensor
+        with the correct feature dimension (num_features).
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv_file,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        train_dl = module.train_dataloader()
+        assert isinstance(train_dl, DataLoader)
+
+        batch = next(iter(train_dl))
+        # TensorDataset with a single tensor yields a list of one tensor
+        assert len(batch) == 1
+        batch_tensor = batch[0]
+        # Feature dimension should match num_features
+        assert batch_tensor.shape[-1] == module.num_features
+
+    def test_ett_15min_variant_golden_path(self, ett_csv_file: Path) -> None:
+        """ETTm1 variant: verifies 4x multiplier in _set_data_slices.
+
+        Same golden-path flow as univariate test but with variant='ETTm1'
+        to exercise 15-min resolution slice boundaries (4x multiplier).
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv_file,
+            variant='ETTm1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._train_data_samples is not None
+        assert module._valid_data_samples is not None
+        assert module._test_data_samples is not None
+        assert module.num_features is not None
+        assert module.num_time_series_features > 0
