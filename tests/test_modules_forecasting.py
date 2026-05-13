@@ -793,3 +793,79 @@ class TestForecastingSetupEdgeCases:
         assert module._train_data_samples is not None
         assert module._valid_data_samples is not None
         assert module._test_data_samples is not None
+
+
+# ---------------------------------------------------------------------------
+# ElectricityLoadModule Integration Smoke Tests (D-03)
+# ---------------------------------------------------------------------------
+
+
+class TestElectricityModuleIntegration:
+    """Integration tests for ElectricityLoadModule dataloader pipeline.
+
+    Verifies prepare_data() -> setup('fit') -> train_dataloader() using
+    the existing electricity_csv_file fixture (semicolon-delimited CSV,
+    comma decimals, 10000 rows spanning 2011-2014). Tests the fractional-
+    split path (60/20/20) with transpose + expand_dims(axis=-1) transform.
+    """
+
+    def test_electricity_golden_path_integration(
+        self, electricity_csv_file: Path
+    ) -> None:
+        """Electricity golden path: prepare_data + setup produces valid splits.
+
+        Full pipeline with existing electricity CSV fixture (10000 rows,
+        semicolon delimiter, comma decimal, columns MT_001/MT_002),
+        mode=UNIVARIATE. Exercises CSV parsing, hourly resampling,
+        column filtering (iloc[8920]), '2012:' slicing, sklearn scaling,
+        time feature extraction, transpose + expand_dims transform, and
+        60/20/20 fractional train/valid/test splitting.
+        """
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        module = ElectricityLoadModule(
+            dataset_file_path=electricity_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._train_data_samples is not None
+        assert module._valid_data_samples is not None
+        assert module._test_data_samples is not None
+        assert module.num_features is not None
+        # Hardcoded dataset name
+        assert module._dataset_name == 'ElectricityLoad'
+
+    def test_electricity_transform_shape(
+        self, electricity_csv_file: Path
+    ) -> None:
+        """Electricity transform produces (features, samples, 1) pattern.
+
+        After prepare_data + setup, _full_data should have shape
+        (num_active_columns, samples, 1 + time_feature_dim) due to
+        transpose + expand_dims(axis=-1) transform plus time feature
+        concatenation. The trailing dimension reflects expand_dims
+        (axis=-1) adding dimension 1, then time features appended
+        to that dimension.
+        """
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        module = ElectricityLoadModule(
+            dataset_file_path=electricity_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        # Trailing dimension >= 1 (expand_dims adds it, time features may enlarge)
+        assert module._full_data.shape[-1] >= 1
+        # First dimension = number of active columns after iloc[8920] filter
+        # For univariate mode, only MT_001 is selected, so shape[0] == 1
+        assert module._full_data.shape[0] == 1
+        # Second dimension = number of samples (from '2012:' onwards)
+        assert module._full_data.shape[1] > 0
