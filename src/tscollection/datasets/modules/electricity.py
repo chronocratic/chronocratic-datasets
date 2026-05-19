@@ -141,7 +141,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
             index_col=[0],
         )
         df = df.resample('1h', closed='right').sum()
-        df = df.loc[:, df.cumsum(axis=0).iloc[8920] != 0]
+        df = df.loc[:, (df != 0).any(axis=0)]
         df.index = df.index.rename('date')
         df = df['2012':]
 

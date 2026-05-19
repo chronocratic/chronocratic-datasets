@@ -140,6 +140,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         different shape (features × timesteps). Fits scaler on train
         slice only to prevent data leakage (T-04-02-04).
 
+        When ``scale_data`` is False, scaling and time feature extraction
+        are skipped entirely to preserve raw values.
+
         Args:
             stage: Lightning stage identifier (``"fit"`` or ``"test"``).
         """
@@ -166,27 +169,35 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             time_series_features = np.empty((0, 0))
             num_time_series_features = 0
 
-        # Fit scaler on train slice only, transform full data
-        data_scaler = self._prepare_data_scaler()
-        data_scaler.fit(full_array[:, self._train_slice])
-        self._full_data = data_scaler.transform(full_array)
+        if self.scale_data:
+            # Fit scaler on train slice only, transform full data.
+            # Before _transform_data(), full_array has shape (time_steps, features),
+            # so time slicing is axis 0 (not axis 1).
+            data_scaler = self._prepare_data_scaler()
+            data_scaler.fit(full_array[self._train_slice])
+            self._full_data = data_scaler.transform(full_array)
 
-        # Apply module-specific transform
-        self._transform_data()
+            # Apply module-specific transform
+            self._transform_data()
 
-        # Scale time features if present
-        if num_time_series_features > 0:
-            ts_feature_scaler = self._prepare_data_scaler()
-            ts_feature_scaler.fit(time_series_features[:, self._train_slice])
-            scaled_ts_features = ts_feature_scaler.transform(time_series_features)
-            scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
-            assert self._full_data is not None
-            repeated_ts = np.repeat(
-                scaled_ts_features, self._full_data.shape[0], axis=0
-            )
-            self._full_data = np.concatenate(
-                [repeated_ts, self._full_data], axis=-1
-            )
+            # Scale time features if present
+            if num_time_series_features > 0:
+                ts_feature_scaler = self._prepare_data_scaler()
+                ts_feature_scaler.fit(time_series_features[self._train_slice])
+                scaled_ts_features = ts_feature_scaler.transform(time_series_features)
+                scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
+                assert self._full_data is not None
+                repeated_ts = np.repeat(
+                    scaled_ts_features, self._full_data.shape[0], axis=0
+                )
+                self._full_data = np.concatenate(
+                    [repeated_ts, self._full_data], axis=-1
+                )
+        else:
+            # No scaling: apply module-specific transform on raw data.
+            # Keep original _full_data (may be DataFrame with DatetimeIndex)
+            # so _transform_data can convert it properly.
+            self._transform_data()
 
         self._num_time_series_features = num_time_series_features
         self._calculate_num_features()
