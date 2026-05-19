@@ -17,7 +17,7 @@ from tscollection.datasets.enums.data import (
     DataForm,
     ScalingMethod,
 )
-from tscollection.datasets.modules.classes.base import BaseTimeSeriesDataModule
+from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.common import separate_target_feature_from_df
 from tscollection.datasets.utils.general import (
     process_data_with_varying_sequence_lengths_single,

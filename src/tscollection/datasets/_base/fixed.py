@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 
-from tscollection.datasets.datasets.transformations import (
+from tscollection.datasets.transformations import (
     expand_data_dimensionality,
 )
 from tscollection.datasets.enums import TimeSeriesDatasetMode

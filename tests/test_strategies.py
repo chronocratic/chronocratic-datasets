@@ -7,7 +7,7 @@ and extract labels for forecasting and classification datasets.
 import numpy as np
 import pytest
 
-from tscollection.datasets.datasets.classes.strategies import (
+from tscollection.datasets._base.strategies import (
     ClassificationStrategyMultipleFiles,
     ClassificationStrategySingleFile,
     ForecastingStrategySingleFile,

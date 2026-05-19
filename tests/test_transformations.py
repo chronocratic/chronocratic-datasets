@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import torch
 
-from tscollection.datasets.datasets.transformations import (
+from tscollection.datasets.transformations import (
     convert_data_to_np_array,
     convert_numpy_to_tensor,
     expand_data_dimensionality,

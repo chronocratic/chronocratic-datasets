@@ -16,14 +16,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
-from tscollection.datasets.datasets.ucr import UCRClassificationUnivariateDataset
+from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 from tscollection.datasets.enums.data import (
     ClassificationSplittingStrategy,
     DataForm,
     ScalingMethod,
     TimeSeriesDatasetMode,
 )
-from tscollection.datasets.modules.classes.classification import (
+from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
 from tscollection.datasets.utils.arff import (
