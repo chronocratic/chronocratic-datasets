@@ -1,17 +1,17 @@
 """Abstract base classes for time series datasets."""
 
-from tscollection.datasets.datasets.classes.fixed import (
+from tscollection.datasets._base.fixed import (
     FixedTimeSeriesDataset,
     FixedTimeSeriesDatasetMultivariate,
     FixedTimeSeriesDatasetUnivariate,
     TimeSeriesDataset,
 )
-from tscollection.datasets.datasets.classes.flexible import (
+from tscollection.datasets._base.flexible import (
     FlexibleTimeSeriesDataset,
     FlexibleTimeSeriesDatasetMultipleFiles,
     FlexibleTimeSeriesDatasetSingleFile,
 )
-from tscollection.datasets.datasets.classes.strategies import (
+from tscollection.datasets._base.strategies import (
     ClassificationStrategyMultipleFiles,
     ClassificationStrategySingleFile,
     ForecastingStrategySingleFile,

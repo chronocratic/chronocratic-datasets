@@ -57,7 +57,7 @@ class TestUCRClassificationDataModule:
 
     def test_extends_classification_base(self, module_class: type) -> None:
         """UCRClassificationDataModule extends BaseClassificationTimeSeriesDataModule."""
-        from tscollection.datasets.modules.classes.classification import (
+        from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
         assert issubclass(module_class, BaseClassificationTimeSeriesDataModule)

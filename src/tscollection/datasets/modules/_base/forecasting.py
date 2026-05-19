@@ -15,7 +15,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
-from tscollection.datasets.modules.classes.base import BaseTimeSeriesDataModule
+from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 
 
 __all__ = ['BaseForecastingTimeSeriesDataModule']

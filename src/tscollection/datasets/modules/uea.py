@@ -22,14 +22,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 
-from tscollection.datasets.datasets.uea import UEAClassificationMultivariateDataset
+from tscollection.datasets.uea import UEAClassificationMultivariateDataset
 from tscollection.datasets.enums.data import (
     ClassificationSplittingStrategy,
     DataForm,
     ScalingMethod,
     TimeSeriesDatasetMode,
 )
-from tscollection.datasets.modules.classes.classification import (
+from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
 

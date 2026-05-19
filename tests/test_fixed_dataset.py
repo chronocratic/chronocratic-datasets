@@ -17,7 +17,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 def test_fixed_yields_data_label():
     """DST-01: FixedTimeSeriesDatasetUnivariate yields (torch.Tensor, int) in WITH_LABELS mode."""
-    from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
+    from tscollection.datasets._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
@@ -35,7 +35,7 @@ def test_fixed_yields_data_label():
 
 def test_fixed_seq_len_property():
     """DST-03: FixedTimeSeriesDataset.seq_len returns int from data shape (read-only)."""
-    from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
+    from tscollection.datasets._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
@@ -54,7 +54,7 @@ def test_fixed_seq_len_property():
 
 def test_fixed_length():
     """FixedTimeSeriesDataset.__len__ returns number of samples."""
-    from tscollection.datasets.datasets.classes.fixed import FixedTimeSeriesDatasetUnivariate
+    from tscollection.datasets._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
@@ -70,7 +70,7 @@ def test_fixed_length():
 
 def test_multivariate_get_current_data():
     """DST-01: FixedTimeSeriesDatasetMultivariate._get_current_data returns 3D slice."""
-    from tscollection.datasets.datasets.classes.fixed import (
+    from tscollection.datasets._base.fixed import (
         FixedTimeSeriesDatasetMultivariate,
     )
 

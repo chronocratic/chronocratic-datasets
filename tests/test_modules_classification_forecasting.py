@@ -12,7 +12,7 @@ from tscollection.datasets.enums.data import (
     ForecastingMode,
     ScalingMethod,
 )
-from tscollection.datasets.modules.classes.base import BaseTimeSeriesDataModule
+from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 
 
 class TestBaseClassificationTimeSeriesDataModule:
@@ -21,7 +21,7 @@ class TestBaseClassificationTimeSeriesDataModule:
     @pytest.fixture()
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
-        from tscollection.datasets.modules.classes.classification import (
+        from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
         return BaseClassificationTimeSeriesDataModule
@@ -67,7 +67,7 @@ class TestBaseClassificationTimeSeriesDataModule:
 
     def test_exposes_num_classes_property(self) -> None:
         """Classification base exposes num_classes property."""
-        from tscollection.datasets.modules.classes.classification import (
+        from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
         assert hasattr(BaseClassificationTimeSeriesDataModule, 'num_classes')
@@ -80,7 +80,7 @@ class TestBaseClassificationTimeSeriesDataModule:
         """Classification base has _separate_target_feature as partial function."""
         # We need a concrete implementation to test instantiation.
         # Verify the attribute exists in the class or is set via __init__.
-        from tscollection.datasets.modules.classes.classification import (
+        from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
         import inspect
@@ -96,7 +96,7 @@ class TestBaseForecastingTimeSeriesDataModule:
     @pytest.fixture()
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
-        from tscollection.datasets.modules.classes.forecasting import (
+        from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
         return BaseForecastingTimeSeriesDataModule
@@ -142,7 +142,7 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_minmax(self) -> None:
         """_prepare_data_scaler returns MinMaxScaler for ScalingMethod.MINMAX."""
-        from tscollection.datasets.modules.classes.forecasting import (
+        from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -173,7 +173,7 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_standard(self) -> None:
         """_prepare_data_scaler returns StandardScaler for ScalingMethod.STANDARD."""
-        from tscollection.datasets.modules.classes.forecasting import (
+        from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -204,7 +204,7 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_invalid_raises(self) -> None:
         """_prepare_data_scaler raises ValueError for unsupported method."""
-        from tscollection.datasets.modules.classes.forecasting import (
+        from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 

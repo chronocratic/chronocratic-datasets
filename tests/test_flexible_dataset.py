@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import torch
 
-from tscollection.datasets.datasets.classes.strategies import (
+from tscollection.datasets._base.strategies import (
     ForecastingStrategySingleFile,
 )
 from tscollection.datasets.enums import TimeSeriesDatasetMode
@@ -19,7 +19,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 def test_flexible_accepts_seq_len_step():
     """DST-04: FlexibleTimeSeriesDatasetSingleFile stores seq_len and step."""
-    from tscollection.datasets.datasets.classes.flexible import (
+    from tscollection.datasets._base.flexible import (
         FlexibleTimeSeriesDatasetSingleFile,
     )
 
@@ -41,7 +41,7 @@ def test_flexible_accepts_seq_len_step():
 
 def test_flexible_yields_windows():
     """DST-02: FlexibleTimeSeriesDatasetSingleFile yields sliding-window pairs."""
-    from tscollection.datasets.datasets.classes.flexible import (
+    from tscollection.datasets._base.flexible import (
         FlexibleTimeSeriesDatasetSingleFile,
     )
 
@@ -64,7 +64,7 @@ def test_flexible_yields_windows():
 
 def test_flexible_bounds_check():
     """FlexibleTimeSeriesDatasetSingleFile raises IndexError for out-of-range index."""
-    from tscollection.datasets.datasets.classes.flexible import (
+    from tscollection.datasets._base.flexible import (
         FlexibleTimeSeriesDatasetSingleFile,
     )
 
@@ -90,10 +90,10 @@ def test_flexible_multifile_boundary_indices():
     Verify that global indices at file boundaries return data from the
     correct file, not the adjacent one (regression test for CR-04).
     """
-    from tscollection.datasets.datasets.classes.flexible import (
+    from tscollection.datasets._base.flexible import (
         FlexibleTimeSeriesDatasetMultipleFiles,
     )
-    from tscollection.datasets.datasets.classes.strategies import (
+    from tscollection.datasets._base.strategies import (
         ClassificationStrategyMultipleFiles,
     )
 

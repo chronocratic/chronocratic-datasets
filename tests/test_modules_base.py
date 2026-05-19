@@ -25,7 +25,7 @@ class TestBaseTimeSeriesDataModule:
         # BaseTimeSeriesDataModule is abstract; we need a concrete subclass
         from abc import abstractmethod
 
-        from tscollection.datasets.modules.classes.base import (
+        from tscollection.datasets.modules._base.base import (
             BaseTimeSeriesDataModule,
         )
 
@@ -139,7 +139,7 @@ class TestBaseTimeSeriesDataModule:
             torch.randint(0, 2, (10,)),
         )
         with patch(
-            'tscollection.datasets.modules.classes.base.DataLoader',
+            'tscollection.datasets.modules._base.base.DataLoader',
             wraps=DataLoader,
         ) as mock_loader:
             module._process_test_dataloader(dataset_object=real_dataset)
@@ -183,7 +183,7 @@ class TestBaseTimeSeriesDataModule:
 
         # Patch DataLoader to capture args
         with patch(
-            'tscollection.datasets.modules.classes.base.DataLoader',
+            'tscollection.datasets.modules._base.base.DataLoader',
             wraps=DataLoader,
         ) as mock_loader:
             mod_zero._process_train_dataloader(dataset_object=real_dataset)
@@ -208,7 +208,7 @@ class TestBaseTimeSeriesDataModule:
 
         real_dataset = TensorDataset(torch.randn(5, 3))
         with patch(
-            'tscollection.datasets.modules.classes.base.DataLoader',
+            'tscollection.datasets.modules._base.base.DataLoader',
             wraps=DataLoader,
         ) as mock_loader:
             module._process_train_dataloader(

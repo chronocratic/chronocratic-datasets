@@ -6,10 +6,9 @@ import pathlib
 PACKAGE_ROOT = pathlib.Path(__file__).parent.parent / 'src' / 'tscollection' / 'datasets'
 EXPECTED_INIT_FILES = [
     PACKAGE_ROOT / '__init__.py',
-    PACKAGE_ROOT / 'datasets' / '__init__.py',
-    PACKAGE_ROOT / 'datasets' / 'classes' / '__init__.py',
+    PACKAGE_ROOT / '_base' / '__init__.py',
     PACKAGE_ROOT / 'modules' / '__init__.py',
-    PACKAGE_ROOT / 'modules' / 'classes' / '__init__.py',
+    PACKAGE_ROOT / 'modules' / '_base' / '__init__.py',
     PACKAGE_ROOT / 'enums' / '__init__.py',
     PACKAGE_ROOT / 'utils' / '__init__.py',
 ]
@@ -56,10 +55,9 @@ def test_init_files_exist():
 def test_submodule_all_declarations():
     """PKG-03: Each submodule __init__.py has an __all__ declaration."""
     submodules = [
-        'tscollection.datasets.datasets',
-        'tscollection.datasets.datasets.classes',
+        'tscollection.datasets._base',
         'tscollection.datasets.modules',
-        'tscollection.datasets.modules.classes',
+        'tscollection.datasets.modules._base',
         'tscollection.datasets.enums',
         'tscollection.datasets.utils',
     ]

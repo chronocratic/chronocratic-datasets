@@ -21,7 +21,7 @@ from tscollection.datasets.enums.data import (
     ScalingMethod,
     TimeSeriesDatasetMode,
 )
-from tscollection.datasets.modules.classes.forecasting import (
+from tscollection.datasets.modules._base.forecasting import (
     BaseForecastingTimeSeriesDataModule,
 )
 

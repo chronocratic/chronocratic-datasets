@@ -1,6 +1,6 @@
 """LightningDataModule classes for time series datasets."""
 
-from tscollection.datasets.modules.classes import (
+from tscollection.datasets.modules._base import (
     BaseClassificationTimeSeriesDataModule,
     BaseForecastingTimeSeriesDataModule,
     BaseTimeSeriesDataModule,

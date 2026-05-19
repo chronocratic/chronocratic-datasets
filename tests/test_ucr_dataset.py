@@ -13,7 +13,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classification_labels):
     """DST-01: UCRClassificationUnivariateDataset yields (Tensor, int) in WITH_LABELS mode."""
-    from tscollection.datasets.datasets.ucr import UCRClassificationUnivariateDataset
+    from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(
         data=synthetic_classification_df,
@@ -33,7 +33,7 @@ def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classifica
 
 def test_ucr_without_labels(synthetic_classification_df):
     """UCR yields single array in WITHOUT_LABELS mode."""
-    from tscollection.datasets.datasets.ucr import UCRClassificationUnivariateDataset
+    from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(
         data=synthetic_classification_df,
@@ -46,7 +46,7 @@ def test_ucr_without_labels(synthetic_classification_df):
 
 def test_ucr_length(synthetic_classification_df, synthetic_classification_labels):
     """UCR dataset length equals number of rows in DataFrame."""
-    from tscollection.datasets.datasets.ucr import UCRClassificationUnivariateDataset
+    from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(
         data=synthetic_classification_df,
