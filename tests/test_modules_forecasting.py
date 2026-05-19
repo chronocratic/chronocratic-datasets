@@ -45,11 +45,10 @@ def synthetic_csv_file(tmp_path: Path) -> Path:
 def electricity_csv_file(tmp_path: Path) -> Path:
     """Create a synthetic electricity CSV with semicolon separator.
 
-    Generates enough data to cover the filtering logic at index 8920
-    and the '2012' slicing.
+    Generates enough data to cover the filtering logic and '2012' slicing.
     """
     csv_file = tmp_path / 'electricity.csv'
-    # Generate data spanning 2011-2014 to cover the '2012' slice
+    # Generate data spanning 2011-2014 to cover the '2012:' slice
     dates = pd.date_range('2011-01-01', periods=10000, freq='h')
     df = pd.DataFrame(
         {
@@ -766,10 +765,8 @@ class TestForecastingSetupEdgeCases:
     def test_setup_scale_data_false(self) -> None:
         """setup() with scale_data=False completes without error.
 
-        Tests current behavior: the forecasting setup() always calls
-        _prepare_data_scaler() regardless of scale_data flag. This
-        test verifies setup() completes and produces valid data
-        samples even with scale_data=False.
+        Verifies setup() respects the scale_data=False flag and produces
+        valid data samples with unscaled values.
         """
         from tscollection.datasets.modules.ett import ETTDataModule
 
@@ -977,7 +974,7 @@ class TestElectricityModuleIntegration:
         Full pipeline with existing electricity CSV fixture (10000 rows,
         semicolon delimiter, comma decimal, columns MT_001/MT_002),
         mode=UNIVARIATE. Exercises CSV parsing, hourly resampling,
-        column filtering (iloc[8920]), '2012:' slicing, sklearn scaling,
+        column filtering, '2012:' slicing, sklearn scaling,
         time feature extraction, transpose + expand_dims transform, and
         60/20/20 fractional train/valid/test splitting.
         """
@@ -1024,7 +1021,7 @@ class TestElectricityModuleIntegration:
 
         # Trailing dimension >= 1 (expand_dims adds it, time features may enlarge)
         assert module._full_data.shape[-1] >= 1
-        # First dimension = number of active columns after iloc[8920] filter
+        # First dimension = number of active columns after zero-column filter
         # For univariate mode, only MT_001 is selected, so shape[0] == 1
         assert module._full_data.shape[0] == 1
         # Second dimension = number of samples (from '2012:' onwards)
