@@ -800,6 +800,166 @@ class TestForecastingSetupEdgeCases:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Bug Fix Tests (CR-01, CR-02, CR-03)
+# ---------------------------------------------------------------------------
+
+
+class TestForecastingBugFixes:
+    """Tests for CR-01 (scaler axis) and CR-02 (scale_data ignored)."""
+
+    def test_scaler_fits_train_only(self) -> None:
+        """Scaler fits only on training time steps, not validation/test (CR-01).
+
+        Pre-populate numpy _full_data (100, 5) where validation rows (60-79)
+        have values 100x larger than training rows (0-59). After setup, the
+        scaled training data should reflect ONLY training statistics. If the
+        scaler leaked validation data, the range would be wider (min would be
+        near 0 for the full dataset, not just the train slice).
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        rng = np.random.default_rng(42)
+        raw_data = rng.standard_normal((100, 5)).astype(np.float32)
+        # Make validation rows (60-79) have large values
+        raw_data[60:80] = raw_data[60:80] * 100.0 + 500.0
+        module._full_data = raw_data
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+
+        # With MINMAX on train-only, train data should span [0, 1].
+        # If scaler leaked validation data (which has values ~500+),
+        # training data would be compressed near 0 (max << 1).
+        train_min = module._train_data_samples.min()
+        train_max = module._train_data_samples.max()
+        assert train_min >= -1e-6, (
+            f'Train min {train_min} is negative — scaler likely saw validation data'
+        )
+        assert train_max > 0.5, (
+            f'Train max {train_max} is too low — scaler likely leaked validation '
+            f'data (expected ~1.0 for MINMAX fitted on train only)'
+        )
+
+    def test_scale_data_false_preserves_values(self) -> None:
+        """scale_data=False produces unscaled data identical to input (CR-02).
+
+        Pre-populate _full_data with known random values, copy to original,
+        call setup. Assert values are unchanged after setup.
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        rng = np.random.default_rng(42)
+        original = rng.standard_normal((100, 5)).astype(np.float32)
+
+        module = ETTDataModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=False,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._full_data = original.copy()
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+
+        # _full_data after _transform_data has shape (1, 100, 5) due to
+        # expand_dims(axis=0). Extract the actual data plane.
+        transformed = module._full_data
+        # Compare the data plane (squeeze axis 0 added by _transform_data)
+        actual_data = transformed.squeeze(axis=0)
+        assert actual_data.shape == (100, 5), f'Unexpected shape {actual_data.shape}'
+        assert np.allclose(actual_data, original, atol=1e-6), (
+            'Data was modified despite scale_data=False'
+        )
+
+    def test_scale_data_true_modifies_values(self) -> None:
+        """scale_data=True actually transforms data values.
+
+        Same setup as test_scale_data_false_preserves_values but with
+        scale_data=True. Assert data values ARE different after setup.
+        """
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        rng = np.random.default_rng(42)
+        original = rng.standard_normal((100, 5)).astype(np.float32)
+
+        module = ETTDataModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._full_data = original.copy()
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+
+        transformed = module._full_data
+        actual_data = transformed.squeeze(axis=0)
+        assert not np.allclose(actual_data, original, atol=1e-6), (
+            'Data was NOT modified despite scale_data=True'
+        )
+
+
+class TestElectricityBugFixes:
+    """Tests for CR-03 (hardcoded iloc[8920])."""
+
+    def test_prepare_data_small_dataset(self, tmp_path: Path) -> None:
+        """ElectricityLoadModule.prepare_data() does not crash on small CSV (CR-03).
+
+        Create a synthetic electricity CSV with only 100 rows (semicolon-
+        delimited, comma decimal, with MT_001 and MT_002 columns).
+        Instantiate ElectricityLoadModule, call prepare_data().
+        Assert no IndexError is raised and _full_data is set.
+        """
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        csv_file = tmp_path / 'small_electricity.csv'
+        dates = pd.date_range('2012-01-01', periods=100, freq='h')
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame(
+            {
+                'MT_001': rng.standard_normal(100),
+                'MT_002': rng.standard_normal(100),
+            },
+            index=dates,
+        )
+        df.index.name = 'datetime'
+        df.to_csv(csv_file, sep=';', decimal=',')
+
+        module = ElectricityLoadModule(
+            dataset_file_path=csv_file,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        # Should NOT raise IndexError
+        module.prepare_data()
+
+        assert module._full_data is not None
+        assert len(module._full_data) > 0
+
+
 class TestElectricityModuleIntegration:
     """Integration tests for ElectricityLoadModule dataloader pipeline.
 
