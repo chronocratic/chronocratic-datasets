@@ -45,15 +45,6 @@ class DataForm(StrEnum):
     MULTI_FILES = 'multi_files'
 
 
-class DistanceMetric(StrEnum):
-    """Distance metric for time series comparison."""
-
-    EUCLIDEAN = 'euclidean'
-    MANHATTAN = 'manhattan'
-    SOFT_DTW = 'soft_dtw'
-    COSINE = 'cosine'
-
-
 class DatasetFamily(StrEnum):
     """Dataset family identifier for registry classification."""
 
