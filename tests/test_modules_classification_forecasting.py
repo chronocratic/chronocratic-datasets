@@ -3,6 +3,7 @@
 from abc import ABC
 from functools import partial
 
+import numpy as np
 import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -147,7 +148,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
+            def prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -178,7 +179,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
+            def prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -209,7 +210,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
+            def prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -232,3 +233,100 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
         with pytest.raises(ValueError):
             mod._prepare_data_scaler()
+
+
+class TestForecastingStageGating:
+    """Tests for stage validation, cache, and branching in forecasting setup()."""
+
+    @pytest.fixture
+    def concrete_forecasting_class(self):
+        """Create a minimal concrete forecasting subclass for testing."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            """Minimal concrete forecasting subclass for testing."""
+
+            def prepare_data(self) -> None:
+                pass
+
+            def _set_data_slices(self) -> None:
+                pass
+
+            def _transform_data(self) -> None:
+                pass
+
+        return ConcreteForecasting
+
+    @pytest.fixture
+    def forecasting_module(self, concrete_forecasting_class):
+        """Create a forecasting module with scale_data=True."""
+        return concrete_forecasting_class(
+            batch_size=32,
+            seq_len=128,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+            data_scaling_range=(0, 1),
+            num_workers=0,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+
+    def test_forecasting_scaler_cache_reused(
+        self, forecasting_module
+    ) -> None:
+        """setup('fit') then setup('test') reuses same scaler instances."""
+        rng = np.random.default_rng(42)
+        forecasting_module._full_data = rng.standard_normal(
+            (100, 5)
+        ).astype(np.float32)
+        forecasting_module._train_slice = slice(None, 60)
+        forecasting_module._valid_slice = slice(60, 80)
+        forecasting_module._test_slice = slice(80, None)
+
+        forecasting_module.setup(stage='fit')
+        data_scaler_id = id(forecasting_module._data_scaler_cache)
+        assert forecasting_module._data_scaler_cache is not None
+
+        forecasting_module.setup(stage='test')
+        # Same scaler instance (not refit)
+        assert id(forecasting_module._data_scaler_cache) == data_scaler_id
+
+    def test_forecasting_validate_no_mutation(self, forecasting_module) -> None:
+        """setup('validate') does not alter data or populate train samples."""
+        rng = np.random.default_rng(42)
+        full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        forecasting_module._full_data = full_data
+        forecasting_module._train_slice = slice(None, 60)
+        forecasting_module._valid_slice = slice(60, 80)
+        forecasting_module._test_slice = slice(80, None)
+
+        forecasting_module.setup(stage='validate')
+
+        # _full_data unchanged (not scaled or transformed)
+        np.testing.assert_array_equal(forecasting_module._full_data, full_data)
+        # _train_data_samples remains None (no splitting happened)
+        assert forecasting_module._train_data_samples is None
+
+    def test_forecasting_unknown_stage_raises(self, forecasting_module) -> None:
+        """setup('warmup') raises ValueError for unknown stage."""
+        with pytest.raises(ValueError, match="Unknown stage: 'warmup'"):
+            forecasting_module.setup(stage='warmup')
+
+    def test_forecasting_default_stage_is_none(
+        self, forecasting_module
+    ) -> None:
+        """setup() with no args uses stage=None and does not raise TypeError."""
+        rng = np.random.default_rng(42)
+        forecasting_module._full_data = rng.standard_normal(
+            (100, 5)
+        ).astype(np.float32)
+        forecasting_module._train_slice = slice(None, 60)
+        forecasting_module._valid_slice = slice(60, 80)
+        forecasting_module._test_slice = slice(80, None)
+
+        # Should not raise TypeError
+        forecasting_module.setup()
