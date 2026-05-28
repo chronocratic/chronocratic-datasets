@@ -141,7 +141,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
     def train_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,
+        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,  # noqa: ARG002
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
@@ -168,7 +168,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
     def val_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,
+        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,  # noqa: ARG002
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:
@@ -194,7 +194,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
     def test_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,
+        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,  # noqa: ARG002
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
