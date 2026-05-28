@@ -8,6 +8,7 @@ Weather).
 from __future__ import annotations
 
 from abc import abstractmethod
+import logging
 
 import numpy as np
 import pandas as pd
@@ -274,6 +275,11 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                     pass
                 else:
                     # No cached scaler and no prior fit; transform without scaling
+                    logging.warning(
+                        'scale_data=True but no fitted scaler cache available. '
+                        'Data will not be scaled. Call setup(stage="fit") first or '
+                        'provide a pre-fitted _data_scaler_cache.'
+                    )
                     self._transform_data()
                     self._calculate_num_features()
                     self._split_data()
