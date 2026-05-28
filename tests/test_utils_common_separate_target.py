@@ -42,28 +42,6 @@ class TestClassificationSplitMode:
         assert not hasattr(datasets_module, 'SplittingStrategy')
 
 
-class TestForecastingSplitMode:
-    """Tests for the ForecastingSplitMode enum."""
-
-    def test_indexed_value(self) -> None:
-        """ForecastingSplitMode.INDEXED equals 'indexed'."""
-        from tscollection.datasets.enums import ForecastingSplitMode
-
-        assert ForecastingSplitMode.INDEXED == 'indexed'
-
-    def test_fractional_value(self) -> None:
-        """ForecastingSplitMode.FRACTIONAL equals 'fractional'."""
-        from tscollection.datasets.enums import ForecastingSplitMode
-
-        assert ForecastingSplitMode.FRACTIONAL == 'fractional'
-
-    def test_import_from_root(self) -> None:
-        """ForecastingSplitMode is importable from tscollection.datasets."""
-        from tscollection.datasets import ForecastingSplitMode
-
-        assert ForecastingSplitMode.INDEXED == 'indexed'
-
-
 class TestSeparateTargetFeatureFromDf:
     """Tests for the separate_target_feature_from_df utility."""
 

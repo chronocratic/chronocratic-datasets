@@ -17,7 +17,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from tscollection.datasets.enums.data import ForecastingMode, ForecastingSplitMode, ScalingMethod, TimeSeriesDatasetMode
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 
 if TYPE_CHECKING:
@@ -90,7 +90,6 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
             mode=mode,
-            split_mode=ForecastingSplitMode.INDEXED,
         )
         self.dataset_file_path = dataset_file_path
         self.variant = variant
