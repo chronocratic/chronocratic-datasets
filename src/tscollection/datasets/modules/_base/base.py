@@ -9,7 +9,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import partial
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import lightning.pytorch as pl
 import pandas as pd
@@ -18,6 +18,9 @@ from torch.utils.data import DataLoader
 from tscollection.datasets.enums.data import DataForm, ScalingMethod
 from tscollection.datasets.utils.general import custom_collate_fn
 from tscollection.datasets.utils.scaling import create_data_scaler
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 __all__ = ['BaseTimeSeriesDataModule']
 
@@ -80,7 +83,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._valid_data_samples: Any = None
         self._dataset_class: Any = None
         self._setup_completed_stages: set[str | None] = set()
-        self._prepare_data_called: bool = False
+        self._scaler_cache: Callable | None = None
 
     # ------------------------------------------------------------------
     # Properties
@@ -132,49 +135,21 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     # Abstract methods
     # ------------------------------------------------------------------
 
+    @abstractmethod
     def prepare_data(self) -> None:
         """Validate file paths and perform lightweight checks.
 
-        Concrete wrapper that drives the template:
-        1. Check idempotency sentinel (skip if already called).
-        2. Call ``_do_prepare_data()`` (abstract — subclass I/O).
-        3. Call ``_finalize_prepare_data()`` (hook — no-op default,
-           forecasting overrides to set slices).
-        4. Set sentinel.
-
         Per D-09, ``prepare_data()`` does NOT load or split data —
-        that happens in ``setup()``.
+        that happens in ``setup()``. Subclasses must implement
+        this method to verify that all required files exist and
+        are well-formed.
         """
-        if self._prepare_data_called:
-            return
-        self._do_prepare_data()
-        self._finalize_prepare_data()
-        self._prepare_data_called = True
-
-    @abstractmethod
-    def _do_prepare_data(self) -> None:
-        """Subclass hook for the I/O portion of prepare_data.
-
-        Concrete modules implement this to validate file paths,
-        read data, and set module state (``_full_data``,
-        ``_num_features``, ``_seq_len``, etc.).
-        """
-        ...
-
-    def _finalize_prepare_data(self) -> None:
-        """Hook called after ``_do_prepare_data()`` completes.
-
-        Default is no-op. Forecasting base overrides this to call
-        ``_set_data_slices()`` so slice population is driven by the
-        base wrapper rather than individual concrete modules.
-        """
-        return
 
     # ------------------------------------------------------------------
     # Setup
     # ------------------------------------------------------------------
 
-    def setup(self, stage: str) -> None:
+    def setup(self, stage: str | None = None) -> None:
         """Apply data scaling via :func:`create_data_scaler`.
 
         Per D-09 and D-10, the classification branch uses
@@ -182,27 +157,51 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         branch overrides this method entirely with sklearn
         direct scaling.
 
+        Stage validation (D1): unknown stages raise ValueError.
+        Sentinel guard (B1): already-completed stages are skipped.
+        Cache logic (B4): scaler closure is cached on first use.
+        Stage branching: fit/None scales all splits, test/predict
+        scales test only, validate is a no-op for data mutation.
+
         Args:
-            stage: Lightning stage identifier (``"fit"`` or ``"test"``).
+            stage: Lightning stage identifier. Defaults to ``None``.
+                Allowed values: ``"fit"``, ``"validate"``, ``"test"``,
+                ``"predict"``, or ``None``.
+
+        Raises:
+            ValueError: If ``stage`` is not one of the allowed values.
         """
+        if stage not in ('fit', 'validate', 'test', 'predict', None):
+            raise ValueError(f'Unknown stage: {stage!r}')
         if stage in self._setup_completed_stages or None in self._setup_completed_stages:
             return
 
-        scaler = create_data_scaler(
-            scale=self.scale_data,
-            scaling_range=self.data_scaling_range,
-            scaling_method=self.data_scaling_method,
-            data_form=self._data_form,
-        )
-        (
-            self._train_data_samples,
-            self._valid_data_samples,
-            self._test_data_samples,
-        ) = scaler(
-            self._train_data_samples,
-            self._valid_data_samples,
-            self._test_data_samples,
-        )
+        if self._scaler_cache is None:
+            self._scaler_cache = create_data_scaler(
+                scale=self.scale_data,
+                scaling_range=self.data_scaling_range,
+                scaling_method=self.data_scaling_method,
+                data_form=self._data_form,
+            )
+
+        if stage in ('fit', None):
+            (
+                self._train_data_samples,
+                self._valid_data_samples,
+                self._test_data_samples,
+            ) = self._scaler_cache(
+                self._train_data_samples,
+                self._valid_data_samples,
+                self._test_data_samples,
+            )
+        elif stage in ('test', 'predict'):
+            _, _, self._test_data_samples = self._scaler_cache(
+                self._train_data_samples,
+                self._valid_data_samples,
+                self._test_data_samples,
+            )
+        # stage == 'validate': no data mutation
+
         self._setup_completed_stages.add(stage)
 
     # ------------------------------------------------------------------

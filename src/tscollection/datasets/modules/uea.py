@@ -168,7 +168,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     # Lightning lifecycle
     # ------------------------------------------------------------------
 
-    def _do_prepare_data(self) -> None:
+    def prepare_data(self) -> None:
         """Validate paths, read ARFF files, split, and prepare data.
 
         Per D-16, raises ``FileNotFoundError`` if the dataset folder

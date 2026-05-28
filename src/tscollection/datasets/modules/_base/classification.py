@@ -149,7 +149,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     @abstractmethod
-    def _do_prepare_data(self) -> None:
+    def prepare_data(self) -> None:
         """Validate file paths, read data, and split into train/val/test.
 
         Subclasses must implement this method to:
