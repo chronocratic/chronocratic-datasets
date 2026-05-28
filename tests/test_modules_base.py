@@ -308,6 +308,35 @@ class TestSetupSentinel:
             mod.setup(stage='fit')
             assert scaler_spy.call_count == 1
 
+    def test_setup_none_then_test_runs(self, concrete_module_class) -> None:
+        """setup(None) should NOT block setup('test') from running.
+
+        Verifies that after setup(None) (which covers fit), a subsequent
+        setup('test') still executes test-stage logic rather than
+        returning early from the guard.
+        """
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=True,
+        )
+        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
+        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
+        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+
+        with patch(
+            'tscollection.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
+        ) as scaler_spy:
+            scaler_spy.return_value = lambda t, v, te: (t, v, te)
+            mod.setup(stage=None)
+            mod.setup(stage='test')
+            # test stage should have run (scaler reused from cache)
+            assert scaler_spy.call_count == 1
+            assert 'test' in mod._setup_completed_stages
+
 
 class TestPrepareDataWrapper:
     """Tests for the idempotent prepare_data() wrapper.
