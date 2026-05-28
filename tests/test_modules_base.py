@@ -109,7 +109,6 @@ class TestBaseTimeSeriesDataModule:
 
     def test_process_train_dataloader_returns_dataloader(self, module) -> None:
         """_process_train_dataloader returns a DataLoader instance."""
-        TensorDataset(_torch_rand := MagicMock())
         # Create a real small dataset
         import torch
 
