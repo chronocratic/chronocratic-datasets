@@ -8,7 +8,7 @@ from tscollection.datasets.utils.common import (
     get_num_samples_from_ts,
     separate_target_feature_from_df,
 )
-from tscollection.datasets.utils.features import extract_time_features
+from tscollection.datasets.utils.features import TIME_FEATURE_COUNT, extract_time_features
 from tscollection.datasets.utils.general import (
     centralize_variable_length_series,
     custom_collate_fn,
@@ -18,6 +18,7 @@ from tscollection.datasets.utils.scaling import create_data_scaler
 
 __all__ = [
     'FunctionComposer',
+    'TIME_FEATURE_COUNT',
     'centralize_variable_length_series',
     'compose',
     'create_data_scaler',
