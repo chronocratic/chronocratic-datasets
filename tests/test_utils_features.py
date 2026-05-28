@@ -56,3 +56,11 @@ def test_extract_time_features_empty_index() -> None:
     result = extract_time_features(dti)
     assert result.shape == (0, 7)
     assert result.dtype == np.float32
+
+
+def test_extract_time_features_week() -> None:
+    """Seventh column is ISO week number."""
+    dti = pd.date_range('2020-01-01', periods=1, freq='D')
+    result = extract_time_features(dti)
+    # 2020-01-01 is in ISO week 1
+    assert result[0, 6] == 1.0
