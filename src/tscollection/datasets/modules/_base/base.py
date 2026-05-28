@@ -80,6 +80,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._valid_data_samples: Any = None
         self._dataset_class: Any = None
         self._setup_completed_stages: set[str | None] = set()
+        self._prepare_data_called: bool = False
 
     # ------------------------------------------------------------------
     # Properties
@@ -131,15 +132,43 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     # Abstract methods
     # ------------------------------------------------------------------
 
-    @abstractmethod
     def prepare_data(self) -> None:
         """Validate file paths and perform lightweight checks.
 
+        Concrete wrapper that drives the template:
+        1. Check idempotency sentinel (skip if already called).
+        2. Call ``_do_prepare_data()`` (abstract — subclass I/O).
+        3. Call ``_finalize_prepare_data()`` (hook — no-op default,
+           forecasting overrides to set slices).
+        4. Set sentinel.
+
         Per D-09, ``prepare_data()`` does NOT load or split data —
-        that happens in ``setup()``. Subclasses must implement
-        this method to verify that all required files exist and
-        are well-formed.
+        that happens in ``setup()``.
         """
+        if self._prepare_data_called:
+            return
+        self._do_prepare_data()
+        self._finalize_prepare_data()
+        self._prepare_data_called = True
+
+    @abstractmethod
+    def _do_prepare_data(self) -> None:
+        """Subclass hook for the I/O portion of prepare_data.
+
+        Concrete modules implement this to validate file paths,
+        read data, and set module state (``_full_data``,
+        ``_num_features``, ``_seq_len``, etc.).
+        """
+        ...
+
+    def _finalize_prepare_data(self) -> None:
+        """Hook called after ``_do_prepare_data()`` completes.
+
+        Default is no-op. Forecasting base overrides this to call
+        ``_set_data_slices()`` so slice population is driven by the
+        base wrapper rather than individual concrete modules.
+        """
+        return
 
     # ------------------------------------------------------------------
     # Setup
@@ -174,7 +203,6 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             self._valid_data_samples,
             self._test_data_samples,
         )
-
         self._setup_completed_stages.add(stage)
 
     # ------------------------------------------------------------------
