@@ -57,7 +57,7 @@ def _make_mock_train_data() -> np.ndarray:
         np.array([[25.0, 26.0], [27.0, 28.0], [29.0, 30.0]]),
     ]
     labels = [b'0', b'1', b'0', b'1', b'0']
-    data = np.array(list(zip(samples, labels)), dtype=[('f0', 'O'), ('f1', 'O')])
+    data = np.array(list(zip(samples, labels, strict=False)), dtype=[('f0', 'O'), ('f1', 'O')])
     return data
 
 
@@ -72,7 +72,7 @@ def _make_mock_test_data() -> np.ndarray:
         np.array([[37.0, 38.0], [39.0, 40.0], [41.0, 42.0]]),
     ]
     labels = [b'0', b'1']
-    data = np.array(list(zip(samples, labels)), dtype=[('f0', 'O'), ('f1', 'O')])
+    data = np.array(list(zip(samples, labels, strict=False)), dtype=[('f0', 'O'), ('f1', 'O')])
     return data
 
 
@@ -111,12 +111,11 @@ class TestUEAClassificationDataModuleConstructor:
         assert module.num_workers == 2
 
     def test_data_form_is_nested(self, synthetic_uea_folder: Path) -> None:
-        """data_form is hardcoded to DataForm.NESTED (D-02)."""
+        """data_form is hardcoded to DataForm.NESTED."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
         )
         assert module._data_form == DataForm.NESTED
 
@@ -124,24 +123,18 @@ class TestUEAClassificationDataModuleConstructor:
 class TestUEAProcessStackedData:
     """Tests for _process_stacked_data method."""
 
-    def test_process_stacked_data_returns_tuple(
-        self, synthetic_uea_folder: Path
-    ) -> None:
+    def test_process_stacked_data_returns_tuple(self, synthetic_uea_folder: Path) -> None:
         """_process_stacked_data returns (np.ndarray, np.ndarray) tuple."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
         )
         # Build mock nested data that scipy.loadarff would return
         # Structure: each row is (sample_array, label)
         sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
         sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
-        mock_data = np.array(
-            [(sample1, b'0'), (sample2, b'1')],
-            dtype=[('f0', 'O'), ('f1', 'O')],
-        )
+        mock_data = np.array([(sample1, b'0'), (sample2, b'1')], dtype=[('f0', 'O'), ('f1', 'O')])
 
         samples, labels = module._process_stacked_data(mock_data)
 
@@ -155,17 +148,13 @@ class TestUEAProcessStackedData:
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
         )
         sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
         sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
-        mock_data = np.array(
-            [(sample1, b'A'), (sample2, b'B')],
-            dtype=[('f0', 'O'), ('f1', 'O')],
-        )
+        mock_data = np.array([(sample1, b'A'), (sample2, b'B')], dtype=[('f0', 'O'), ('f1', 'O')])
 
-        samples, labels = module._process_stacked_data(mock_data)
+        _samples, labels = module._process_stacked_data(mock_data)
 
         # Labels should be encoded integers (0, 1)
         assert set(labels.tolist()).issubset({0, 1})
@@ -175,31 +164,25 @@ class TestUEAPrepareData:
     """Tests for prepare_data method."""
 
     def test_prepare_data_raises_file_not_found(self) -> None:
-        """prepare_data raises FileNotFoundError for missing folder (D-16)."""
+        """prepare_data raises FileNotFoundError for missing folder."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=Path('/nonexistent/path'),
-            target_column_name='class',
+            dataset_folder_path=Path('/nonexistent/path'), target_column_name='class'
         )
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
-        '._read_arff_data_file',
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
-    def test_prepare_data_loads_data(
-        self, mock_read, synthetic_uea_folder: Path
-    ) -> None:
+    def test_prepare_data_loads_data(self, mock_read, synthetic_uea_folder: Path) -> None:
         """prepare_data loads train/test data and sets module state."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            scale_data=False,
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
         )
         module.prepare_data()
 
@@ -219,8 +202,7 @@ class TestUEADataLoaders:
     """Tests for dataloader methods."""
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
-        '._read_arff_data_file',
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_train_dataloader_returns_dataloader(
@@ -230,21 +212,16 @@ class TestUEADataLoaders:
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            scale_data=False,
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
         )
         module.prepare_data()
         module.setup('fit')
 
-        loader = module.train_dataloader(
-            mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
-        )
+        loader = module.train_dataloader(mode=TimeSeriesDatasetMode.WITHOUT_LABELS)
         assert isinstance(loader, DataLoader)
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
-        '._read_arff_data_file',
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_val_dataloader_returns_dataloader_or_none(
@@ -260,14 +237,11 @@ class TestUEADataLoaders:
             scale_data=False,
         )
         module.prepare_data()
-        result = module.val_dataloader(
-            mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
-        )
+        result = module.val_dataloader(mode=TimeSeriesDatasetMode.WITHOUT_LABELS)
         assert result is None
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule'
-        '._read_arff_data_file',
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_test_dataloader_returns_dataloader(
@@ -277,30 +251,24 @@ class TestUEADataLoaders:
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            scale_data=False,
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
         )
         module.prepare_data()
         module.setup('fit')
 
-        loader = module.test_dataloader(
-            mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
-        )
+        loader = module.test_dataloader(mode=TimeSeriesDatasetMode.WITHOUT_LABELS)
         assert isinstance(loader, DataLoader)
 
 
 class TestUEAUsesScipyLoadarff:
-    """Tests verifying scipy.io.arff.loadarff usage (D-12)."""
+    """Tests verifying scipy.io.arff.loadarff usage."""
 
     def test_uses_scipy_loadarff(self, synthetic_uea_folder: Path) -> None:
         """Module uses scipy.io.arff.loadarff directly (not utils/arff.py)."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            scale_data=False,
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
         )
 
         with patch('scipy.io.arff.loadarff') as mock_load:
@@ -308,8 +276,7 @@ class TestUEAUsesScipyLoadarff:
             sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
             sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
             train_data = np.array(
-                [(sample1, b'0'), (sample2, b'1')],
-                dtype=[('f0', 'O'), ('f1', 'O')],
+                [(sample1, b'0'), (sample2, b'1')], dtype=[('f0', 'O'), ('f1', 'O')]
             )
             mock_load.return_value = (train_data, None)
 
@@ -321,15 +288,13 @@ class TestUEAUsesScipyLoadarff:
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
         )
         # Build mock data with string labels
         sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
         sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
         mock_data = np.array(
-            [(sample1, b'classA'), (sample2, b'classB')],
-            dtype=[('f0', 'O'), ('f1', 'O')],
+            [(sample1, b'classA'), (sample2, b'classB')], dtype=[('f0', 'O'), ('f1', 'O')]
         )
 
         _, labels = module._process_stacked_data(mock_data)
@@ -338,3 +303,29 @@ class TestUEAUsesScipyLoadarff:
         encoder = LabelEncoder()
         expected = encoder.fit_transform(['classA', 'classB'])
         assert list(labels) == list(expected)
+
+
+def test_setup_idempotent(synthetic_uea_folder: Path) -> None:
+    """UEA: setup('fit') called twice produces identical train samples.
+
+    Uses mocked _read_arff_data_file to load synthetic nested ARFF data,
+    calls prepare_data() + setup('fit'), snapshots the train samples,
+    then calls setup('fit') again and asserts data is unchanged
+    (sentinel guard).
+    """
+    from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+    with patch(
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+    ):
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        snapshot_train = module._train_data_samples.copy()
+        module.setup(stage='fit')
+
+        np.testing.assert_array_equal(snapshot_train, module._train_data_samples)

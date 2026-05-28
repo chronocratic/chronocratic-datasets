@@ -136,7 +136,7 @@ class FlexibleTimeSeriesDatasetSingleFile(FlexibleTimeSeriesDataset):
         return get_num_samples_from_ts(self._data)
 
     def _go_to_idx(self, idx: int) -> None:
-        # T-02-02-03: Bounds check with negative index normalization
+        # Bounds check with negative index normalization
         if idx < 0:
             idx = len(self) + idx
         if idx < 0 or idx >= len(self):
@@ -202,15 +202,13 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
         self._num_sequences_per_file = sequence_handling_strategy.get_num_sequences_per_file(
             data=self._data, seq_len=self._seq_len, step=self._step
         )
-        self._accumulated_num_sequences_per_file = list(
-            accumulate(self._num_sequences_per_file)
-        )
+        self._accumulated_num_sequences_per_file = list(accumulate(self._num_sequences_per_file))
 
     def _get_num_samples_per_file(self) -> list[int]:
         return [get_num_samples_from_ts(ts) for ts in self._data]
 
     def _go_to_idx(self, idx: int) -> None:
-        # T-02-02-03: Bounds check with negative index normalization
+        # Bounds check with negative index normalization
         if idx < 0:
             idx = len(self) + idx
         if idx < 0 or idx >= len(self):
@@ -219,9 +217,7 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
         file_num = bisect(self._accumulated_num_sequences_per_file, idx)
         self._current_file = file_num
         self._n = (
-            idx - self._accumulated_num_sequences_per_file[file_num - 1]
-            if file_num != 0
-            else idx
+            idx - self._accumulated_num_sequences_per_file[file_num - 1] if file_num != 0 else idx
         )
 
     def _get_current_label(self) -> np.ndarray | None:

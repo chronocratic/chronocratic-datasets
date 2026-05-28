@@ -1,7 +1,6 @@
 """Tests for classification and forecasting base DataModule classes."""
 
 from abc import ABC
-from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -10,8 +9,6 @@ import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from tscollection.datasets.enums.data import (
-    ClassificationSplittingStrategy,
-    DataForm,
     ForecastingMode,
     ScalingMethod,
 )
@@ -22,24 +19,21 @@ from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 class TestBaseClassificationTimeSeriesDataModule:
     """Tests for BaseClassificationTimeSeriesDataModule."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
         from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
+
         return BaseClassificationTimeSeriesDataModule
 
-    def test_is_subclass_of_base_and_abc(
-        self, module_class: type,
-    ) -> None:
+    def test_is_subclass_of_base_and_abc(self, module_class: type) -> None:
         """BaseClassificationTimeSeriesDataModule is subclass of BaseTimeSeriesDataModule and ABC."""
         assert issubclass(module_class, BaseTimeSeriesDataModule)
         assert issubclass(module_class, ABC)
 
-    def test_constructor_accepts_target_column_name(
-        self, module_class: type,
-    ) -> None:
+    def test_constructor_accepts_target_column_name(self, module_class: type) -> None:
         """Classification base constructor accepts target_column_name."""
         # ABC + abstract methods prevent direct instantiation;
         # verify the signature accepts the parameter instead.
@@ -48,22 +42,18 @@ class TestBaseClassificationTimeSeriesDataModule:
         sig = inspect.signature(module_class.__init__)
         assert 'target_column_name' in sig.parameters
 
-    def test_constructor_accepts_splitting_strategy(
-        self, module_class: type,
-    ) -> None:
+    def test_constructor_accepts_splitting_strategy(self, module_class: type) -> None:
         """Classification base constructor accepts splitting_strategy enum."""
         import inspect
 
         sig = inspect.signature(module_class.__init__)
         assert 'splitting_strategy' in sig.parameters
 
-    def test_constructor_accepts_data_form(
-        self, module_class: type,
-    ) -> None:
+    def test_constructor_accepts_data_form(self, module_class: type) -> None:
         """Classification base constructor accepts data_form (even if set by subclass)."""
         import inspect
 
-        sig = inspect.signature(module_class.__init__)
+        inspect.signature(module_class.__init__)
         # data_form is inherited from base; classification base may or may not
         # re-expose it, but the parent signature should include it.
         base_sig = inspect.signature(BaseTimeSeriesDataModule.__init__)
@@ -74,20 +64,21 @@ class TestBaseClassificationTimeSeriesDataModule:
         from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
+
         assert hasattr(BaseClassificationTimeSeriesDataModule, 'num_classes')
         assert isinstance(
-            BaseClassificationTimeSeriesDataModule.__dict__.get('num_classes'),
-            property,
+            BaseClassificationTimeSeriesDataModule.__dict__.get('num_classes'), property
         )
 
     def test_has_separate_target_feature_partial(self) -> None:
         """Classification base has _separate_target_feature as partial function."""
         # We need a concrete implementation to test instantiation.
         # Verify the attribute exists in the class or is set via __init__.
+        import inspect
+
         from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
-        import inspect
 
         source = inspect.getsource(BaseClassificationTimeSeriesDataModule.__init__)
         assert '_separate_target_feature' in source
@@ -97,49 +88,40 @@ class TestBaseClassificationTimeSeriesDataModule:
 class TestBaseForecastingTimeSeriesDataModule:
     """Tests for BaseForecastingTimeSeriesDataModule."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
         from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
+
         return BaseForecastingTimeSeriesDataModule
 
-    def test_is_subclass_of_base_and_abc(
-        self, module_class: type,
-    ) -> None:
+    def test_is_subclass_of_base_and_abc(self, module_class: type) -> None:
         """BaseForecastingTimeSeriesDataModule is subclass of BaseTimeSeriesDataModule and ABC."""
         assert issubclass(module_class, BaseTimeSeriesDataModule)
         assert issubclass(module_class, ABC)
 
-    def test_constructor_accepts_mode(
-        self, module_class: type,
-    ) -> None:
+    def test_constructor_accepts_mode(self, module_class: type) -> None:
         """Forecasting base constructor accepts mode (ForecastingMode)."""
         import inspect
 
         sig = inspect.signature(module_class.__init__)
         assert 'mode' in sig.parameters
 
-    def test_constructor_accepts_seq_len(
-        self, module_class: type,
-    ) -> None:
+    def test_constructor_accepts_seq_len(self, module_class: type) -> None:
         """Forecasting base constructor accepts seq_len (int)."""
         import inspect
 
         sig = inspect.signature(module_class.__init__)
         assert 'seq_len' in sig.parameters
 
-    def test_has_abstract_set_data_slices(
-        self, module_class: type,
-    ) -> None:
+    def test_has_abstract_set_data_slices(self, module_class: type) -> None:
         """Forecasting base has abstract _set_data_slices method."""
         assert hasattr(module_class, '_set_data_slices')
         assert getattr(module_class._set_data_slices, '__isabstractmethod__', False)
 
-    def test_has_abstract_transform_data(
-        self, module_class: type,
-    ) -> None:
+    def test_has_abstract_transform_data(self, module_class: type) -> None:
         """Forecasting base has abstract _transform_data method."""
         assert hasattr(module_class, '_transform_data')
         assert getattr(module_class._transform_data, '__isabstractmethod__', False)
@@ -239,13 +221,11 @@ class TestBaseForecastingTimeSeriesDataModule:
 
 
 class TestPrepareDimensions:
-    """Tests for prepare_dimensions() API and _compute_dimensions() hook (A1, D4)."""
+    """Tests for prepare_dimensions() API and _compute_dimensions() hook."""
 
     def test_base_prepare_dimensions_exists(self) -> None:
         """prepare_dimensions() exists on base and returns a 2-tuple."""
-        from tscollection.datasets.modules._base.base import (
-            BaseTimeSeriesDataModule,
-        )
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             def _do_prepare_data(self) -> None:
@@ -324,8 +304,7 @@ class TestPrepareDimensions:
         # Inject a DataFrame with DatetimeIndex and 8 raw columns
         dates = pd.date_range('2020-01-01', periods=100, freq='h')
         module._full_data = pd.DataFrame(
-            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32),
-            index=dates,
+            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32), index=dates
         )
         n_features, seq_len = module.prepare_dimensions()
         assert n_features == 8 + TIME_FEATURE_COUNT
@@ -363,7 +342,7 @@ class TestPrepareDimensions:
         assert seq_len == 96
 
     def test_post_setup_returns_cached(self) -> None:
-        """D4 short-circuit: prepare_dimensions() returns cached _num_features when set."""
+        """prepare_dimensions() returns cached _num_features when set."""
         from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
@@ -392,8 +371,7 @@ class TestPrepareDimensions:
         # Inject _full_data that would compute a different value
         dates = pd.date_range('2020-01-01', periods=100, freq='h')
         module._full_data = pd.DataFrame(
-            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32),
-            index=dates,
+            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32), index=dates
         )
         # Should return cached value (42), NOT compute from _full_data
         n_features, seq_len = module.prepare_dimensions()

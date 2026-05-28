@@ -6,17 +6,14 @@ creates a validation split, and handles variable-length series.
 
 from __future__ import annotations
 
+from collections import defaultdict
 import logging
 import re
-from collections import defaultdict
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
 
-from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 from tscollection.datasets.enums.data import (
     ClassificationSplittingStrategy,
     DataForm,
@@ -26,13 +23,13 @@ from tscollection.datasets.enums.data import (
 from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
-from tscollection.datasets.utils.arff import (
-    process_df_according_to_dtypes,
-    read_arff_as_df,
-)
+from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
+from tscollection.datasets.utils.arff import process_df_according_to_dtypes, read_arff_as_df
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from pathlib import Path
+
+    from torch.utils.data import DataLoader
 
 __all__ = ['UCRClassificationDataModule']
 
@@ -45,12 +42,12 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     Reads train/test ARFF files, applies optional manual re-splitting,
     creates a validation split, and handles variable-length series.
 
-    Per D-01, accepts ``dataset_folder_path`` (Path) and
+    Accepts ``dataset_folder_path`` (Path) and
     ``target_column_name`` as explicit constructor parameters.
     No JSON config files. ARFF file patterns are hardcoded:
     ``{dataset_name}_TRAIN.arff`` and ``{dataset_name}_TEST.arff``.
 
-    Per D-02, ``data_form`` is hardcoded as ``DataForm.REGULAR``.
+    ``data_form`` is hardcoded as ``DataForm.REGULAR``.
 
     Args:
         dataset_folder_path: Path to the dataset ARFF directory.
@@ -111,9 +108,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._datatype_handling_functions_map = defaultdict(
             lambda: lambda x: x,
             {
-                'nominal': lambda x: x.str.decode(
-                    'utf-8'
-                ).astype('category').astype('int64'),
+                'nominal': lambda x: x.str.decode('utf-8').astype('category').astype('int64'),
                 'numeric': lambda x: x.astype('float64'),
             },
         )
@@ -129,7 +124,9 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         """
         df, meta = read_arff_as_df(file_path)
         df = process_df_according_to_dtypes(
-            df, meta, self._datatype_handling_functions_map or {}  # type: ignore[arg-type]
+            df,
+            meta,
+            self._datatype_handling_functions_map or {},  # type: ignore[arg-type]
         )
         return df
 
@@ -143,9 +140,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Cleaned DataFrame with missing values removed.
         """
         df_data = df_data[df_data[self.target_column_name].notna()]
-        feature_cols = [
-            c for c in df_data.columns if c != self.target_column_name
-        ]
+        feature_cols = [c for c in df_data.columns if c != self.target_column_name]
         df_data = df_data[~df_data[feature_cols].isna().all(axis=1)]
         return df_data
 
@@ -156,20 +151,19 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def _do_prepare_data(self) -> None:
         """Validate paths, read ARFF files, split, and prepare data.
 
-        Per D-16, raises ``FileNotFoundError`` if the dataset folder
+        Raises ``FileNotFoundError`` if the dataset folder
         does not exist. Reads train/test ARFF files, applies optional
         manual re-splitting, creates validation split, and processes
         variable-length sequences.
         """
-        # Validate folder exists (T-04-02-01)
+        # Validate folder exists
         if not self.dataset_folder_path.exists():
-            raise FileNotFoundError(
-                f'Dataset folder not found: {self.dataset_folder_path}'
-            )
+            msg = f'Dataset folder not found: {self.dataset_folder_path}'
+            raise FileNotFoundError(msg)
 
         self._dataset_name = self.dataset_folder_path.name
 
-        # Construct ARFF paths (D-01: hardcoded patterns)
+        # Construct ARFF paths
         arff_train = self.dataset_folder_path / f'{self._dataset_name}_TRAIN.arff'
         arff_test = self.dataset_folder_path / f'{self._dataset_name}_TEST.arff'
 
@@ -183,9 +177,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
 
         # Apply splitting strategy
         if self.splitting_strategy == ClassificationSplittingStrategy.MANUAL:
-            combined = pd.concat(
-                [train_data, test_data], axis=0, ignore_index=True
-            )
+            combined = pd.concat([train_data, test_data], axis=0, ignore_index=True)
             train_data, test_data = train_test_split(
                 combined,
                 test_size=self.test_size,
@@ -194,14 +186,10 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             )
 
         # Separate target features
-        (
-            self._train_data_samples,
-            self._train_data_labels,
-        ) = self._separate_target_feature(train_data)
-        (
-            self._test_data_samples,
-            self._test_data_labels,
-        ) = self._separate_target_feature(test_data)
+        (self._train_data_samples, self._train_data_labels) = self._separate_target_feature(
+            train_data
+        )
+        (self._test_data_samples, self._test_data_labels) = self._separate_target_feature(test_data)
 
         # Compute module state
         self._num_classes = len(self._train_data_labels.unique())
@@ -224,11 +212,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                     self._train_data_labels,
                     self._valid_data_labels,
                 ) = train_test_split(
-                    X_filt,
-                    y_filt,
-                    test_size=self.valid_size,
-                    stratify=y_filt,
-                    random_state=42,
+                    X_filt, y_filt, test_size=self.valid_size, stratify=y_filt, random_state=42
                 )
             except ValueError as e:
                 pattern = (
@@ -244,15 +228,10 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                         self._train_data_labels,
                         self._valid_data_labels,
                     ) = train_test_split(
-                        X_filt,
-                        y_filt,
-                        test_size=test_size,
-                        stratify=y_filt,
-                        random_state=42,
+                        X_filt, y_filt, test_size=test_size, stratify=y_filt, random_state=42
                     )
                     logger.warning(
-                        "Validation size adjusted to %d for dataset '%s' "
-                        'to cover all classes',
+                        "Validation size adjusted to %d for dataset '%s' to cover all classes",
                         test_size,
                         self._dataset_name,
                     )
@@ -286,9 +265,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for training.
         """
         dataset = UCRClassificationUnivariateDataset(
-            data=self._train_data_samples,
-            labels=self._train_data_labels,
-            mode=mode,
+            data=self._train_data_samples, labels=self._train_data_labels, mode=mode
         )
         return self._process_train_dataloader(
             dataset_object=dataset,
@@ -321,14 +298,10 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
         dataset = UCRClassificationUnivariateDataset(
-            data=self._valid_data_samples,
-            labels=self._valid_data_labels,
-            mode=mode,
+            data=self._valid_data_samples, labels=self._valid_data_labels, mode=mode
         )
         return self._process_valid_dataloader(
-            dataset_object=dataset,
-            strict_batch_size=strict_batch_size,
-            extra_args=extra_args,
+            dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
         )
 
     def test_dataloader(
@@ -351,12 +324,8 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for testing.
         """
         dataset = UCRClassificationUnivariateDataset(
-            data=self._test_data_samples,
-            labels=self._test_data_labels,
-            mode=mode,
+            data=self._test_data_samples, labels=self._test_data_labels, mode=mode
         )
         return self._process_test_dataloader(
-            dataset_object=dataset,
-            strict_batch_size=strict_batch_size,
-            extra_args=extra_args,
+            dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
         )

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from functools import partial
-from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from tscollection.datasets.enums.data import (
@@ -19,11 +18,11 @@ from tscollection.datasets.enums.data import (
 )
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.common import separate_target_feature_from_df
-from tscollection.datasets.utils.general import (
-    process_data_with_varying_sequence_lengths_single,
-)
+from tscollection.datasets.utils.general import process_data_with_varying_sequence_lengths_single
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
     from torch.utils.data import DataLoader
 
@@ -38,10 +37,10 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     target column separation, and variable-length sequence processing.
     Used by UCR and UEA classification modules.
 
-    The constructor accepts ``target_column_name`` as an explicit parameter
-    (D-01), uses :class:`ClassificationSplittingStrategy` enum for splitting
-    (D-04), and relies on the inherited ``setup()`` which calls
-    ``create_data_scaler()`` (D-10).
+    The constructor accepts ``target_column_name`` as an explicit parameter,
+    uses :class:`ClassificationSplittingStrategy` enum for splitting,
+    and relies on the inherited ``setup()`` which calls
+    ``create_data_scaler()``.
 
     Args:
         dataset_folder_path: Path to the dataset folder containing
@@ -96,8 +95,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self.target_column_name = target_column_name
         self.splitting_strategy = splitting_strategy
         self._separate_target_feature = partial(
-            separate_target_feature_from_df,
-            target_feature_name=self.target_column_name,
+            separate_target_feature_from_df, target_feature_name=self.target_column_name
         )
         self._data_column_names: str | None = None
         self._num_classes: int | None = None
@@ -135,12 +133,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         import pandas as pd
 
         return pd.concat(
-            [
-                self._train_data_labels,
-                self._test_data_labels,
-                self._valid_data_labels,
-            ],
-            axis=0,
+            [self._train_data_labels, self._test_data_labels, self._valid_data_labels], axis=0
         )
 
     # ------------------------------------------------------------------
@@ -205,12 +198,12 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         Skips validation split when ``_valid_data_samples`` is ``None``.
         """
         self._train_data_samples = process_data_with_varying_sequence_lengths_single(
-            data=self._train_data_samples,
+            data=self._train_data_samples
         )
         if self._valid_data_samples is not None:
             self._valid_data_samples = process_data_with_varying_sequence_lengths_single(
-                data=self._valid_data_samples,
+                data=self._valid_data_samples
             )
         self._test_data_samples = process_data_with_varying_sequence_lengths_single(
-            data=self._test_data_samples,
+            data=self._test_data_samples
         )

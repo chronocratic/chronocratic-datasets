@@ -15,9 +15,7 @@ def synthetic_classification_df() -> pd.DataFrame:
 
     10 samples, 50 timesteps — typical UCR-style univariate classification data.
     """
-    return pd.DataFrame(
-        np.random.default_rng().standard_normal((10, 50)).astype(np.float32)
-    )
+    return pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
 
 
 @pytest.fixture

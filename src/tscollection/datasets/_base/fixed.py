@@ -16,10 +16,8 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 
-from tscollection.datasets.transformations import (
-    expand_data_dimensionality,
-)
 from tscollection.datasets.enums import TimeSeriesDatasetMode
+from tscollection.datasets.transformations import expand_data_dimensionality
 from tscollection.datasets.utils import compose
 
 if TYPE_CHECKING:
@@ -104,9 +102,7 @@ class TimeSeriesDataset(Dataset[Any], ABC):
         """
         sequence = list(transformations_sequence)
         if expand_dims_axis is not None:
-            sequence.append(
-                partial(expand_data_dimensionality, expand_dims_axis=expand_dims_axis)
-            )
+            sequence.append(partial(expand_data_dimensionality, expand_dims_axis=expand_dims_axis))
         self._transform = compose(*sequence)
 
     def _get_sample_1(self) -> object:
@@ -166,18 +162,14 @@ class FixedTimeSeriesDataset(TimeSeriesDataset, ABC):
         expand_dims_axis: int | None,
         transformations_sequence: list[Callable] | tuple[Callable, ...] | None = None,
     ) -> None:
-        # T-02-02-01: Type-check data
+        # Type-check data
         if not isinstance(data, (np.ndarray, pd.DataFrame)):
             msg = f'data must be np.ndarray or pd.DataFrame, got {type(data).__name__}'
-            raise TypeError(
-                msg
-            )
-        # T-02-02-02: Validate minimum dimensions for seq_len
+            raise TypeError(msg)
+        # Validate minimum dimensions for seq_len
         if isinstance(data, np.ndarray) and data.ndim < MIN_DIM_FOR_SEQ_LEN:
             msg = f'data must have at least 2 dimensions for seq_len, got {data.ndim}D'
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         if isinstance(data, pd.DataFrame) and data.shape[1] < 1:
             msg = 'data DataFrame must have at least 1 column for seq_len'
             raise ValueError(msg)

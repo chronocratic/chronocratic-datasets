@@ -1,28 +1,25 @@
 """UEA multivariate classification LightningDataModule.
 
-Reads nested ARFF files via scipy.io.arff.loadarff (D-12), encodes
+Reads nested ARFF files via scipy.io.arff.loadarff, encodes
 labels with LabelEncoder, and manages splits with variable-length
 handling.
 
-Per D-02, ``data_form`` is hardcoded as ``DataForm.NESTED``.
-Per D-12, uses raw scipy loading (not utils/arff.py).
+``data_form`` is hardcoded as ``DataForm.NESTED``.
+Uses raw scipy loading (not utils/arff.py).
 """
 
 from __future__ import annotations
 
 import logging
 import re
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 from scipy.io import arff
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from torch.utils.data import DataLoader
 
-from tscollection.datasets.uea import UEAClassificationMultivariateDataset
 from tscollection.datasets.enums.data import (
     ClassificationSplittingStrategy,
     DataForm,
@@ -32,9 +29,12 @@ from tscollection.datasets.enums.data import (
 from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
+from tscollection.datasets.uea import UEAClassificationMultivariateDataset
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
+
+    from torch.utils.data import DataLoader
 
 __all__ = ['UEAClassificationDataModule']
 
@@ -45,12 +45,12 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     """LightningDataModule for UEA multivariate classification datasets.
 
     Reads multi-dimensional nested ARFF files using raw
-    :func:`scipy.io.arff.loadarff` (D-12), decodes byte values,
+    :func:`scipy.io.arff.loadarff`, decodes byte values,
     encodes labels with :class:`sklearn.preprocessing.LabelEncoder`,
     and manages splits with variable-length handling.
 
-    Per D-02, ``data_form`` is hardcoded as ``DataForm.NESTED``.
-    Per D-01, ARFF file patterns are hardcoded:
+    ``data_form`` is hardcoded as ``DataForm.NESTED``.
+    ARFF file patterns are hardcoded:
     ``{dataset_name}_TRAIN.arff`` and ``{dataset_name}_TEST.arff``.
 
     Args:
@@ -110,7 +110,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def _read_arff_data_file(self, file_path: Path) -> Any:
         """Read an ARFF file using scipy.io.arff.loadarff.
 
-        Uses raw scipy loading (D-12), NOT the utils/arff.py helpers.
+        Uses raw scipy loading, NOT the utils/arff.py helpers.
         Nested ARFF data doesn't fit the DataFrame-based approach.
 
         Args:
@@ -122,9 +122,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         data, _meta = arff.loadarff(file_path)
         return data
 
-    def _process_stacked_data(
-        self, data: Any
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _process_stacked_data(self, data: Any) -> tuple[np.ndarray, np.ndarray]:
         """Process nested ARFF data into samples and encoded labels.
 
         Iterates over (sample, label) pairs. For each sample, iterates
@@ -146,17 +144,12 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             for point in sample:
                 point = point.tolist()
                 point = [
-                    float(d.decode('utf-8'))
-                    if isinstance(d, bytes)
-                    else float(d)
-                    for d in point
+                    float(d.decode('utf-8')) if isinstance(d, bytes) else float(d) for d in point
                 ]
                 sample_list.append(point)
             processed_data.append(np.array(sample_list))
 
-            label_str = (
-                label.decode('utf-8') if isinstance(label, bytes) else label
-            )
+            label_str = label.decode('utf-8') if isinstance(label, bytes) else label
             labels.append(label_str)
 
         encoder = LabelEncoder()
@@ -171,42 +164,35 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def _do_prepare_data(self) -> None:
         """Validate paths, read ARFF files, split, and prepare data.
 
-        Per D-16, raises ``FileNotFoundError`` if the dataset folder
+        Raises ``FileNotFoundError`` if the dataset folder
         does not exist. Reads train/test ARFF files via scipy.io.arff,
         applies optional manual re-splitting, creates validation split,
         and processes variable-length sequences.
         """
-        # Validate folder exists (T-04-02-01, D-16)
+        # Validate folder exists
         if not self.dataset_folder_path.exists():
-            raise FileNotFoundError(
-                f'Dataset folder not found: {self.dataset_folder_path}'
-            )
+            msg = f'Dataset folder not found: {self.dataset_folder_path}'
+            raise FileNotFoundError(msg)
 
         self._dataset_name = self.dataset_folder_path.name
 
-        # Construct ARFF paths (D-01: hardcoded patterns)
+        # Construct ARFF paths
         arff_train = self.dataset_folder_path / f'{self._dataset_name}_TRAIN.arff'
         arff_test = self.dataset_folder_path / f'{self._dataset_name}_TEST.arff'
 
-        # Read and process ARFF files via scipy (D-12)
+        # Read and process ARFF files via scipy
         train_data = self._read_arff_data_file(arff_train)
         test_data = self._read_arff_data_file(arff_test)
 
-        self._train_data_samples, self._train_data_labels = self._process_stacked_data(
-            train_data
-        )
-        self._test_data_samples, self._test_data_labels = self._process_stacked_data(
-            test_data
-        )
+        self._train_data_samples, self._train_data_labels = self._process_stacked_data(train_data)
+        self._test_data_samples, self._test_data_labels = self._process_stacked_data(test_data)
 
         # Apply splitting strategy
         if self.splitting_strategy == ClassificationSplittingStrategy.MANUAL:
             full_samples = np.concatenate(
                 [self._train_data_samples, self._test_data_samples], axis=0
             )
-            full_labels = np.concatenate(
-                [self._train_data_labels, self._test_data_labels], axis=0
-            )
+            full_labels = np.concatenate([self._train_data_labels, self._test_data_labels], axis=0)
             (
                 self._train_data_samples,
                 self._test_data_samples,
@@ -225,9 +211,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._valid_data_samples = None
         if self.valid_size > 0.0:
             label_counts = np.bincount(self._train_data_labels)
-            valid_mask = np.isin(
-                self._train_data_labels, np.where(label_counts > 1)[0]
-            )
+            valid_mask = np.isin(self._train_data_labels, np.where(label_counts > 1)[0])
             filtered_samples = self._train_data_samples[valid_mask]
             filtered_labels = self._train_data_labels[valid_mask]
 
@@ -265,8 +249,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                         random_state=42,
                     )
                     logger.warning(
-                        'Validation size adjusted to %d samples to cover all classes',
-                        test_size,
+                        'Validation size adjusted to %d samples to cover all classes', test_size
                     )
 
         # Variable-length processing
@@ -276,9 +259,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._train_data_labels = pd.Series(self._train_data_labels, dtype='category')
         self._test_data_labels = pd.Series(self._test_data_labels, dtype='category')
         if self.valid_size > 0.0 and self._valid_data_labels is not None:
-            self._valid_data_labels = pd.Series(
-                self._valid_data_labels, dtype='category'
-            )
+            self._valid_data_labels = pd.Series(self._valid_data_labels, dtype='category')
 
         # Compute module state
         self._num_classes = len(self._train_data_labels.unique())
@@ -310,9 +291,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for training.
         """
         dataset = UEAClassificationMultivariateDataset(
-            data=self._train_data_samples,
-            labels=self._train_data_labels,
-            mode=mode,
+            data=self._train_data_samples, labels=self._train_data_labels, mode=mode
         )
         return self._process_train_dataloader(
             dataset_object=dataset,
@@ -345,14 +324,10 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
         dataset = UEAClassificationMultivariateDataset(
-            data=self._valid_data_samples,
-            labels=self._valid_data_labels,
-            mode=mode,
+            data=self._valid_data_samples, labels=self._valid_data_labels, mode=mode
         )
         return self._process_valid_dataloader(
-            dataset_object=dataset,
-            strict_batch_size=strict_batch_size,
-            extra_args=extra_args,
+            dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
         )
 
     def test_dataloader(
@@ -375,12 +350,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for testing.
         """
         dataset = UEAClassificationMultivariateDataset(
-            data=self._test_data_samples,
-            labels=self._test_data_labels,
-            mode=mode,
+            data=self._test_data_samples, labels=self._test_data_labels, mode=mode
         )
         return self._process_test_dataloader(
-            dataset_object=dataset,
-            strict_batch_size=strict_batch_size,
-            extra_args=extra_args,
+            dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
         )

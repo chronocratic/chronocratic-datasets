@@ -1,4 +1,6 @@
-"""Tests for package foundation (PKG-01, PKG-02, PKG-03)."""
+"""Tests for package foundation."""
+
+from __future__ import annotations
 
 import importlib
 import pathlib
@@ -15,7 +17,7 @@ EXPECTED_INIT_FILES = [
 
 
 def test_version_defined():
-    """PKG-02: Package exposes __version__."""
+    """Package exposes __version__."""
     import tscollection.datasets
 
     assert hasattr(tscollection.datasets, '__version__')
@@ -23,14 +25,14 @@ def test_version_defined():
 
 
 def test_import_tscollection_datasets():
-    """PKG-02: import tscollection.datasets resolves without errors."""
+    """import tscollection.datasets resolves without errors."""
     ts = importlib.import_module('tscollection.datasets')
     assert hasattr(ts, '__all__')
     assert '__version__' in ts.__all__
 
 
 def test_enum_exports_in_root():
-    """PKG-02: Enum types are exported from package root."""
+    """Enum types are exported from package root."""
     from tscollection.datasets import (
         ClassificationSplittingStrategy,
         ForecastingMode,
@@ -45,13 +47,13 @@ def test_enum_exports_in_root():
 
 
 def test_init_files_exist():
-    """PKG-03: __init__.py files exist at all planned levels."""
+    """__init__.py files exist at all planned levels."""
     for init_path in EXPECTED_INIT_FILES:
         assert init_path.exists(), f'Missing __init__.py: {init_path.relative_to(PACKAGE_ROOT)}'
 
 
 def test_submodule_all_declarations():
-    """PKG-03: Each submodule __init__.py has an __all__ declaration."""
+    """Each submodule __init__.py has an __all__ declaration."""
     submodules = [
         'tscollection.datasets._base',
         'tscollection.datasets.modules',

@@ -3,36 +3,29 @@
 Supports ETTh1, ETTh2 (hourly) and ETTm1, ETTm2 (15-min) variants.
 Uses standard 16-month / 4-month / 4-month splits.
 
-Per D-06, accepts explicit ``variant`` parameter (not filename auto-detection).
-Per D-13, uses TensorDataset for dataloaders.
-Per T-04-03-01, validates variant against known set.
+Accepts explicit ``variant`` parameter (not filename auto-detection).
+Uses TensorDataset for dataloaders.
+Validates variant against known set.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from tscollection.datasets.enums.data import (
-    ForecastingMode,
-    ScalingMethod,
-    TimeSeriesDatasetMode,
-)
-from tscollection.datasets.modules._base.forecasting import (
-    BaseForecastingTimeSeriesDataModule,
-)
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
+from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 __all__ = ['ETTDataModule']
 
-# Valid ETT variants (T-04-03-01)
+# Valid ETT variants
 VALID_ETT_VARIANTS = frozenset({'ETTh1', 'ETTh2', 'ETTm1', 'ETTm2'})
 
 
@@ -42,7 +35,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     Supports ETTh1, ETTh2 (hourly) and ETTm1, ETTm2 (15-min). Uses
     standard 16-month / 4-month / 4-month splits based on variant.
 
-    Per D-06, accepts explicit ``variant`` parameter rather than
+    Accepts explicit ``variant`` parameter rather than
     auto-detecting from the filename.
 
     Args:
@@ -61,8 +54,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         num_workers: DataLoader worker count.
 
     Raises:
-        ValueError: If variant is not one of the four valid ETT variants
-            (T-04-03-01).
+        ValueError: If variant is not one of the four valid ETT variants.
     """
 
     _full_data: pd.DataFrame | np.ndarray | None = None
@@ -83,11 +75,11 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
     ) -> None:
-        # Validate variant (T-04-03-01)
+        # Validate variant
         if variant not in VALID_ETT_VARIANTS:
+            msg = f'Unknown ETT variant: {variant!r}. Must be one of {sorted(VALID_ETT_VARIANTS)}'
             raise ValueError(
-                f'Unknown ETT variant: {variant!r}. '
-                f'Must be one of {sorted(VALID_ETT_VARIANTS)}'
+                msg
             )
         super().__init__(
             batch_size=batch_size,
@@ -128,9 +120,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
         Converts DataFrame to numpy, then expands dimension on axis 0.
         """
-        assert self._full_data is not None, (
-            '_full_data was not set by prepare_data()'
-        )
+        assert self._full_data is not None, '_full_data was not set by prepare_data()'
         if isinstance(self._full_data, pd.DataFrame):
             self._full_data = self._full_data.to_numpy()
         if isinstance(self._full_data, np.ndarray):
@@ -143,21 +133,18 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     def _do_prepare_data(self) -> None:
         """Validate file path, read CSV, and prepare data.
 
-        Per D-16, raises ``FileNotFoundError`` if the CSV file does not
-        exist. Per D-06, ``_dataset_name`` is set from the variant
+        Raises ``FileNotFoundError`` if the CSV file does not
+        exist. ``_dataset_name`` is set from the variant
         (not from the filename).
         """
         if not self.dataset_file_path.exists():
-            raise FileNotFoundError(
-                f'Dataset file not found: {self.dataset_file_path}'
-            )
+            msg = f'Dataset file not found: {self.dataset_file_path}'
+            raise FileNotFoundError(msg)
 
-        # D-06: _dataset_name from variant, not filename
+        # _dataset_name from variant, not filename
         self._dataset_name = self.variant
 
-        df = pd.read_csv(
-            self.dataset_file_path, parse_dates=True, index_col='date'
-        )
+        df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col='date')
 
         if self._mode == ForecastingMode.UNIVARIATE:
             df = df[['OT']]
@@ -165,7 +152,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         self._full_data = df
 
     # ------------------------------------------------------------------
-    # Dataloaders (D-13: TensorDataset)
+    # Dataloaders
     # ------------------------------------------------------------------
 
     def train_dataloader(

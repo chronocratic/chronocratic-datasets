@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 
 from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 from tscollection.datasets._base.strategies import ForecastingStrategySingleFile
-from tscollection.datasets.transformations import convert_numpy_to_tensor
 from tscollection.datasets.enums import TimeSeriesDatasetMode
+from tscollection.datasets.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -37,7 +37,7 @@ class ETTDataset(FlexibleTimeSeriesDatasetSingleFile):
         transformations_sequence: Post-processing callables.
 
     Raises:
-        ValueError: If forecast_horizon is not positive (T-02-03-02).
+        ValueError: If forecast_horizon is not positive.
     """
 
     def __init__(
@@ -48,12 +48,10 @@ class ETTDataset(FlexibleTimeSeriesDatasetSingleFile):
         forecast_horizon: int,
         transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
     ) -> None:
-        # T-02-03-02: Validate forecast_horizon > 0
+        # Validate forecast_horizon > 0
         if forecast_horizon <= 0:
             msg = f'forecast_horizon must be positive, got {forecast_horizon}'
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         super().__init__(
             data=data,
             labels=None,

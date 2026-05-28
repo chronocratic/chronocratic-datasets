@@ -36,9 +36,7 @@ def create_data_scaler(
         returns scaled versions of the same.
     """
 
-    def scale_data(
-        train_data: Any, valid_data: Any, test_data: Any
-    ) -> tuple[Any, Any, Any]:
+    def scale_data(train_data: Any, valid_data: Any, test_data: Any) -> tuple[Any, Any, Any]:
         if not scale:
             return train_data, valid_data, test_data
 
@@ -67,7 +65,8 @@ def create_data_scaler(
                 scaling_range=scaling_range,
             )
 
-        raise ValueError(f'Unsupported data form: {data_form}')
+        msg = f'Unsupported data form: {data_form}'
+        raise ValueError(msg)
 
     return scale_data
 
@@ -88,7 +87,8 @@ def _get_scaler(
         return MinMaxScaler(feature_range=scaling_range)
     if scaling_method == ScalingMethod.STANDARD:
         return StandardScaler()
-    raise ValueError(f'Unsupported scaling method: {scaling_method}')
+    msg = f'Unsupported scaling method: {scaling_method}'
+    raise ValueError(msg)
 
 
 def _scale_regular_data(
@@ -112,10 +112,7 @@ def _scale_regular_data(
     """
     scaler = _get_scaler(scaling_method=scaling_method, scaling_range=scaling_range)
     train_scaled = scaler.fit_transform(train_data)
-    if valid_data is not None:
-        valid_scaled = scaler.transform(valid_data)
-    else:
-        valid_scaled = None
+    valid_scaled = scaler.transform(valid_data) if valid_data is not None else None
     test_scaled = scaler.transform(test_data)
     return train_scaled, valid_scaled, test_scaled
 
@@ -126,11 +123,7 @@ def _scale_regular_data_and_return_same_type(
     test_data: np.ndarray | pd.DataFrame,
     scaling_method: ScalingMethod,
     scaling_range: tuple[float, float],
-) -> tuple[
-    np.ndarray | pd.DataFrame,
-    np.ndarray | pd.DataFrame | None,
-    np.ndarray | pd.DataFrame,
-]:
+) -> tuple[np.ndarray | pd.DataFrame, np.ndarray | pd.DataFrame | None, np.ndarray | pd.DataFrame]:
     """Scale regular data and preserve original container type.
 
     Args:
@@ -185,17 +178,11 @@ def _scale_multi_file_data(
     Returns:
         Scaled (train, valid, test) lists of arrays.
     """
-    train_arrays = [
-        x.values if isinstance(x, pd.DataFrame) else x for x in train_data
-    ]
-    test_arrays = [
-        x.values if isinstance(x, pd.DataFrame) else x for x in test_data
-    ]
+    train_arrays = [x.values if isinstance(x, pd.DataFrame) else x for x in train_data]
+    test_arrays = [x.values if isinstance(x, pd.DataFrame) else x for x in test_data]
 
     if valid_data is not None:
-        valid_arrays = [
-            x.values if isinstance(x, pd.DataFrame) else x for x in valid_data
-        ]
+        valid_arrays = [x.values if isinstance(x, pd.DataFrame) else x for x in valid_data]
     else:
         valid_arrays = None
 
@@ -203,17 +190,11 @@ def _scale_multi_file_data(
     scaler = _get_scaler(scaling_method=scaling_method, scaling_range=scaling_range)
     scaler.fit_transform(combined.reshape(-1, 1))
 
-    scaled_train = [
-        scaler.transform(x.reshape(-1, 1)).ravel() for x in train_arrays
-    ]
-    scaled_test = [
-        scaler.transform(x.reshape(-1, 1)).ravel() for x in test_arrays
-    ]
+    scaled_train = [scaler.transform(x.reshape(-1, 1)).ravel() for x in train_arrays]
+    scaled_test = [scaler.transform(x.reshape(-1, 1)).ravel() for x in test_arrays]
 
     if valid_arrays is not None:
-        scaled_valid = [
-            scaler.transform(x.reshape(-1, 1)).ravel() for x in valid_arrays
-        ]
+        scaled_valid = [scaler.transform(x.reshape(-1, 1)).ravel() for x in valid_arrays]
     else:
         scaled_valid = None
 
@@ -245,21 +226,19 @@ def _scale_nested_data_all_dimensions(
     orig_shape = train_data.shape
     scaler.fit(train_data.reshape(-1, orig_shape[-1]))
 
-    scaled_train = scaler.transform(
-        train_data.reshape(-1, orig_shape[-1])
-    ).reshape(train_data.shape)
+    scaled_train = scaler.transform(train_data.reshape(-1, orig_shape[-1])).reshape(
+        train_data.shape
+    )
 
     if valid_data is not None:
         valid_shape = valid_data.shape
-        scaled_valid = scaler.transform(
-            valid_data.reshape(-1, valid_shape[-1])
-        ).reshape(valid_data.shape)
+        scaled_valid = scaler.transform(valid_data.reshape(-1, valid_shape[-1])).reshape(
+            valid_data.shape
+        )
     else:
         scaled_valid = None
 
     test_shape = test_data.shape
-    scaled_test = scaler.transform(
-        test_data.reshape(-1, test_shape[-1])
-    ).reshape(test_data.shape)
+    scaled_test = scaler.transform(test_data.reshape(-1, test_shape[-1])).reshape(test_data.shape)
 
     return scaled_train, scaled_valid, scaled_test

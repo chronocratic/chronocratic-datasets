@@ -199,9 +199,7 @@ class ClassificationStrategyMultipleFiles(SequenceHandlingStrategyMultipleFiles)
         self, data: np.ndarray | list[np.ndarray], seq_len: int, step: int
     ) -> int:
         """Return total classification windows across all files."""
-        data_list: list[np.ndarray] = (
-            [data] if isinstance(data, np.ndarray) else data
-        )
+        data_list: list[np.ndarray] = [data] if isinstance(data, np.ndarray) else data
         return sum(self.get_num_sequences_per_file(data_list, seq_len, step))
 
     def get_current_label(

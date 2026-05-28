@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pandas as pd
 
@@ -32,9 +32,7 @@ def read_arff_as_df(arff_file_path: Path | str) -> tuple[pd.DataFrame, Any]:
 
 
 def process_df_according_to_dtypes(
-    df_data: pd.DataFrame,
-    meta: Any,
-    dtypes_functions_map: dict[str, Callable],
+    df_data: pd.DataFrame, meta: Any, dtypes_functions_map: dict[str, Callable]
 ) -> pd.DataFrame:
     """Process DataFrame columns according to ARFF dtype mapping.
 

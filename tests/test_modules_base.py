@@ -1,4 +1,4 @@
-"""Tests for BaseTimeSeriesDataModule (MOD-01, MOD-05, MOD-06).
+"""Tests for BaseTimeSeriesDataModule.
 
 Verifies the shared base class for all data modules has correct
 constructor, properties, setup, and dataloader construction.
@@ -10,7 +10,6 @@ from functools import partial
 from unittest.mock import MagicMock, patch
 
 import lightning.pytorch as pl
-import numpy as np
 import pandas as pd
 import pytest
 from torch.utils.data import DataLoader, TensorDataset
@@ -23,11 +22,8 @@ class TestBaseTimeSeriesDataModule:
     def concrete_module_class(self):
         """Create a minimal concrete subclass for testing."""
         # BaseTimeSeriesDataModule is abstract; we need a concrete subclass
-        from abc import abstractmethod
 
-        from tscollection.datasets.modules._base.base import (
-            BaseTimeSeriesDataModule,
-        )
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
@@ -111,36 +107,23 @@ class TestBaseTimeSeriesDataModule:
         assert mod._valid_data_samples is not None
         assert mod._test_data_samples is not None
 
-    def test_process_train_dataloader_returns_dataloader(
-        self, module
-    ) -> None:
+    def test_process_train_dataloader_returns_dataloader(self, module) -> None:
         """_process_train_dataloader returns a DataLoader instance."""
-        dataset = TensorDataset(
-            torch_rand := MagicMock(),
-        )
+        TensorDataset(_torch_rand := MagicMock())
         # Create a real small dataset
         import torch
 
-        real_dataset = TensorDataset(
-            torch.randn(10, 5),
-            torch.randint(0, 2, (10,)),
-        )
+        real_dataset = TensorDataset(torch.randn(10, 5), torch.randint(0, 2, (10,)))
         result = module._process_train_dataloader(dataset_object=real_dataset)
         assert isinstance(result, DataLoader)
 
-    def test_process_test_dataloader_returns_dataloader(
-        self, module
-    ) -> None:
+    def test_process_test_dataloader_returns_dataloader(self, module) -> None:
         """_process_test_dataloader returns DataLoader with shuffle=False."""
         import torch
 
-        real_dataset = TensorDataset(
-            torch.randn(10, 5),
-            torch.randint(0, 2, (10,)),
-        )
+        real_dataset = TensorDataset(torch.randn(10, 5), torch.randint(0, 2, (10,)))
         with patch(
-            'tscollection.datasets.modules._base.base.DataLoader',
-            wraps=DataLoader,
+            'tscollection.datasets.modules._base.base.DataLoader', wraps=DataLoader
         ) as mock_loader:
             module._process_test_dataloader(dataset_object=real_dataset)
             call_kwargs = mock_loader.call_args[1]
@@ -183,8 +166,7 @@ class TestBaseTimeSeriesDataModule:
 
         # Patch DataLoader to capture args
         with patch(
-            'tscollection.datasets.modules._base.base.DataLoader',
-            wraps=DataLoader,
+            'tscollection.datasets.modules._base.base.DataLoader', wraps=DataLoader
         ) as mock_loader:
             mod_zero._process_train_dataloader(dataset_object=real_dataset)
             call_kwargs = mock_loader.call_args[1]
@@ -192,34 +174,26 @@ class TestBaseTimeSeriesDataModule:
 
     def test_get_custom_collate_fn(self, module) -> None:
         """_get_custom_collate_fn returns partial with correct batch size."""
-        import torch
 
-        from tscollection.datasets.utils.general import custom_collate_fn
 
         collate = module._get_custom_collate_fn()
         assert isinstance(collate, partial)
         assert collate.keywords['desired_batch_size'] == module.batch_size
 
-    def test_collate_fn_with_strict_batch_size(
-        self, module
-    ) -> None:
+    def test_collate_fn_with_strict_batch_size(self, module) -> None:
         """strict_batch_size=True sets collate_fn on dataloader."""
         import torch
 
         real_dataset = TensorDataset(torch.randn(5, 3))
         with patch(
-            'tscollection.datasets.modules._base.base.DataLoader',
-            wraps=DataLoader,
+            'tscollection.datasets.modules._base.base.DataLoader', wraps=DataLoader
         ) as mock_loader:
-            module._process_train_dataloader(
-                dataset_object=real_dataset,
-                strict_batch_size=True,
-            )
+            module._process_train_dataloader(dataset_object=real_dataset, strict_batch_size=True)
             call_kwargs = mock_loader.call_args[1]
             assert 'collate_fn' in call_kwargs
 
     def test_scaling_method_type_is_enum(self, concrete_module_class) -> None:
-        """data_scaling_method is typed as ScalingMethod enum (D-03)."""
+        """data_scaling_method is typed as ScalingMethod enum."""
         from tscollection.datasets.enums.data import ScalingMethod
 
         mod = concrete_module_class(
@@ -235,7 +209,7 @@ class TestBaseTimeSeriesDataModule:
         assert isinstance(mod.data_scaling_method, ScalingMethod)
 
     def test_data_form_type_is_enum(self, concrete_module_class) -> None:
-        """data_form is typed as DataForm enum (D-02)."""
+        """data_form is typed as DataForm enum."""
         from tscollection.datasets.enums.data import DataForm
 
         mod = concrete_module_class(
@@ -262,14 +236,12 @@ class TestBaseTimeSeriesDataModule:
 
 
 class TestSetupSentinel:
-    """Tests for _setup_completed_stages sentinel and setup() idempotency (B1)."""
+    """Tests for _setup_completed_stages sentinel and setup() idempotency."""
 
     @pytest.fixture
     def concrete_module_class(self):
         """Create a minimal concrete subclass for testing."""
-        from tscollection.datasets.modules._base.base import (
-            BaseTimeSeriesDataModule,
-        )
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
@@ -292,9 +264,7 @@ class TestSetupSentinel:
         assert hasattr(mod, '_setup_completed_stages')
         assert mod._setup_completed_stages == set()
 
-    def test_setup_idempotent_same_stage(
-        self, concrete_module_class
-    ) -> None:
+    def test_setup_idempotent_same_stage(self, concrete_module_class) -> None:
         """Calling setup(stage='fit') twice runs the scaler only once."""
         mod = concrete_module_class(
             batch_size=16,
@@ -309,17 +279,14 @@ class TestSetupSentinel:
         mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
 
         with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler',
-            wraps=MagicMock(),
+            'tscollection.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
             mod.setup(stage='fit')
             mod.setup(stage='fit')
             assert scaler_spy.call_count == 1
 
-    def test_setup_none_covers_all_stages(
-        self, concrete_module_class
-    ) -> None:
+    def test_setup_none_covers_all_stages(self, concrete_module_class) -> None:
         """setup(None) then setup('fit') — second call is a no-op (None covers all)."""
         mod = concrete_module_class(
             batch_size=16,
@@ -334,15 +301,16 @@ class TestSetupSentinel:
         mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
 
         with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler',
-            wraps=MagicMock(),
+            'tscollection.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
             mod.setup(stage=None)
             mod.setup(stage='fit')
             assert scaler_spy.call_count == 1
+
+
 class TestPrepareDataWrapper:
-    """Tests for the idempotent prepare_data() wrapper (D3/B3).
+    """Tests for the idempotent prepare_data() wrapper.
 
     Verifies that the base class drives the template:
     _do_prepare_data() → _finalize_prepare_data() → set sentinel.
@@ -351,9 +319,7 @@ class TestPrepareDataWrapper:
     @pytest.fixture
     def concrete_module_with_counter(self):
         """Create a concrete subclass that counts _do_prepare_data calls."""
-        from tscollection.datasets.modules._base.base import (
-            BaseTimeSeriesDataModule,
-        )
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class CountingModule(BaseTimeSeriesDataModule):
             """Minimal concrete module that tracks _do_prepare_data calls."""
@@ -367,10 +333,7 @@ class TestPrepareDataWrapper:
 
         return CountingModule
 
-    def test_prepare_data_calls_do_prepare_data_once(
-        self,
-        concrete_module_with_counter,
-    ) -> None:
+    def test_prepare_data_calls_do_prepare_data_once(self, concrete_module_with_counter) -> None:
         """Calling prepare_data() twice invokes _do_prepare_data only once."""
         mod = concrete_module_with_counter(
             batch_size=32,
@@ -384,10 +347,7 @@ class TestPrepareDataWrapper:
         mod.prepare_data()
         assert mod._do_prepare_data_call_count == 1
 
-    def test_prepare_data_idempotent_sentinel(
-        self,
-        concrete_module_with_counter,
-    ) -> None:
+    def test_prepare_data_idempotent_sentinel(self, concrete_module_with_counter) -> None:
         """Sentinel is False before prepare_data(), True after."""
         mod = concrete_module_with_counter(
             batch_size=32,
@@ -401,10 +361,7 @@ class TestPrepareDataWrapper:
         mod.prepare_data()
         assert mod._prepare_data_called is True
 
-    def test_finalize_prepare_data_is_noop_on_base(
-        self,
-        concrete_module_with_counter,
-    ) -> None:
+    def test_finalize_prepare_data_is_noop_on_base(self, concrete_module_with_counter) -> None:
         """Calling _finalize_prepare_data on the base does nothing harmful."""
         mod = concrete_module_with_counter(
             batch_size=32,
@@ -420,19 +377,13 @@ class TestPrepareDataWrapper:
     def test_base_declares_do_prepare_data_abstract(self) -> None:
         """Base class declares _do_prepare_data as abstract (not prepare_data).
 
-        After the rename chain (D3), prepare_data is concrete on the base
+        After the rename, prepare_data is concrete on the base
         and _do_prepare_data is the abstract method subclasses implement.
         """
-        from tscollection.datasets.modules._base.base import (
-            BaseTimeSeriesDataModule,
-        )
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         # _do_prepare_data must be abstract
-        assert getattr(
-            BaseTimeSeriesDataModule._do_prepare_data, '__isabstractmethod__', False
-        )
+        assert getattr(BaseTimeSeriesDataModule._do_prepare_data, '__isabstractmethod__', False)
 
         # prepare_data must NOT be abstract (it's the concrete wrapper now)
-        assert not getattr(
-            BaseTimeSeriesDataModule.prepare_data, '__isabstractmethod__', False
-        )
+        assert not getattr(BaseTimeSeriesDataModule.prepare_data, '__isabstractmethod__', False)
