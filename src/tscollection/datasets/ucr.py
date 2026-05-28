@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from tscollection.datasets._base.fixed import FixedTimeSeriesDatasetUnivariate
-from tscollection.datasets.transformations import convert_numpy_to_tensor
+from tscollection.datasets.utils.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:
     from collections.abc import Callable

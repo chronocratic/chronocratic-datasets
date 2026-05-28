@@ -1,10 +1,10 @@
 """Abstract base classes for time series datasets."""
 
+from tscollection.datasets._base.base import TimeSeriesDataset
 from tscollection.datasets._base.fixed import (
     FixedTimeSeriesDataset,
     FixedTimeSeriesDatasetMultivariate,
     FixedTimeSeriesDatasetUnivariate,
-    TimeSeriesDataset,
 )
 from tscollection.datasets._base.flexible import (
     FlexibleTimeSeriesDataset,

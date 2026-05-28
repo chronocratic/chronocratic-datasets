@@ -11,9 +11,9 @@ from bisect import bisect
 from itertools import accumulate
 from typing import TYPE_CHECKING
 
-from tscollection.datasets._base.fixed import TimeSeriesDataset
-from tscollection.datasets.transformations import convert_numpy_to_tensor
+from tscollection.datasets._base.base import TimeSeriesDataset
 from tscollection.datasets.utils import get_num_samples_from_ts
+from tscollection.datasets.utils.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:
     from collections.abc import Callable
