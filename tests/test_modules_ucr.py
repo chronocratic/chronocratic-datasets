@@ -1,6 +1,7 @@
 """Tests for UCRClassificationDataModule."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -215,3 +216,70 @@ def test_setup_idempotent(tmp_path: Path) -> None:
     mod.setup(stage='fit')
 
     pd.testing.assert_frame_equal(snapshot_train, mod.train_data_samples)
+
+
+def test_setup_unknown_stage_raises(tmp_path: Path) -> None:
+    """UCR: setup() raises ValueError for unknown stage.
+
+    Verifies stage validation in the base class propagates to concrete modules.
+    """
+    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+
+    dataset_dir = tmp_path / 'synthetic'
+    dataset_dir.mkdir()
+    (dataset_dir / 'synthetic_TRAIN.arff').write_text('')
+    (dataset_dir / 'synthetic_TEST.arff').write_text('')
+
+    mod = UCRClassificationDataModule(
+        dataset_folder_path=dataset_dir, target_column_name='class', valid_size=0.1
+    )
+    with pytest.raises(ValueError, match=r'Unknown stage'):
+        mod.setup(stage='warmup')  # type: ignore[arg-type]
+
+
+def test_setup_fit_then_test_reuses_scaler(tmp_path: Path) -> None:
+    """UCR: setup('fit') then setup('test') creates scaler only once.
+
+    Verifies D2: _scaler_cache is populated by fit, reused by test.
+    """
+    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+
+    # Create synthetic UCR folder
+    arff_content = """@relation test
+
+@attribute t1 numeric
+@attribute t2 numeric
+@attribute class {0,1}
+
+@data
+0.1,0.2,0
+0.4,0.5,1
+0.7,0.8,0
+0.2,0.3,1
+0.5,0.6,0
+0.8,0.9,1
+"""
+    dataset_dir = tmp_path / 'synthetic'
+    dataset_dir.mkdir()
+    (dataset_dir / 'synthetic_TRAIN.arff').write_text(arff_content)
+    (dataset_dir / 'synthetic_TEST.arff').write_text(arff_content)
+
+    call_count = 0
+
+    def counting_scaler(**_kwargs):
+        nonlocal call_count
+        call_count += 1
+        return lambda t, v, te: (t, v, te)
+
+    mod = UCRClassificationDataModule(
+        dataset_folder_path=dataset_dir, target_column_name='class', valid_size=0.1
+    )
+    mod.prepare_data()
+    with patch(
+        'tscollection.datasets.modules._base.base.create_data_scaler',
+        side_effect=counting_scaler,
+    ):
+        mod.setup(stage='fit')
+        assert mod._scaler_cache is not None
+        mod.setup(stage='test')
+        assert call_count == 1
