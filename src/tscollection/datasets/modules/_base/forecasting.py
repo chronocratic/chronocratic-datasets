@@ -135,11 +135,19 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def _set_data_slices(self) -> None:
         """Define train/valid/test slice boundaries.
 
-        Default implementation uses ``split_mode`` to compute slices:
-        - ``ForecastingSplitMode.FRACTIONAL``: splits by ``split_ratios``.
-        - ``ForecastingSplitMode.INDEXED``: subclasses must override
-          with absolute index positions (e.g., ETT's 16/4/4 months).
+        Dispatches on ``split_mode``:
+        - ``ForecastingSplitMode.FRACTIONAL``: computes slices from
+          ``split_ratios`` (train_frac, valid_frac). Test is remainder.
+        - ``ForecastingSplitMode.INDEXED``: raises ``NotImplementedError`` —
+          subclasses must override with absolute index positions
+          (e.g., ETT's 16/4/4 months).
         """
+        if self._split_mode == ForecastingSplitMode.INDEXED:
+            msg = (
+                'INDEXED split requires overriding _set_data_slices(). '
+                'Define _train_slice, _valid_slice, _test_slice.'
+            )
+            raise NotImplementedError(msg)
         assert self._full_data is not None, '_full_data was not set by prepare_data()'
         num_samples = len(self._full_data)
         train_frac, valid_frac = self._split_ratios
