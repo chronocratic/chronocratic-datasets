@@ -147,7 +147,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -178,7 +178,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -209,7 +209,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
