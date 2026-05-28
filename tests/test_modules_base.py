@@ -32,7 +32,7 @@ class TestBaseTimeSeriesDataModule:
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
 
-            def _do_prepare_data(self) -> None:
+            def prepare_data(self) -> None:
                 pass
 
         return ConcreteTestModule
@@ -261,8 +261,8 @@ class TestBaseTimeSeriesDataModule:
         assert module.train_data_samples is data
 
 
-class TestSetupSentinel:
-    """Tests for _setup_completed_stages sentinel and setup() idempotency (B1)."""
+class TestSetupStageGating:
+    """Tests for stage validation, cache, and branching in setup()."""
 
     @pytest.fixture
     def concrete_module_class(self):
@@ -274,13 +274,13 @@ class TestSetupSentinel:
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
 
-            def _do_prepare_data(self) -> None:
+            def prepare_data(self) -> None:
                 pass
 
         return ConcreteTestModule
 
-    def test_sentinel_exists_after_init(self, concrete_module_class) -> None:
-        """Fresh instance has _setup_completed_stages as an empty set."""
+    def test_unknown_stage_raises(self, concrete_module_class) -> None:
+        """setup('warmup') raises ValueError for unknown stage."""
         mod = concrete_module_class(
             batch_size=16,
             seq_len=None,
@@ -289,38 +289,27 @@ class TestSetupSentinel:
             shuffle=True,
             scale_data=False,
         )
-        assert hasattr(mod, '_setup_completed_stages')
-        assert mod._setup_completed_stages == set()
+        with pytest.raises(ValueError, match="Unknown stage: 'warmup'"):
+            mod.setup(stage='warmup')
 
-    def test_setup_idempotent_same_stage(
-        self, concrete_module_class
-    ) -> None:
-        """Calling setup(stage='fit') twice runs the scaler only once."""
+    def test_default_stage_is_none(self, concrete_module_class) -> None:
+        """setup() with no args uses stage=None and does not raise TypeError."""
         mod = concrete_module_class(
             batch_size=16,
             seq_len=None,
             valid_size=0.2,
             test_size=0.2,
             shuffle=True,
-            scale_data=True,
+            scale_data=False,
         )
-        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
-        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0]})
+        mod._valid_data_samples = pd.DataFrame({'a': [3.0]})
+        mod._test_data_samples = pd.DataFrame({'a': [4.0]})
+        # Should not raise TypeError
+        mod.setup()
 
-        with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler',
-            wraps=MagicMock(),
-        ) as scaler_spy:
-            scaler_spy.return_value = lambda t, v, te: (t, v, te)
-            mod.setup(stage='fit')
-            mod.setup(stage='fit')
-            assert scaler_spy.call_count == 1
-
-    def test_setup_none_covers_all_stages(
-        self, concrete_module_class
-    ) -> None:
-        """setup(None) then setup('fit') — second call is a no-op (None covers all)."""
+    def test_scaler_cache_populated(self, concrete_module_class) -> None:
+        """After setup('fit'), _scaler_cache is not None."""
         mod = concrete_module_class(
             batch_size=16,
             seq_len=None,
@@ -333,106 +322,36 @@ class TestSetupSentinel:
         mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
         mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
 
-        with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler',
-            wraps=MagicMock(),
-        ) as scaler_spy:
-            scaler_spy.return_value = lambda t, v, te: (t, v, te)
-            mod.setup(stage=None)
-            mod.setup(stage='fit')
-            assert scaler_spy.call_count == 1
-class TestPrepareDataWrapper:
-    """Tests for the idempotent prepare_data() wrapper (D3/B3).
+        mod.setup(stage='fit')
 
-    Verifies that the base class drives the template:
-    _do_prepare_data() → _finalize_prepare_data() → set sentinel.
-    """
+        assert mod._scaler_cache is not None
 
-    @pytest.fixture
-    def concrete_module_with_counter(self):
-        """Create a concrete subclass that counts _do_prepare_data calls."""
-        from tscollection.datasets.modules._base.base import (
-            BaseTimeSeriesDataModule,
-        )
-
-        class CountingModule(BaseTimeSeriesDataModule):
-            """Minimal concrete module that tracks _do_prepare_data calls."""
-
-            def __init__(self, **kwargs):
-                super().__init__(**kwargs)
-                self._do_prepare_data_call_count = 0
-
-            def _do_prepare_data(self) -> None:
-                self._do_prepare_data_call_count += 1
-
-        return CountingModule
-
-    def test_prepare_data_calls_do_prepare_data_once(
-        self,
-        concrete_module_with_counter,
+    def test_setup_fit_then_test_stage_branching(
+        self, concrete_module_class
     ) -> None:
-        """Calling prepare_data() twice invokes _do_prepare_data only once."""
-        mod = concrete_module_with_counter(
-            batch_size=32,
+        """setup('fit') populates cache; setup('test') reuses it, only test scaled."""
+        mod = concrete_module_class(
+            batch_size=16,
             seq_len=None,
             valid_size=0.2,
             test_size=0.2,
             shuffle=True,
-            scale_data=False,
+            scale_data=True,
         )
-        mod.prepare_data()
-        mod.prepare_data()
-        assert mod._do_prepare_data_call_count == 1
+        train_df = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
+        valid_df = pd.DataFrame({'a': [5.0], 'b': [6.0]})
+        test_df = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+        mod._train_data_samples = train_df.copy()
+        mod._valid_data_samples = valid_df.copy()
+        mod._test_data_samples = test_df.copy()
 
-    def test_prepare_data_idempotent_sentinel(
-        self,
-        concrete_module_with_counter,
-    ) -> None:
-        """Sentinel is False before prepare_data(), True after."""
-        mod = concrete_module_with_counter(
-            batch_size=32,
-            seq_len=None,
-            valid_size=0.2,
-            test_size=0.2,
-            shuffle=True,
-            scale_data=False,
-        )
-        assert mod._prepare_data_called is False
-        mod.prepare_data()
-        assert mod._prepare_data_called is True
+        mod.setup(stage='fit')
+        assert mod._scaler_cache is not None
+        cache_id_after_fit = id(mod._scaler_cache)
+        train_after_fit = mod._train_data_samples.copy()
 
-    def test_finalize_prepare_data_is_noop_on_base(
-        self,
-        concrete_module_with_counter,
-    ) -> None:
-        """Calling _finalize_prepare_data on the base does nothing harmful."""
-        mod = concrete_module_with_counter(
-            batch_size=32,
-            seq_len=None,
-            valid_size=0.2,
-            test_size=0.2,
-            shuffle=True,
-            scale_data=False,
-        )
-        # Should not raise
-        mod._finalize_prepare_data()
-
-    def test_base_declares_do_prepare_data_abstract(self) -> None:
-        """Base class declares _do_prepare_data as abstract (not prepare_data).
-
-        After the rename chain (D3), prepare_data is concrete on the base
-        and _do_prepare_data is the abstract method subclasses implement.
-        """
-        from tscollection.datasets.modules._base.base import (
-            BaseTimeSeriesDataModule,
-        )
-
-        # _do_prepare_data must be abstract
-        assert getattr(
-            BaseTimeSeriesDataModule._do_prepare_data, '__isabstractmethod__', False
-        )
-
-        # prepare_data must NOT be abstract (it's the concrete wrapper now)
-        assert not getattr(
-            BaseTimeSeriesDataModule.prepare_data, '__isabstractmethod__', False
-        )
+        mod.setup(stage='test')
+        # Cache reused (same object identity)
+        assert id(mod._scaler_cache) == cache_id_after_fit
+        # Train data unchanged (not re-scaled in test stage)
+        pd.testing.assert_frame_equal(mod._train_data_samples, train_after_fit)

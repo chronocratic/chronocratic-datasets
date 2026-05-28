@@ -119,7 +119,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
     # Lightning lifecycle
     # ------------------------------------------------------------------
 
-    def _do_prepare_data(self) -> None:
+    def prepare_data(self) -> None:
         """Validate file path, read CSV, and prepare data.
 
         Per D-16, raises ``FileNotFoundError`` if the CSV file does not
@@ -149,6 +149,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
             df = df[['MT_001']]
 
         self._full_data = df
+        self._post_prepare_data()
 
     # ------------------------------------------------------------------
     # Dataloaders (D-13: TensorDataset)
