@@ -32,7 +32,7 @@ class TestBaseTimeSeriesDataModule:
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
 
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
         return ConcreteTestModule
@@ -274,7 +274,7 @@ class TestSetupSentinel:
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
 
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
         return ConcreteTestModule
@@ -341,3 +341,98 @@ class TestSetupSentinel:
             mod.setup(stage=None)
             mod.setup(stage='fit')
             assert scaler_spy.call_count == 1
+class TestPrepareDataWrapper:
+    """Tests for the idempotent prepare_data() wrapper (D3/B3).
+
+    Verifies that the base class drives the template:
+    _do_prepare_data() → _finalize_prepare_data() → set sentinel.
+    """
+
+    @pytest.fixture
+    def concrete_module_with_counter(self):
+        """Create a concrete subclass that counts _do_prepare_data calls."""
+        from tscollection.datasets.modules._base.base import (
+            BaseTimeSeriesDataModule,
+        )
+
+        class CountingModule(BaseTimeSeriesDataModule):
+            """Minimal concrete module that tracks _do_prepare_data calls."""
+
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                self._do_prepare_data_call_count = 0
+
+            def _do_prepare_data(self) -> None:
+                self._do_prepare_data_call_count += 1
+
+        return CountingModule
+
+    def test_prepare_data_calls_do_prepare_data_once(
+        self,
+        concrete_module_with_counter,
+    ) -> None:
+        """Calling prepare_data() twice invokes _do_prepare_data only once."""
+        mod = concrete_module_with_counter(
+            batch_size=32,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        mod.prepare_data()
+        mod.prepare_data()
+        assert mod._do_prepare_data_call_count == 1
+
+    def test_prepare_data_idempotent_sentinel(
+        self,
+        concrete_module_with_counter,
+    ) -> None:
+        """Sentinel is False before prepare_data(), True after."""
+        mod = concrete_module_with_counter(
+            batch_size=32,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        assert mod._prepare_data_called is False
+        mod.prepare_data()
+        assert mod._prepare_data_called is True
+
+    def test_finalize_prepare_data_is_noop_on_base(
+        self,
+        concrete_module_with_counter,
+    ) -> None:
+        """Calling _finalize_prepare_data on the base does nothing harmful."""
+        mod = concrete_module_with_counter(
+            batch_size=32,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        # Should not raise
+        mod._finalize_prepare_data()
+
+    def test_base_declares_do_prepare_data_abstract(self) -> None:
+        """Base class declares _do_prepare_data as abstract (not prepare_data).
+
+        After the rename chain (D3), prepare_data is concrete on the base
+        and _do_prepare_data is the abstract method subclasses implement.
+        """
+        from tscollection.datasets.modules._base.base import (
+            BaseTimeSeriesDataModule,
+        )
+
+        # _do_prepare_data must be abstract
+        assert getattr(
+            BaseTimeSeriesDataModule._do_prepare_data, '__isabstractmethod__', False
+        )
+
+        # prepare_data must NOT be abstract (it's the concrete wrapper now)
+        assert not getattr(
+            BaseTimeSeriesDataModule.prepare_data, '__isabstractmethod__', False
+        )

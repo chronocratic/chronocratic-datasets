@@ -253,9 +253,11 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._valid_data_samples = valid_data
         self._test_data_samples = test_data
 
-    def _post_prepare_data(self) -> None:
-        """Called at the end of ``prepare_data()`` to set data slices.
+    def _finalize_prepare_data(self) -> None:
+        """Hook called after ``_do_prepare_data()`` to set data slices.
 
-        Subclasses should invoke this after loading ``_full_data``.
+        Overrides the base class no-op. The base wrapper drives this
+        call, so concrete forecasting modules no longer invoke it
+        manually.
         """
         self._set_data_slices()
