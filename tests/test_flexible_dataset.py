@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 import torch
 
-from tscollection.datasets._base.strategies import ForecastingStrategySingleFile
+from tscollection.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
 from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 # --- Task 2 RED-phase tests (will fail until flexible.py is implemented) ---
@@ -19,7 +19,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 def test_flexible_accepts_seq_len_step():
     """FlexibleTimeSeriesDatasetSingleFile stores seq_len and step."""
-    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
+    from tscollection.datasets.datatypes._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 
     data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
@@ -39,7 +39,7 @@ def test_flexible_accepts_seq_len_step():
 
 def test_flexible_yields_windows():
     """FlexibleTimeSeriesDatasetSingleFile yields sliding-window pairs."""
-    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
+    from tscollection.datasets.datatypes._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 
     data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
@@ -60,7 +60,7 @@ def test_flexible_yields_windows():
 
 def test_flexible_bounds_check():
     """FlexibleTimeSeriesDatasetSingleFile raises IndexError for out-of-range index."""
-    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
+    from tscollection.datasets.datatypes._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 
     data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
@@ -84,8 +84,10 @@ def test_flexible_multifile_boundary_indices():
     Verify that global indices at file boundaries return data from the
     correct file, not the adjacent one.
     """
-    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetMultipleFiles
-    from tscollection.datasets._base.strategies import ClassificationStrategyMultipleFiles
+    from tscollection.datasets.datatypes._base.flexible import (
+        FlexibleTimeSeriesDatasetMultipleFiles,
+    )
+    from tscollection.datasets.datatypes._base.strategies import ClassificationStrategyMultipleFiles
 
     # File 0: 100 samples, seq_len=50, step=10 -> 6 windows (global idx 0..5)
     # File 1: 200 samples, seq_len=50, step=10 -> 16 windows (global idx 6..21)

@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from tscollection.datasets._base.strategies import (
+from tscollection.datasets.datatypes._base.strategies import (
     ClassificationStrategyMultipleFiles,
     ClassificationStrategySingleFile,
     ForecastingStrategySingleFile,
