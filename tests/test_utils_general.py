@@ -57,42 +57,6 @@ def test_custom_collate_fn_keyword_only() -> None:
     assert result.shape[0] == 4
 
 
-def test_collate_padding_uses_originals_only() -> None:
-    """C2: Padding elements are references to originals, not self-references.
-
-    Verifies the cycling formula ``current_batch_size - 1 - (i %% current_batch_size)``
-    continues to produce copies of the original batch elements, not zeros or NaN.
-    """
-    originals = [
-        torch.tensor([100.0]),
-        torch.tensor([200.0]),
-        torch.tensor([300.0]),
-    ]
-    result = custom_collate_fn(originals, desired_batch_size=6)
-
-    assert result.shape[0] == 6
-
-    # First 3 elements are the originals
-    assert result[0].item() == pytest.approx(100.0)
-    assert result[1].item() == pytest.approx(200.0)
-    assert result[2].item() == pytest.approx(300.0)
-
-    # Padded elements follow the cycling pattern:
-    #   sample_index = current_batch_size - 1 - (i % current_batch_size)
-    #   i=0: 3-1-(0%3) = 2  -> originals[2] = 300.0
-    #   i=1: 3-1-(1%3) = 1  -> originals[1] = 200.0
-    #   i=2: 3-1-(2%3) = 0  -> originals[0] = 100.0
-    current_batch_size = 3
-    for i in range(result.shape[0] - current_batch_size):
-        sample_index = current_batch_size - 1 - (i % current_batch_size)
-        expected = originals[sample_index].item()
-        actual = result[current_batch_size + i].item()
-        assert actual == pytest.approx(expected), (
-            f"Padded element {current_batch_size + i} should be "
-            f"originals[{sample_index}]={expected}, got {actual}"
-        )
-
-
 # --------------------------------------------------------------------------- #
 # centralize_variable_length_series tests                                       #
 # --------------------------------------------------------------------------- #

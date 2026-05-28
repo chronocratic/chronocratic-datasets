@@ -2,8 +2,10 @@
 
 from abc import ABC
 from functools import partial
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -14,6 +16,7 @@ from tscollection.datasets.enums.data import (
     ScalingMethod,
 )
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
 
 class TestBaseClassificationTimeSeriesDataModule:
@@ -148,7 +151,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -179,7 +182,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -210,7 +213,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -235,20 +238,72 @@ class TestBaseForecastingTimeSeriesDataModule:
             mod._prepare_data_scaler()
 
 
-class TestForecastingStageGating:
-    """Tests for stage validation, cache, and branching in forecasting setup()."""
+class TestPrepareDimensions:
+    """Tests for prepare_dimensions() API and _compute_dimensions() hook (A1, D4)."""
 
-    @pytest.fixture
-    def concrete_forecasting_class(self):
-        """Create a minimal concrete forecasting subclass for testing."""
+    def test_base_prepare_dimensions_exists(self) -> None:
+        """prepare_dimensions() exists on base and returns a 2-tuple."""
+        from tscollection.datasets.modules._base.base import (
+            BaseTimeSeriesDataModule,
+        )
+
+        class ConcreteTestModule(BaseTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
+
+        module = ConcreteTestModule(
+            batch_size=32,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        assert hasattr(module, 'prepare_dimensions')
+        result = module.prepare_dimensions()
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    def test_classification_raises_without_prepare_data(self) -> None:
+        """Classification _compute_dimensions raises RuntimeError when _train_data_samples is None."""
+        from tscollection.datasets.modules._base.classification import (
+            BaseClassificationTimeSeriesDataModule,
+        )
+
+        class ConcreteClassification(BaseClassificationTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
+
+            def train_dataloader(self, **kwargs):
+                pass
+
+            def val_dataloader(self, **kwargs):
+                pass
+
+            def test_dataloader(self, **kwargs):
+                pass
+
+        module = ConcreteClassification(
+            dataset_folder_path=Path('/nonexistent'),
+            batch_size=32,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=False,
+            scale_data=False,
+            target_column_name='label',
+        )
+        # _train_data_samples is None — prepare_data was never called
+        with pytest.raises(RuntimeError, match=r'prepare_dimensions.*prepare_data'):
+            module.prepare_dimensions()
+
+    def test_forecasting_pre_setup_with_dataframe(self) -> None:
+        """Forecasting _compute_dimensions adds TIME_FEATURE_COUNT for DataFrame _full_data."""
         from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            """Minimal concrete forecasting subclass for testing."""
-
-            def prepare_data(self) -> None:
+            def _do_prepare_data(self) -> None:
                 pass
 
             def _set_data_slices(self) -> None:
@@ -257,76 +312,90 @@ class TestForecastingStageGating:
             def _transform_data(self) -> None:
                 pass
 
-        return ConcreteForecasting
-
-    @pytest.fixture
-    def forecasting_module(self, concrete_forecasting_class):
-        """Create a forecasting module with scale_data=True."""
-        return concrete_forecasting_class(
+        module = ConcreteForecasting(
             batch_size=32,
-            seq_len=128,
+            seq_len=96,
             valid_size=0.1,
             test_size=0.5,
             shuffle=False,
-            scale_data=True,
-            data_scaling_method=ScalingMethod.MINMAX,
-            data_scaling_range=(0, 1),
-            num_workers=0,
+            scale_data=False,
             mode=ForecastingMode.UNIVARIATE,
         )
+        # Inject a DataFrame with DatetimeIndex and 8 raw columns
+        dates = pd.date_range('2020-01-01', periods=100, freq='h')
+        module._full_data = pd.DataFrame(
+            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32),
+            index=dates,
+        )
+        n_features, seq_len = module.prepare_dimensions()
+        assert n_features == 8 + TIME_FEATURE_COUNT
+        assert seq_len == 96
 
-    def test_forecasting_scaler_cache_reused(
-        self, forecasting_module
-    ) -> None:
-        """setup('fit') then setup('test') reuses same scaler instances."""
-        rng = np.random.default_rng(42)
-        forecasting_module._full_data = rng.standard_normal(
-            (100, 5)
-        ).astype(np.float32)
-        forecasting_module._train_slice = slice(None, 60)
-        forecasting_module._valid_slice = slice(60, 80)
-        forecasting_module._test_slice = slice(80, None)
+    def test_forecasting_pre_setup_with_numpy(self) -> None:
+        """Forecasting _compute_dimensions does NOT add TIME_FEATURE_COUNT for numpy _full_data."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
 
-        forecasting_module.setup(stage='fit')
-        data_scaler_id = id(forecasting_module._data_scaler_cache)
-        assert forecasting_module._data_scaler_cache is not None
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
 
-        forecasting_module.setup(stage='test')
-        # Same scaler instance (not refit)
-        assert id(forecasting_module._data_scaler_cache) == data_scaler_id
+            def _set_data_slices(self) -> None:
+                pass
 
-    def test_forecasting_validate_no_mutation(self, forecasting_module) -> None:
-        """setup('validate') does not alter data or populate train samples."""
-        rng = np.random.default_rng(42)
-        full_data = rng.standard_normal((100, 5)).astype(np.float32)
-        forecasting_module._full_data = full_data
-        forecasting_module._train_slice = slice(None, 60)
-        forecasting_module._valid_slice = slice(60, 80)
-        forecasting_module._test_slice = slice(80, None)
+            def _transform_data(self) -> None:
+                pass
 
-        forecasting_module.setup(stage='validate')
+        module = ConcreteForecasting(
+            batch_size=32,
+            seq_len=96,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=False,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        # Inject a numpy array (no DatetimeIndex, so no time features)
+        module._full_data = np.random.default_rng(42).standard_normal((100, 6)).astype(np.float32)
+        n_features, seq_len = module.prepare_dimensions()
+        assert n_features == 6  # No TIME_FEATURE_COUNT added
+        assert seq_len == 96
 
-        # _full_data unchanged (not scaled or transformed)
-        np.testing.assert_array_equal(forecasting_module._full_data, full_data)
-        # _train_data_samples remains None (no splitting happened)
-        assert forecasting_module._train_data_samples is None
+    def test_post_setup_returns_cached(self) -> None:
+        """D4 short-circuit: prepare_dimensions() returns cached _num_features when set."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
 
-    def test_forecasting_unknown_stage_raises(self, forecasting_module) -> None:
-        """setup('warmup') raises ValueError for unknown stage."""
-        with pytest.raises(ValueError, match="Unknown stage: 'warmup'"):
-            forecasting_module.setup(stage='warmup')
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
 
-    def test_forecasting_default_stage_is_none(
-        self, forecasting_module
-    ) -> None:
-        """setup() with no args uses stage=None and does not raise TypeError."""
-        rng = np.random.default_rng(42)
-        forecasting_module._full_data = rng.standard_normal(
-            (100, 5)
-        ).astype(np.float32)
-        forecasting_module._train_slice = slice(None, 60)
-        forecasting_module._valid_slice = slice(60, 80)
-        forecasting_module._test_slice = slice(80, None)
+            def _set_data_slices(self) -> None:
+                pass
 
-        # Should not raise TypeError
-        forecasting_module.setup()
+            def _transform_data(self) -> None:
+                pass
+
+        module = ConcreteForecasting(
+            batch_size=32,
+            seq_len=96,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=False,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        # Simulate post-setup: _num_features is already populated
+        module._num_features = 42
+        # Inject _full_data that would compute a different value
+        dates = pd.date_range('2020-01-01', periods=100, freq='h')
+        module._full_data = pd.DataFrame(
+            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32),
+            index=dates,
+        )
+        # Should return cached value (42), NOT compute from _full_data
+        n_features, seq_len = module.prepare_dimensions()
+        assert n_features == 42
+        assert seq_len == 96

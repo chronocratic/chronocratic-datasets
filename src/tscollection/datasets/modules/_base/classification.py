@@ -10,7 +10,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 from tscollection.datasets.enums.data import (
     ClassificationSplittingStrategy,
@@ -25,7 +25,6 @@ from tscollection.datasets.utils.general import (
 
 if TYPE_CHECKING:
     import pandas as pd
-
     from torch.utils.data import DataLoader
 
 
@@ -148,8 +147,27 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # Abstract methods for subclasses
     # ------------------------------------------------------------------
 
+    def _compute_dimensions(self) -> tuple[int | None, int | None]:
+        """Compute dimensions from classification train data samples.
+
+        Raises RuntimeError if prepare_data() was never called, as
+        train samples are required to determine feature count and
+        sequence length.
+
+        Returns:
+            Tuple of (n_features, sequence_len).
+
+        Raises:
+            RuntimeError: If _train_data_samples is None (prepare_data
+                not yet called).
+        """
+        if self._train_data_samples is None:
+            msg = 'prepare_dimensions() requires prepare_data() to have run first'
+            raise RuntimeError(msg)
+        return self._num_features, self._seq_len
+
     @abstractmethod
-    def prepare_data(self) -> None:
+    def _do_prepare_data(self) -> None:
         """Validate file paths, read data, and split into train/val/test.
 
         Subclasses must implement this method to:
