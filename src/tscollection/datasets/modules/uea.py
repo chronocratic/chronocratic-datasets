@@ -22,7 +22,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 from tscollection.datasets.enums.data import (
-    ClassificationSplittingStrategy,
+    ClassificationSplitMode,
     DataForm,
     ScalingMethod,
     TimeSeriesDatasetMode,
@@ -66,7 +66,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             :data:`ScalingMethod.MINMAX`.
         splitting_strategy: ``AS_DEFINED`` or ``MANUAL`` splitting,
             typed as
-            :class:`~tscollection.datasets.enums.data.ClassificationSplittingStrategy`.
+            :class:`~tscollection.datasets.enums.data.ClassificationSplitMode`.
         test_size: Test set fraction for ``MANUAL`` splitting.
         num_workers: DataLoader worker count.
     """
@@ -82,8 +82,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         scale_data: bool = True,
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
-        splitting_strategy: ClassificationSplittingStrategy = (
-            ClassificationSplittingStrategy.AS_DEFINED
+        splitting_strategy: ClassificationSplitMode = (
+            ClassificationSplitMode.AS_DEFINED
         ),
         test_size: float = 0.5,
         num_workers: int = 0,
@@ -189,7 +189,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._test_data_samples, self._test_data_labels = self._process_stacked_data(test_data)
 
         # Apply splitting strategy
-        if self.splitting_strategy == ClassificationSplittingStrategy.MANUAL:
+        if self.splitting_strategy == ClassificationSplitMode.MANUAL:
             full_samples = np.concatenate(
                 [self._train_data_samples, self._test_data_samples], axis=0
             )

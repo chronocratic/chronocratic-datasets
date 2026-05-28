@@ -9,7 +9,7 @@ class TimeSeriesDatasetMode(StrEnum):
     FORECASTING = 'forecasting'
 
 
-class ClassificationSplittingStrategy(StrEnum):
+class ClassificationSplitMode(StrEnum):
     """Strategy for classification train/test data splitting."""
 
     AS_DEFINED = 'as_defined'
@@ -43,3 +43,10 @@ class DataForm(StrEnum):
     REGULAR = 'regular'
     NESTED = 'nested'
     MULTI_FILES = 'multi_files'
+
+
+class ForecastingSplitMode(StrEnum):
+    """Mode for defining train/valid/test split boundaries in forecasting."""
+
+    INDEXED = 'indexed'
+    FRACTIONAL = 'fractional'
