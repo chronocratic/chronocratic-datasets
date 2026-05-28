@@ -16,7 +16,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 def test_uea_yields_data_label(synthetic_multivariate_data):
     """UEAClassificationMultivariateDataset yields (Tensor, int) in WITH_LABELS mode."""
-    from tscollection.datasets.uea import UEAClassificationMultivariateDataset
+    from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 
     labels = pd.Series([0, 1, 0, 1, 0])
     ds = UEAClassificationMultivariateDataset(
@@ -32,7 +32,7 @@ def test_uea_yields_data_label(synthetic_multivariate_data):
 
 def test_uea_without_labels(synthetic_multivariate_data):
     """UEA yields single tensor in WITHOUT_LABELS mode."""
-    from tscollection.datasets.uea import UEAClassificationMultivariateDataset
+    from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 
     ds = UEAClassificationMultivariateDataset(
         data=synthetic_multivariate_data, labels=None, mode=TimeSeriesDatasetMode.WITHOUT_LABELS
@@ -45,7 +45,7 @@ def test_uea_without_labels(synthetic_multivariate_data):
 
 def test_uea_length(synthetic_multivariate_data):
     """UEA dataset length equals number of samples in 3D array."""
-    from tscollection.datasets.uea import UEAClassificationMultivariateDataset
+    from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 
     labels = pd.Series([0, 1, 0, 1, 0])
     ds = UEAClassificationMultivariateDataset(
@@ -56,7 +56,7 @@ def test_uea_length(synthetic_multivariate_data):
 
 def test_uea_no_expand_dims_by_default(synthetic_multivariate_data):
     """UEA defaults to expand_dims_axis=None, preserving 2D sample shape."""
-    from tscollection.datasets.uea import UEAClassificationMultivariateDataset
+    from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 
     labels = pd.Series([0, 1, 0, 1, 0])
     ds = UEAClassificationMultivariateDataset(
