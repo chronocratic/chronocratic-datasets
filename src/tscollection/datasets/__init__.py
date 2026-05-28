@@ -7,20 +7,16 @@ __version__ = '0.1.0'
 from tscollection.datasets.enums import (
     ClassificationSplittingStrategy,
     DataForm,
-    DatasetFamily,
     ForecastingMode,
     ScalingMethod,
-    SplitMode,
     TimeSeriesDatasetMode,
 )
 
 __all__ = [
     'ClassificationSplittingStrategy',
     'DataForm',
-    'DatasetFamily',
     'ForecastingMode',
     'ScalingMethod',
-    'SplitMode',
     'TimeSeriesDatasetMode',
     '__version__',
 ]
