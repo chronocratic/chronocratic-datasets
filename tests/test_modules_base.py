@@ -387,3 +387,108 @@ class TestPrepareDataWrapper:
 
         # prepare_data must NOT be abstract (it's the concrete wrapper now)
         assert not getattr(BaseTimeSeriesDataModule.prepare_data, '__isabstractmethod__', False)
+
+
+class TestSetupStageGating:
+    """Tests for stage validation, branching, and scaler cache in setup().
+
+    Verifies D1 (signature with default None), D2 (scaler cache), and B4
+    (stage branching: fit scales all, test scales only test data,
+    validate is no-op).
+    """
+
+    @pytest.fixture
+    def concrete_module_class(self):
+        """Create a minimal concrete subclass for testing."""
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+
+        class ConcreteTestModule(BaseTimeSeriesDataModule):
+            """Minimal concrete subclass for testing."""
+
+            def _do_prepare_data(self) -> None:
+                pass
+
+        return ConcreteTestModule
+
+    def test_unknown_stage_raises(self, concrete_module_class) -> None:
+        """setup('warmup') raises ValueError for unknown stage."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        with pytest.raises(ValueError, match=r'Unknown stage'):
+            mod.setup(stage='warmup')  # type: ignore[arg-type]
+
+    def test_default_stage_is_none(self, concrete_module_class) -> None:
+        """setup() with no args uses stage=None and does not raise TypeError."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        mod._train_data_samples = pd.DataFrame({'a': [1.0]})
+        mod._valid_data_samples = pd.DataFrame({'a': [2.0]})
+        mod._test_data_samples = pd.DataFrame({'a': [3.0]})
+        # Should not raise TypeError
+        mod.setup()
+
+    def test_setup_fit_then_test_reuses_scaler_cache(
+        self, concrete_module_class
+    ) -> None:
+        """setup('fit') creates scaler, setup('test') reuses it (create_data_scaler called once).
+
+        Verifies D2: _scaler_cache holds the fitted closure.
+        """
+        passthrough = lambda t, v, te: (t, v, te)  # noqa: E731
+        call_count = 0
+
+        def counting_scaler(**_kwargs):
+            nonlocal call_count
+            call_count += 1
+            return passthrough
+
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=True,
+        )
+        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0]})
+        mod._valid_data_samples = pd.DataFrame({'a': [3.0]})
+        mod._test_data_samples = pd.DataFrame({'a': [4.0]})
+
+        with patch(
+            'tscollection.datasets.modules._base.base.create_data_scaler',
+            side_effect=counting_scaler,
+        ):
+            mod.setup(stage='fit')
+            assert mod._scaler_cache is not None
+            mod.setup(stage='test')
+            assert call_count == 1
+
+    def test_validate_does_not_mutate(self, concrete_module_class) -> None:
+        """setup('validate') does not mutate data samples."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        train = pd.DataFrame({'a': [1.0, 2.0]})
+        mod._train_data_samples = train
+        mod._valid_data_samples = pd.DataFrame({'a': [3.0]})
+        mod._test_data_samples = pd.DataFrame({'a': [4.0]})
+
+        mod.setup(stage='validate')
+        assert mod._train_data_samples is train

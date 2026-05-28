@@ -9,6 +9,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import partial
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
 
 import lightning.pytorch as pl
 import numpy as np
@@ -81,6 +86,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._dataset_class: type | None = None
         self._setup_completed_stages: set[str | None] = set()
         self._prepare_data_called: bool = False
+        self._scaler_cache: Callable[..., tuple[Any, Any, Any]] | None = None
 
     # ------------------------------------------------------------------
     # Properties
@@ -216,7 +222,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     # Setup
     # ------------------------------------------------------------------
 
-    def setup(self, stage: str) -> None:
+    def setup(self, stage: str | None = None) -> None:
         """Apply data scaling via :func:`create_data_scaler`.
 
         The classification branch uses
@@ -224,21 +230,58 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         branch overrides this method entirely with sklearn
         direct scaling.
 
+        Stage branching:
+        - ``fit``/``None``: Fit scaler on all splits.
+        - ``test``/``predict``: Scale test data only (reuse cached scaler).
+        - ``validate``: No data mutation; mark stage as complete.
+
+        Idempotency guard: Repeated calls for the same stage are
+        no-ops via ``_setup_completed_stages`` sentinel.
+
         Args:
-            stage: Lightning stage identifier (``"fit"`` or ``"test"``).
+            stage: Lightning stage identifier. Defaults to ``None``
+                (equivalent to ``"fit"``).
+
+        Raises:
+            ValueError: If stage is not one of
+                ``{'fit', 'validate', 'test', 'predict', None}``.
         """
-        if stage in self._setup_completed_stages or None in self._setup_completed_stages:
+        if stage not in ('fit', 'validate', 'test', 'predict', None):
+            msg = f'Unknown stage: {stage!r}'
+            raise ValueError(msg)
+        if stage in self._setup_completed_stages:
+            return
+        # fit and None are equivalent — both scale all three splits
+        if stage in ('fit', None) and (
+            'fit' in self._setup_completed_stages or None in self._setup_completed_stages
+        ):
             return
 
-        scaler = create_data_scaler(
-            scale=self.scale_data,
-            scaling_range=self.data_scaling_range,
-            scaling_method=self.data_scaling_method,
-            data_form=self._data_form,
-        )
-        (self._train_data_samples, self._valid_data_samples, self._test_data_samples) = scaler(
-            self._train_data_samples, self._valid_data_samples, self._test_data_samples
-        )
+        # validate: no data mutation
+        if stage == 'validate':
+            self._setup_completed_stages.add(stage)
+            return
+
+        # Build or reuse scaler cache
+        if self._scaler_cache is None:
+            self._scaler_cache = create_data_scaler(
+                scale=self.scale_data,
+                scaling_range=self.data_scaling_range,
+                scaling_method=self.data_scaling_method,
+                data_form=self._data_form,
+            )
+
+        if stage in ('fit', None):
+            (self._train_data_samples, self._valid_data_samples, self._test_data_samples) = (
+                self._scaler_cache(
+                    self._train_data_samples, self._valid_data_samples, self._test_data_samples
+                )
+            )
+        elif stage in ('test', 'predict'):
+            _, _, self._test_data_samples = self._scaler_cache(
+                self._train_data_samples, self._valid_data_samples, self._test_data_samples
+            )
+
         self._setup_completed_stages.add(stage)
 
     # ------------------------------------------------------------------
