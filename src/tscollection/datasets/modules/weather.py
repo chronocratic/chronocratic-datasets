@@ -15,7 +15,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from tscollection.datasets.enums.data import ForecastingMode, ForecastingSplitMode, ScalingMethod, TimeSeriesDatasetMode
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 
 if TYPE_CHECKING:
@@ -76,13 +76,20 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
             mode=mode,
-            split_mode=ForecastingSplitMode.FRACTIONAL,
         )
         self.dataset_file_path = dataset_file_path
 
     # ------------------------------------------------------------------
     # Abstract method implementations
     # ------------------------------------------------------------------
+
+    def _set_data_slices(self) -> None:
+        """Set 60/20/20 fractional train/valid/test splits."""
+        assert self._full_data is not None, '_full_data was not set by prepare_data()'
+        num_samples = len(self._full_data)
+        self._train_slice = slice(None, int(0.6 * num_samples))
+        self._valid_slice = slice(int(0.6 * num_samples), int(0.8 * num_samples))
+        self._test_slice = slice(int(0.8 * num_samples), None)
 
     def _transform_data(self) -> None:
         """Transform ``_full_data`` using expand_dims(axis=0).

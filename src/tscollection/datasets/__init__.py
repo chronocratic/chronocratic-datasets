@@ -8,7 +8,6 @@ from tscollection.datasets.enums import (
     ClassificationSplitMode,
     DataForm,
     ForecastingMode,
-    ForecastingSplitMode,
     ScalingMethod,
     TimeSeriesDatasetMode,
 )
@@ -17,7 +16,6 @@ __all__ = [
     'ClassificationSplitMode',
     'DataForm',
     'ForecastingMode',
-    'ForecastingSplitMode',
     'ScalingMethod',
     'TimeSeriesDatasetMode',
     '__version__',
