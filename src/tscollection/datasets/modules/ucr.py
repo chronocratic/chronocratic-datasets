@@ -126,7 +126,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         df = process_df_according_to_dtypes(
             df,
             meta,
-            self._datatype_handling_functions_map or {},  # type: ignore[arg-type]
+            self._datatype_handling_functions_map or {},  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
         )
         return df
 
@@ -203,7 +203,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             data_df = self._train_data_samples.copy(deep=True)
             data_df['label'] = self._train_data_labels.copy(deep=True)
             filtered = data_df.groupby('label').filter(lambda x: len(x) > 1)
-            X_filt = filtered.drop('label', axis=1)
+            x_filt = filtered.drop('label', axis=1)
             y_filt = filtered['label']
             try:
                 (
@@ -212,7 +212,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                     self._train_data_labels,
                     self._valid_data_labels,
                 ) = train_test_split(
-                    X_filt, y_filt, test_size=self.valid_size, stratify=y_filt, random_state=42
+                    x_filt, y_filt, test_size=self.valid_size, stratify=y_filt, random_state=42
                 )
             except ValueError as e:
                 pattern = (
@@ -228,7 +228,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                         self._train_data_labels,
                         self._valid_data_labels,
                     ) = train_test_split(
-                        X_filt, y_filt, test_size=test_size, stratify=y_filt, random_state=42
+                        x_filt, y_filt, test_size=test_size, stratify=y_filt, random_state=42
                     )
                     logger.warning(
                         "Validation size adjusted to %d for dataset '%s' to cover all classes",
@@ -250,7 +250,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         shuffle: bool | None = None,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
-    ) -> DataLoader:
+    ) -> DataLoader:  # ty:ignore[invalid-method-override]
         """Build the training DataLoader.
 
         Args:
@@ -265,7 +265,9 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for training.
         """
         dataset = UCRClassificationUnivariateDataset(
-            data=self._train_data_samples, labels=self._train_data_labels, mode=mode
+            data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
+            labels=self._train_data_labels,
+            mode=mode,
         )
         return self._process_train_dataloader(
             dataset_object=dataset,
@@ -280,7 +282,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.WITHOUT_LABELS,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
-    ) -> DataLoader | None:
+    ) -> DataLoader | None:  # ty:ignore[invalid-method-override]
         """Build the validation DataLoader.
 
         Returns ``None`` when :attr:`valid_size` is ``0.0``.
@@ -298,7 +300,9 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
         dataset = UCRClassificationUnivariateDataset(
-            data=self._valid_data_samples, labels=self._valid_data_labels, mode=mode
+            data=self._valid_data_samples,  # ty:ignore[invalid-argument-type]
+            labels=self._valid_data_labels,
+            mode=mode,
         )
         return self._process_valid_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
@@ -310,7 +314,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.WITHOUT_LABELS,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
-    ) -> DataLoader:
+    ) -> DataLoader:  # ty:ignore[invalid-method-override]
         """Build the test DataLoader.
 
         Args:
@@ -324,7 +328,9 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for testing.
         """
         dataset = UCRClassificationUnivariateDataset(
-            data=self._test_data_samples, labels=self._test_data_labels, mode=mode
+            data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
+            labels=self._test_data_labels,
+            mode=mode,
         )
         return self._process_test_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args

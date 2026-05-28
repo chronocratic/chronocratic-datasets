@@ -18,7 +18,7 @@ ignore = [
     "D101", # Allow missing docstring in public classes
     "RET504", # Allow unnecessary assignment of variables in return statements. It is useful for readability in AI code.
     "PLR0913", # Allow too many arguments in functions. It is useful for readability in AI code.
-    "C901",    # Allow complex functions — typical for AI/ML data pipeline code.
+    "C901",  # Allow complex functions — typical for AI/ML data pipeline code.
 ]
 
 [lint.pydocstyle]
@@ -27,8 +27,24 @@ convention = "google"
 
 [lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"src/tscollection/datasets/modules/**/*.py" = [
+    "ANN401",  # Label properties return dataset-specific types; abstract **kwargs can't be narrowed.
+    "N806",    # Allow X/y signal processing variable names in data module methods.
+    "PLC0415", # Deferred imports in setup() to avoid circular deps and cold-start cost.
+    "PLR0912", # setup() stage gating requires many branches.
+    "PLR0915", # setup() orchestration is intentionally long.
+    "PT019",   # False pytest fixture warning on dataloader mode params.
+    "S101",    # assert used as internal precondition checks, not user-input validation.
+    "TC002",   # numpy/pd used at runtime for isinstance checks; cannot be TYPE_CHECKING-only.
+]
 "notebooks/**/*.ipynb" = ["D", "E402", "T201"]
 "tests/**/*.py" = ["ANN", "D", "PLC0415", "PLR2004", "S101", "SLF001"]
+"src/tscollection/datasets/utils/**/*.py" = [
+    "ANN401",  # scipy arff meta has no public type; collate_fn returns variable PyTorch types; scale_data inner fn params vary by data_form.
+    "PLC0415", # Heavy scipy import deferred to function scope for performance.
+    "PLR2004", # Dimension checks (==2, ==3) are universal numpy constants, not magic values.
+    "TC002",   # numpy/pd used at runtime for isinstance checks; cannot be TYPE_CHECKING-only.
+]
 
 [lint.isort]
 # Combine "as" imports into a single line

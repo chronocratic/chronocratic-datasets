@@ -198,12 +198,12 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         Skips validation split when ``_valid_data_samples`` is ``None``.
         """
         self._train_data_samples = process_data_with_varying_sequence_lengths_single(
-            data=self._train_data_samples
+            data=self._train_data_samples  # ty:ignore[invalid-argument-type]
         )
         if self._valid_data_samples is not None:
             self._valid_data_samples = process_data_with_varying_sequence_lengths_single(
                 data=self._valid_data_samples
             )
         self._test_data_samples = process_data_with_varying_sequence_lengths_single(
-            data=self._test_data_samples
+            data=self._test_data_samples  # ty:ignore[invalid-argument-type]
         )

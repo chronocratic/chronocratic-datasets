@@ -13,7 +13,7 @@ from functools import partial
 import lightning.pytorch as pl
 import numpy as np
 import pandas as pd
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from tscollection.datasets.enums.data import DataForm, ScalingMethod
 from tscollection.datasets.utils.general import custom_collate_fn
@@ -117,10 +117,26 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         return self._valid_data_samples
 
     @property
-    def all_data_samples(self) -> pd.DataFrame:
+    def all_data_samples(self) -> np.ndarray | pd.DataFrame:
         """Concatenation of all data splits."""
-        return pd.concat(
-            [self._train_data_samples, self._test_data_samples, self._valid_data_samples], axis=0
+        if isinstance(self._train_data_samples, pd.DataFrame):
+            return pd.concat(
+                [
+                    self._train_data_samples,  # type: ignore[arg-type]
+                    self._test_data_samples,  # type: ignore[arg-type]
+                    self._valid_data_samples,  # type: ignore[arg-type]
+                ],
+                axis=0,
+            )  # ty:ignore[no-matching-overload]
+        import numpy as np
+
+        return np.concatenate(
+            [
+                self._train_data_samples,  # type: ignore[arg-type]
+                self._test_data_samples,  # type: ignore[arg-type]
+                self._valid_data_samples,  # type: ignore[arg-type]
+            ],
+            axis=0,
         )
 
     # ------------------------------------------------------------------
@@ -254,7 +270,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     def _process_train_dataloader(
         self,
         *,
-        dataset_object: object,
+        dataset_object: Dataset[object],
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
@@ -285,12 +301,12 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             dataloader_args['persistent_workers'] = True
         if strict_batch_size:
             dataloader_args['collate_fn'] = self._get_custom_collate_fn()
-        return DataLoader(**dataloader_args)
+        return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
     def _process_test_dataloader(
         self,
         *,
-        dataset_object: object,
+        dataset_object: Dataset[object],
         strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
@@ -319,12 +335,12 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             dataloader_args['persistent_workers'] = True
         if strict_batch_size:
             dataloader_args['collate_fn'] = self._get_custom_collate_fn()
-        return DataLoader(**dataloader_args)
+        return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
     def _process_valid_dataloader(
         self,
         *,
-        dataset_object: object,
+        dataset_object: Dataset[object],
         strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
