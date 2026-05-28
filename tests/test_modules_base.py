@@ -259,3 +259,85 @@ class TestBaseTimeSeriesDataModule:
         data = pd.DataFrame({'x': [1, 2, 3]})
         module._train_data_samples = data
         assert module.train_data_samples is data
+
+
+class TestSetupSentinel:
+    """Tests for _setup_completed_stages sentinel and setup() idempotency (B1)."""
+
+    @pytest.fixture
+    def concrete_module_class(self):
+        """Create a minimal concrete subclass for testing."""
+        from tscollection.datasets.modules._base.base import (
+            BaseTimeSeriesDataModule,
+        )
+
+        class ConcreteTestModule(BaseTimeSeriesDataModule):
+            """Minimal concrete subclass for testing."""
+
+            def prepare_data(self) -> None:
+                pass
+
+        return ConcreteTestModule
+
+    def test_sentinel_exists_after_init(self, concrete_module_class) -> None:
+        """Fresh instance has _setup_completed_stages as an empty set."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        assert hasattr(mod, '_setup_completed_stages')
+        assert mod._setup_completed_stages == set()
+
+    def test_setup_idempotent_same_stage(
+        self, concrete_module_class
+    ) -> None:
+        """Calling setup(stage='fit') twice runs the scaler only once."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=True,
+        )
+        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
+        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
+        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+
+        with patch(
+            'tscollection.datasets.modules._base.base.create_data_scaler',
+            wraps=MagicMock(),
+        ) as scaler_spy:
+            scaler_spy.return_value = lambda t, v, te: (t, v, te)
+            mod.setup(stage='fit')
+            mod.setup(stage='fit')
+            assert scaler_spy.call_count == 1
+
+    def test_setup_none_covers_all_stages(
+        self, concrete_module_class
+    ) -> None:
+        """setup(None) then setup('fit') — second call is a no-op (None covers all)."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=True,
+        )
+        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
+        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
+        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+
+        with patch(
+            'tscollection.datasets.modules._base.base.create_data_scaler',
+            wraps=MagicMock(),
+        ) as scaler_spy:
+            scaler_spy.return_value = lambda t, v, te: (t, v, te)
+            mod.setup(stage=None)
+            mod.setup(stage='fit')
+            assert scaler_spy.call_count == 1
