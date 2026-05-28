@@ -79,6 +79,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._test_data_samples: Any = None
         self._valid_data_samples: Any = None
         self._dataset_class: Any = None
+        self._setup_completed_stages: set[str | None] = set()
 
     # ------------------------------------------------------------------
     # Properties
@@ -155,6 +156,9 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Args:
             stage: Lightning stage identifier (``"fit"`` or ``"test"``).
         """
+        if stage in self._setup_completed_stages or None in self._setup_completed_stages:
+            return
+
         scaler = create_data_scaler(
             scale=self.scale_data,
             scaling_range=self.data_scaling_range,
@@ -170,6 +174,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             self._valid_data_samples,
             self._test_data_samples,
         )
+
+        self._setup_completed_stages.add(stage)
 
     # ------------------------------------------------------------------
     # Internal helpers
