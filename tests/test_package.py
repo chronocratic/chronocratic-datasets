@@ -35,16 +35,19 @@ def test_import_tscollection_datasets():
 def test_enum_exports_in_root():
     """Enum types are exported from package root."""
     from tscollection.datasets import (
-        ClassificationSplittingStrategy,
+        ClassificationSplitMode,
         ForecastingMode,
+        ForecastingSplitMode,
         ScalingMethod,
         TimeSeriesDatasetMode,
     )
 
     assert TimeSeriesDatasetMode.WITH_LABELS == 'with_labels'
     assert ScalingMethod.MINMAX == 'minmax'
-    assert ClassificationSplittingStrategy.AS_DEFINED == 'as_defined'
+    assert ClassificationSplitMode.AS_DEFINED == 'as_defined'
     assert ForecastingMode.UNIVARIATE == 'univariate'
+    assert ForecastingSplitMode.INDEXED == 'indexed'
+    assert ForecastingSplitMode.FRACTIONAL == 'fractional'
 
 
 def test_init_files_exist():

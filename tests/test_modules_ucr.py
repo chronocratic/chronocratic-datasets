@@ -8,7 +8,7 @@ import pytest
 from torch.utils.data import DataLoader
 
 from tscollection.datasets.enums.data import (
-    ClassificationSplittingStrategy,
+    ClassificationSplitMode,
     DataForm,
     TimeSeriesDatasetMode,
 )
@@ -56,7 +56,7 @@ class TestUCRClassificationDataModule:
     def test_splitting_strategy_default(self, module_class: type, tmp_path: Path) -> None:
         """splitting_strategy defaults to AS_DEFINED."""
         mod = module_class(dataset_folder_path=tmp_path, target_column_name='class')
-        assert mod.splitting_strategy == ClassificationSplittingStrategy.AS_DEFINED
+        assert mod.splitting_strategy == ClassificationSplitMode.AS_DEFINED
 
     def test_has_dataloader_methods(self, module_class: type) -> None:
         """Module has train_dataloader, val_dataloader, test_dataloader."""
@@ -105,7 +105,7 @@ class TestUCRClassificationDataModule:
             dataset_folder_path=synthetic_ucr_folder,
             target_column_name='class',
             valid_size=0.1,
-            splitting_strategy=ClassificationSplittingStrategy.AS_DEFINED,
+            splitting_strategy=ClassificationSplitMode.AS_DEFINED,
         )
         mod.prepare_data()
         mod.setup('fit')

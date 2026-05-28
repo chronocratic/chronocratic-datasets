@@ -15,7 +15,7 @@ from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 
 from tscollection.datasets.enums.data import (
-    ClassificationSplittingStrategy,
+    ClassificationSplitMode,
     DataForm,
     ScalingMethod,
     TimeSeriesDatasetMode,
@@ -98,7 +98,7 @@ class TestUEAClassificationDataModuleConstructor:
             scale_data=False,
             data_scaling_method=ScalingMethod.STANDARD,
             data_scaling_range=(0, 1),
-            splitting_strategy=ClassificationSplittingStrategy.AS_DEFINED,
+            splitting_strategy=ClassificationSplitMode.AS_DEFINED,
             test_size=0.3,
             num_workers=2,
         )
@@ -107,7 +107,7 @@ class TestUEAClassificationDataModuleConstructor:
         assert module.shuffle is True
         assert module.scale_data is False
         assert module.data_scaling_method == ScalingMethod.STANDARD
-        assert module.splitting_strategy == ClassificationSplittingStrategy.AS_DEFINED
+        assert module.splitting_strategy == ClassificationSplitMode.AS_DEFINED
         assert module.num_workers == 2
 
     def test_data_form_is_nested(self, synthetic_uea_folder: Path) -> None:
