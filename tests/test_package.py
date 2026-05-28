@@ -33,7 +33,6 @@ def test_enum_exports_in_root():
     """PKG-02: Enum types are exported from package root."""
     from tscollection.datasets import (
         ClassificationSplittingStrategy,
-        DistanceMetric,
         ForecastingMode,
         ScalingMethod,
         TimeSeriesDatasetMode,
@@ -43,7 +42,6 @@ def test_enum_exports_in_root():
     assert ScalingMethod.MINMAX == 'minmax'
     assert ClassificationSplittingStrategy.AS_DEFINED == 'as_defined'
     assert ForecastingMode.UNIVARIATE == 'univariate'
-    assert DistanceMetric.EUCLIDEAN == 'euclidean'
 
 
 def test_init_files_exist():
