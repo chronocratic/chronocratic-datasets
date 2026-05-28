@@ -179,6 +179,11 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Safe to call before or after setup() — returns cached attrs once
         populated.
 
+        Branch-specific prerequisites:
+        - Forecasting: prepare_data() must have populated _full_data.
+        - Classification: prepare_data() must have populated
+          _train_data_samples.
+
         Returns:
             Tuple of (n_features, sequence_len). Values may be None if
             dimensions have not yet been computed.
