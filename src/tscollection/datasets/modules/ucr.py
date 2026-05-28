@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 
 from tscollection.datasets.datatypes.ucr import UCRClassificationUnivariateDataset
 from tscollection.datasets.enums.data import (
-    ClassificationSplittingStrategy,
+    ClassificationSplitMode,
     DataForm,
     ScalingMethod,
     TimeSeriesDatasetMode,
@@ -62,7 +62,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             :data:`ScalingMethod.MINMAX`.
         splitting_strategy: ``AS_DEFINED`` or ``MANUAL`` splitting,
             typed as
-            :class:`~tscollection.datasets.enums.data.ClassificationSplittingStrategy`.
+            :class:`~tscollection.datasets.enums.data.ClassificationSplitMode`.
         test_size: Test set fraction for ``MANUAL`` splitting.
         num_workers: DataLoader worker count.
     """
@@ -78,8 +78,8 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         scale_data: bool = True,
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
-        splitting_strategy: ClassificationSplittingStrategy = (
-            ClassificationSplittingStrategy.AS_DEFINED
+        splitting_strategy: ClassificationSplitMode = (
+            ClassificationSplitMode.AS_DEFINED
         ),
         test_size: float = 0.5,
         num_workers: int = 0,
@@ -176,7 +176,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         test_data = self._clean_data_of_missing_values(test_data)
 
         # Apply splitting strategy
-        if self.splitting_strategy == ClassificationSplittingStrategy.MANUAL:
+        if self.splitting_strategy == ClassificationSplitMode.MANUAL:
             combined = pd.concat([train_data, test_data], axis=0, ignore_index=True)
             train_data, test_data = train_test_split(
                 combined,

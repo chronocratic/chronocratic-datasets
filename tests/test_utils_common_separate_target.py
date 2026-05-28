@@ -1,4 +1,4 @@
-"""Tests for ClassificationSplittingStrategy enum and separate_target_feature_from_df.
+"""Tests for ClassificationSplitMode enum and separate_target_feature_from_df.
 
 Verifies the enum rename and the new utility function port
 that are foundational for Phase 4 data modules.
@@ -8,26 +8,26 @@ import pandas as pd
 import pytest
 
 
-class TestClassificationSplittingStrategy:
-    """Tests for the renamed ClassificationSplittingStrategy enum."""
+class TestClassificationSplitMode:
+    """Tests for the renamed ClassificationSplitMode enum."""
 
     def test_as_defined_value(self) -> None:
-        """ClassificationSplittingStrategy.AS_DEFINED equals 'as_defined'."""
-        from tscollection.datasets.enums import ClassificationSplittingStrategy
+        """ClassificationSplitMode.AS_DEFINED equals 'as_defined'."""
+        from tscollection.datasets.enums import ClassificationSplitMode
 
-        assert ClassificationSplittingStrategy.AS_DEFINED == 'as_defined'
+        assert ClassificationSplitMode.AS_DEFINED == 'as_defined'
 
     def test_manual_value(self) -> None:
-        """ClassificationSplittingStrategy.MANUAL equals 'manual'."""
-        from tscollection.datasets.enums import ClassificationSplittingStrategy
+        """ClassificationSplitMode.MANUAL equals 'manual'."""
+        from tscollection.datasets.enums import ClassificationSplitMode
 
-        assert ClassificationSplittingStrategy.MANUAL == 'manual'
+        assert ClassificationSplitMode.MANUAL == 'manual'
 
     def test_import_from_root(self) -> None:
-        """ClassificationSplittingStrategy is importable from tscollection.datasets."""
-        from tscollection.datasets import ClassificationSplittingStrategy
+        """ClassificationSplitMode is importable from tscollection.datasets."""
+        from tscollection.datasets import ClassificationSplitMode
 
-        assert ClassificationSplittingStrategy.AS_DEFINED == 'as_defined'
+        assert ClassificationSplitMode.AS_DEFINED == 'as_defined'
 
     def test_old_name_does_not_exist(self) -> None:
         """SplittingStrategy should no longer be exported from enums."""
@@ -40,6 +40,28 @@ class TestClassificationSplittingStrategy:
         import tscollection.datasets as datasets_module
 
         assert not hasattr(datasets_module, 'SplittingStrategy')
+
+
+class TestForecastingSplitMode:
+    """Tests for the ForecastingSplitMode enum."""
+
+    def test_indexed_value(self) -> None:
+        """ForecastingSplitMode.INDEXED equals 'indexed'."""
+        from tscollection.datasets.enums import ForecastingSplitMode
+
+        assert ForecastingSplitMode.INDEXED == 'indexed'
+
+    def test_fractional_value(self) -> None:
+        """ForecastingSplitMode.FRACTIONAL equals 'fractional'."""
+        from tscollection.datasets.enums import ForecastingSplitMode
+
+        assert ForecastingSplitMode.FRACTIONAL == 'fractional'
+
+    def test_import_from_root(self) -> None:
+        """ForecastingSplitMode is importable from tscollection.datasets."""
+        from tscollection.datasets import ForecastingSplitMode
+
+        assert ForecastingSplitMode.INDEXED == 'indexed'
 
 
 class TestSeparateTargetFeatureFromDf:

@@ -12,7 +12,7 @@ from functools import partial
 from typing import Any, TYPE_CHECKING
 
 from tscollection.datasets.enums.data import (
-    ClassificationSplittingStrategy,
+    ClassificationSplitMode,
     DataForm,
     ScalingMethod,
 )
@@ -38,7 +38,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     Used by UCR and UEA classification modules.
 
     The constructor accepts ``target_column_name`` as an explicit parameter,
-    uses :class:`ClassificationSplittingStrategy` enum for splitting,
+    uses :class:`ClassificationSplitMode` enum for splitting,
     and relies on the inherited ``setup()`` which calls
     ``create_data_scaler()``.
 
@@ -55,9 +55,9 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             :data:`ScalingMethod.MINMAX`.
         target_column_name: Name of the target/label column in the data.
         splitting_strategy: How to split train/test data, typed as
-            :class:`~tscollection.datasets.enums.data.ClassificationSplittingStrategy`.
+            :class:`~tscollection.datasets.enums.data.ClassificationSplitMode`.
         test_size: Fraction reserved as test set (used with
-            :data:`ClassificationSplittingStrategy.MANUAL`).
+            :data:`ClassificationSplitMode.MANUAL`).
         num_workers: Number of DataLoader worker processes.
     """
 
@@ -72,8 +72,8 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
         target_column_name: str,
-        splitting_strategy: ClassificationSplittingStrategy = (
-            ClassificationSplittingStrategy.AS_DEFINED
+        splitting_strategy: ClassificationSplitMode = (
+            ClassificationSplitMode.AS_DEFINED
         ),
         test_size: float = 0.5,
         num_workers: int = 0,

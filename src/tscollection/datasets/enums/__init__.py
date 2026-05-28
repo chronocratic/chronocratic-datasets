@@ -1,17 +1,19 @@
 """Typed enumerations for dataset parameters."""
 
 from tscollection.datasets.enums.data import (
-    ClassificationSplittingStrategy,
+    ClassificationSplitMode,
     DataForm,
     ForecastingMode,
+    ForecastingSplitMode,
     ScalingMethod,
     TimeSeriesDatasetMode,
 )
 
 __all__ = [
-    'ClassificationSplittingStrategy',
+    'ClassificationSplitMode',
     'DataForm',
     'ForecastingMode',
+    'ForecastingSplitMode',
     'ScalingMethod',
     'TimeSeriesDatasetMode',
 ]
