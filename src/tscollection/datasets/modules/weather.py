@@ -118,7 +118,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
     # Lightning lifecycle
     # ------------------------------------------------------------------
 
-    def prepare_data(self) -> None:
+    def _do_prepare_data(self) -> None:
         """Validate file path, read CSV, and prepare data.
 
         Per D-16, raises ``FileNotFoundError`` if the CSV file does not
@@ -139,7 +139,6 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             df = df.iloc[:, -1:]  # Last column for univariate
 
         self._full_data = df
-        self._post_prepare_data()
 
     # ------------------------------------------------------------------
     # Dataloaders (D-13: TensorDataset)
