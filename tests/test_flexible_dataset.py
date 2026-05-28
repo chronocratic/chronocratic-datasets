@@ -1,27 +1,25 @@
-"""Tests for flexible (sliding-window) dataset classes (DST-02, DST-04).
+"""Tests for flexible (sliding-window) dataset classes.
 
 Verifies that FlexibleTimeSeriesDataset accepts seq_len and step,
 produces sliding-window sequences, and raises IndexError for
 out-of-range indices.
 """
 
+from __future__ import annotations
+
 import numpy as np
 import pytest
 import torch
 
-from tscollection.datasets._base.strategies import (
-    ForecastingStrategySingleFile,
-)
+from tscollection.datasets._base.strategies import ForecastingStrategySingleFile
 from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 # --- Task 2 RED-phase tests (will fail until flexible.py is implemented) ---
 
 
 def test_flexible_accepts_seq_len_step():
-    """DST-04: FlexibleTimeSeriesDatasetSingleFile stores seq_len and step."""
-    from tscollection.datasets._base.flexible import (
-        FlexibleTimeSeriesDatasetSingleFile,
-    )
+    """FlexibleTimeSeriesDatasetSingleFile stores seq_len and step."""
+    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 
     data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
@@ -40,10 +38,8 @@ def test_flexible_accepts_seq_len_step():
 
 
 def test_flexible_yields_windows():
-    """DST-02: FlexibleTimeSeriesDatasetSingleFile yields sliding-window pairs."""
-    from tscollection.datasets._base.flexible import (
-        FlexibleTimeSeriesDatasetSingleFile,
-    )
+    """FlexibleTimeSeriesDatasetSingleFile yields sliding-window pairs."""
+    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 
     data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
@@ -64,9 +60,7 @@ def test_flexible_yields_windows():
 
 def test_flexible_bounds_check():
     """FlexibleTimeSeriesDatasetSingleFile raises IndexError for out-of-range index."""
-    from tscollection.datasets._base.flexible import (
-        FlexibleTimeSeriesDatasetSingleFile,
-    )
+    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 
     data = np.random.default_rng().standard_normal((200, 7)).astype(np.float32)
     strategy = ForecastingStrategySingleFile(forecast_horizon=24)
@@ -88,14 +82,10 @@ def test_flexible_multifile_boundary_indices():
     """FlexibleTimeSeriesDatasetMultipleFiles maps boundary indices correctly.
 
     Verify that global indices at file boundaries return data from the
-    correct file, not the adjacent one (regression test for CR-04).
+    correct file, not the adjacent one.
     """
-    from tscollection.datasets._base.flexible import (
-        FlexibleTimeSeriesDatasetMultipleFiles,
-    )
-    from tscollection.datasets._base.strategies import (
-        ClassificationStrategyMultipleFiles,
-    )
+    from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetMultipleFiles
+    from tscollection.datasets._base.strategies import ClassificationStrategyMultipleFiles
 
     # File 0: 100 samples, seq_len=50, step=10 -> 6 windows (global idx 0..5)
     # File 1: 200 samples, seq_len=50, step=10 -> 16 windows (global idx 6..21)

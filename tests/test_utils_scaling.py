@@ -1,4 +1,4 @@
-"""Tests for scaling utility functions (UTI-02).
+"""Tests for scaling utility functions.
 
 Verifies that create_data_scaler correctly wires ScalingMethod and DataForm
 enums, applies MinMax/Standard scaling across regular, nested, and
@@ -11,21 +11,20 @@ import pytest
 
 from tscollection.datasets.enums.data import DataForm, ScalingMethod
 
-
 # --------------------------------------------------------------------------- #
 # create_data_scaler import tests                                              #
 # --------------------------------------------------------------------------- #
 
 
 def test_create_data_scaler_import() -> None:
-    """UTI-02: create_data_scaler is importable from scaling module."""
+    """create_data_scaler is importable from scaling module."""
     from tscollection.datasets.utils.scaling import create_data_scaler
 
     assert callable(create_data_scaler)
 
 
 def test_no_dataformenum_defined() -> None:
-    """UTI-02: scaling.py does not define a local DataFormEnum class."""
+    """scaling.py does not define a local DataFormEnum class."""
     import tscollection.datasets.utils.scaling as scaling_mod
 
     assert not hasattr(scaling_mod, 'DataFormEnum')
@@ -37,7 +36,7 @@ def test_no_dataformenum_defined() -> None:
 
 
 def test_create_data_scaler_regular_minmax() -> None:
-    """UTI-02: create_data_scaler with REGULAR data and MinMax scaling.
+    """create_data_scaler with REGULAR data and MinMax scaling.
 
     Train data is fit, all splits are transformed.
     Values should be in the specified range.
@@ -54,7 +53,7 @@ def test_create_data_scaler_regular_minmax() -> None:
     valid = np.array([[2.5, 15.0], [7.5, 25.0]])
     test = np.array([[0.0, 0.0], [10.0, 40.0]])
 
-    scaled_train, scaled_valid, scaled_test = scaler_fn(
+    scaled_train, _scaled_valid, _scaled_test = scaler_fn(
         train_data=train, valid_data=valid, test_data=test
     )
 
@@ -66,7 +65,7 @@ def test_create_data_scaler_regular_minmax() -> None:
 
 
 def test_create_data_scaler_regular_standard() -> None:
-    """UTI-02: create_data_scaler with REGULAR data and Standard scaling.
+    """create_data_scaler with REGULAR data and Standard scaling.
 
     Values should be zero-mean, unit-variance per feature.
     """
@@ -82,7 +81,7 @@ def test_create_data_scaler_regular_standard() -> None:
     valid = np.array([[2.5, 15.0]])
     test = np.array([[7.5, 25.0]])
 
-    scaled_train, scaled_valid, scaled_test = scaler_fn(
+    scaled_train, _scaled_valid, _scaled_test = scaler_fn(
         train_data=train, valid_data=valid, test_data=test
     )
 
@@ -94,7 +93,7 @@ def test_create_data_scaler_regular_standard() -> None:
 
 
 def test_create_data_scaler_regular_dataframe() -> None:
-    """UTI-02: create_data_scaler preserves DataFrame type for regular data."""
+    """create_data_scaler preserves DataFrame type for regular data."""
     from tscollection.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
@@ -106,7 +105,7 @@ def test_create_data_scaler_regular_dataframe() -> None:
     train = pd.DataFrame({'a': [0.0, 10.0], 'b': [10.0, 30.0]})
     test = pd.DataFrame({'a': [5.0], 'b': [20.0]})
 
-    scaled_train, scaled_valid, scaled_test = scaler_fn(
+    scaled_train, _scaled_valid, _scaled_test = scaler_fn(
         train_data=train, valid_data=None, test_data=test
     )
 
@@ -120,7 +119,7 @@ def test_create_data_scaler_regular_dataframe() -> None:
 
 
 def test_create_data_scaler_nested_preserves_shape() -> None:
-    """UTI-02: create_data_scaler with NESTED data preserves 3-D shape."""
+    """create_data_scaler with NESTED data preserves 3-D shape."""
     from tscollection.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
@@ -149,7 +148,7 @@ def test_create_data_scaler_nested_preserves_shape() -> None:
 
 
 def test_create_data_scaler_multi_files() -> None:
-    """UTI-02: create_data_scaler with MULTI_FILES scales list of 1-D arrays."""
+    """create_data_scaler with MULTI_FILES scales list of 1-D arrays."""
     from tscollection.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
@@ -161,7 +160,7 @@ def test_create_data_scaler_multi_files() -> None:
     train = [np.array([0.0, 5.0, 10.0]), np.array([2.0, 8.0])]
     test = [np.array([1.0, 9.0])]
 
-    scaled_train, scaled_valid, scaled_test = scaler_fn(
+    scaled_train, _scaled_valid, scaled_test = scaler_fn(
         train_data=train, valid_data=None, test_data=test
     )
 
@@ -175,7 +174,7 @@ def test_create_data_scaler_multi_files() -> None:
 
 
 def test_create_data_scaler_no_scale() -> None:
-    """UTI-02: create_data_scaler with scale=False returns data unchanged."""
+    """create_data_scaler with scale=False returns data unchanged."""
     from tscollection.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
@@ -203,29 +202,27 @@ def test_create_data_scaler_no_scale() -> None:
 
 
 def test_get_scaler_minmax_enum() -> None:
-    """UTI-02: _get_scaler accepts ScalingMethod.MINMAX enum member."""
-    from tscollection.datasets.utils.scaling import _get_scaler
+    """_get_scaler accepts ScalingMethod.MINMAX enum member."""
     from sklearn.preprocessing import MinMaxScaler
 
-    scaler = _get_scaler(
-        scaling_method=ScalingMethod.MINMAX, scaling_range=(0.0, 1.0)
-    )
+    from tscollection.datasets.utils.scaling import _get_scaler
+
+    scaler = _get_scaler(scaling_method=ScalingMethod.MINMAX, scaling_range=(0.0, 1.0))
     assert isinstance(scaler, MinMaxScaler)
 
 
 def test_get_scaler_standard_enum() -> None:
-    """UTI-02: _get_scaler accepts ScalingMethod.STANDARD enum member."""
-    from tscollection.datasets.utils.scaling import _get_scaler
+    """_get_scaler accepts ScalingMethod.STANDARD enum member."""
     from sklearn.preprocessing import StandardScaler
 
-    scaler = _get_scaler(
-        scaling_method=ScalingMethod.STANDARD, scaling_range=(0.0, 1.0)
-    )
+    from tscollection.datasets.utils.scaling import _get_scaler
+
+    scaler = _get_scaler(scaling_method=ScalingMethod.STANDARD, scaling_range=(0.0, 1.0))
     assert isinstance(scaler, StandardScaler)
 
 
 def test_get_scaler_invalid_raises() -> None:
-    """UTI-02: _get_scaler raises ValueError for unknown method."""
+    """_get_scaler raises ValueError for unknown method."""
     from tscollection.datasets.utils.scaling import _get_scaler
 
     with pytest.raises(ValueError, match='Unsupported scaling method'):
@@ -238,7 +235,7 @@ def test_get_scaler_invalid_raises() -> None:
 
 
 def test_all_exports() -> None:
-    """UTI-02: __all__ exports only create_data_scaler (not private helpers)."""
+    """__all__ exports only create_data_scaler (not private helpers)."""
     import tscollection.datasets.utils.scaling as scaling_mod
 
     assert scaling_mod.__all__ == ['create_data_scaler']

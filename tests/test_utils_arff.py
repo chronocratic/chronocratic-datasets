@@ -1,17 +1,12 @@
-"""Tests for ARFF utility functions (UTI-01).
+"""Tests for ARFF utility functions.
 
 Verifies that read_arff_as_df and process_df_according_to_dtypes
 correctly parse ARFF files and transform DataFrame columns.
 """
 
 import pandas as pd
-import pytest
 
-from tscollection.datasets.utils.arff import (
-    process_df_according_to_dtypes,
-    read_arff_as_df,
-)
-
+from tscollection.datasets.utils.arff import process_df_according_to_dtypes, read_arff_as_df
 
 # --------------------------------------------------------------------------- #
 # read_arff_as_df tests                                                        #
@@ -19,7 +14,7 @@ from tscollection.datasets.utils.arff import (
 
 
 def test_read_arff_as_df_returns_dataframe_and_metadata(tmp_path) -> None:
-    """UTI-01: read_arff_as_df returns a DataFrame and ARFF metadata."""
+    """read_arff_as_df returns a DataFrame and ARFF metadata."""
     arff_content = """@relation test
 @attribute numeric_col numeric
 @attribute nominal_col {a, b}
@@ -40,7 +35,7 @@ def test_read_arff_as_df_returns_dataframe_and_metadata(tmp_path) -> None:
 
 
 def test_read_arff_as_df_string_path(tmp_path) -> None:
-    """UTI-01: read_arff_as_df accepts string paths."""
+    """read_arff_as_df accepts string paths."""
     arff_content = """@relation test
 @attribute x numeric
 
@@ -50,13 +45,13 @@ def test_read_arff_as_df_string_path(tmp_path) -> None:
     arff_file = tmp_path / 'string_test.arff'
     arff_file.write_text(arff_content)
 
-    df, meta = read_arff_as_df(str(arff_file))
+    df, _meta = read_arff_as_df(str(arff_file))
     assert isinstance(df, pd.DataFrame)
     assert df.shape[0] == 1
 
 
 def test_read_arff_as_df_nominal_returns_bytes(tmp_path) -> None:
-    """UTI-01: Nominal columns from scipy are bytes objects."""
+    """Nominal columns from scipy are bytes objects."""
     arff_content = """@relation test
 @attribute label {cat, dog}
 
@@ -79,7 +74,7 @@ dog,
 
 
 def test_process_df_according_to_dtypes_applies_transforms(tmp_path) -> None:
-    """UTI-01: process_df_according_to_dtypes applies mapped functions."""
+    """process_df_according_to_dtypes applies mapped functions."""
     arff_content = """@relation test
 @attribute x numeric
 @attribute y {a, b}
@@ -99,13 +94,8 @@ def test_process_df_according_to_dtypes_applies_transforms(tmp_path) -> None:
     def decode_bytes(series):
         return series.apply(lambda x: x.decode() if isinstance(x, bytes) else x)
 
-    dtypes_map = {
-        'numeric': to_float,
-        'nominal': decode_bytes,
-    }
+    dtypes_map = {'numeric': to_float, 'nominal': decode_bytes}
 
-    result = process_df_according_to_dtypes(
-        df_data=df, meta=meta, dtypes_functions_map=dtypes_map
-    )
+    result = process_df_according_to_dtypes(df_data=df, meta=meta, dtypes_functions_map=dtypes_map)
     assert result['x'].dtype == float
     assert result['y'].iloc[0] == 'a'

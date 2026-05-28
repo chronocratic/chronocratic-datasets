@@ -1,9 +1,11 @@
-"""Tests for fixed-length dataset classes (DST-01, DST-03).
+"""Tests for fixed-length dataset classes.
 
 Verifies that TimeSeriesDataset dispatches correctly by mode,
 FixedTimeSeriesDataset exposes seq_len as a read-only property,
 and univariate/multivariate subclasses return data in the expected format.
 """
+
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
@@ -16,7 +18,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 
 def test_fixed_yields_data_label():
-    """DST-01: FixedTimeSeriesDatasetUnivariate yields (torch.Tensor, int) in WITH_LABELS mode."""
+    """FixedTimeSeriesDatasetUnivariate yields (torch.Tensor, int) in WITH_LABELS mode."""
     from tscollection.datasets._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
@@ -34,7 +36,7 @@ def test_fixed_yields_data_label():
 
 
 def test_fixed_seq_len_property():
-    """DST-03: FixedTimeSeriesDataset.seq_len returns int from data shape (read-only)."""
+    """FixedTimeSeriesDataset.seq_len returns int from data shape (read-only)."""
     from tscollection.datasets._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
@@ -69,10 +71,8 @@ def test_fixed_length():
 
 
 def test_multivariate_get_current_data():
-    """DST-01: FixedTimeSeriesDatasetMultivariate._get_current_data returns 3D slice."""
-    from tscollection.datasets._base.fixed import (
-        FixedTimeSeriesDatasetMultivariate,
-    )
+    """FixedTimeSeriesDatasetMultivariate._get_current_data returns 3D slice."""
+    from tscollection.datasets._base.fixed import FixedTimeSeriesDatasetMultivariate
 
     # 5 samples, 30 timesteps, 4 features
     data = np.random.default_rng().standard_normal((5, 30, 4)).astype(np.float32)

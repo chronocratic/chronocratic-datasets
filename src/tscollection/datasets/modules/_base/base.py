@@ -9,9 +9,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import partial
-from typing import Any
 
 import lightning.pytorch as pl
+import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
 
@@ -71,14 +71,14 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self.data_scaling_range = data_scaling_range
         self.num_workers = num_workers
         self._data_form = data_form
-        self._datatype_handling_functions_map: dict[str, Any] | None = None
+        self._datatype_handling_functions_map: dict[str, object] | None = None
         self._initiate_datatypes_handling_functions_map()
         self._dataset_name: str | None = None
         self._num_features: int | None = None
-        self._train_data_samples: Any = None
-        self._test_data_samples: Any = None
-        self._valid_data_samples: Any = None
-        self._dataset_class: Any = None
+        self._train_data_samples: np.ndarray | pd.DataFrame | None = None
+        self._test_data_samples: np.ndarray | pd.DataFrame | None = None
+        self._valid_data_samples: np.ndarray | pd.DataFrame | None = None
+        self._dataset_class: type | None = None
         self._setup_completed_stages: set[str | None] = set()
         self._prepare_data_called: bool = False
 
@@ -102,17 +102,17 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         return self._num_features
 
     @property
-    def train_data_samples(self) -> Any:
+    def train_data_samples(self) -> np.ndarray | pd.DataFrame | None:
         """Training data samples."""
         return self._train_data_samples
 
     @property
-    def test_data_samples(self) -> Any:
+    def test_data_samples(self) -> np.ndarray | pd.DataFrame | None:
         """Test data samples."""
         return self._test_data_samples
 
     @property
-    def valid_data_samples(self) -> Any:
+    def valid_data_samples(self) -> np.ndarray | pd.DataFrame | None:
         """Validation data samples."""
         return self._valid_data_samples
 
@@ -120,12 +120,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     def all_data_samples(self) -> pd.DataFrame:
         """Concatenation of all data splits."""
         return pd.concat(
-            [
-                self._train_data_samples,
-                self._test_data_samples,
-                self._valid_data_samples,
-            ],
-            axis=0,
+            [self._train_data_samples, self._test_data_samples, self._valid_data_samples], axis=0
         )
 
     # ------------------------------------------------------------------
@@ -142,7 +137,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
            forecasting overrides to set slices).
         4. Set sentinel.
 
-        Per D-09, ``prepare_data()`` does NOT load or split data —
+        ``prepare_data()`` does NOT load or split data —
         that happens in ``setup()``.
         """
         if self._prepare_data_called:
@@ -152,7 +147,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._prepare_data_called = True
 
     # ------------------------------------------------------------------
-    # Dimension API (A1, D4)
+    # Dimension API
     # ------------------------------------------------------------------
 
     def prepare_dimensions(self) -> tuple[int | None, int | None]:
@@ -160,7 +155,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
 
         Caller must invoke prepare_data() first. setup() is NOT required.
         Safe to call before or after setup() — returns cached attrs once
-        populated (D4 short-circuit).
+        populated.
 
         Returns:
             Tuple of (n_features, sequence_len). Values may be None if
@@ -208,7 +203,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     def setup(self, stage: str) -> None:
         """Apply data scaling via :func:`create_data_scaler`.
 
-        Per D-09 and D-10, the classification branch uses
+        The classification branch uses
         ``create_data_scaler()`` from utilities. The forecasting
         branch overrides this method entirely with sklearn
         direct scaling.
@@ -225,14 +220,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             scaling_method=self.data_scaling_method,
             data_form=self._data_form,
         )
-        (
-            self._train_data_samples,
-            self._valid_data_samples,
-            self._test_data_samples,
-        ) = scaler(
-            self._train_data_samples,
-            self._valid_data_samples,
-            self._test_data_samples,
+        (self._train_data_samples, self._valid_data_samples, self._test_data_samples) = scaler(
+            self._train_data_samples, self._valid_data_samples, self._test_data_samples
         )
         self._setup_completed_stages.add(stage)
 
@@ -242,13 +231,9 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
 
     def _initiate_datatypes_handling_functions_map(self) -> None:
         """Initialize the datatype handling functions map."""
-        self._datatype_handling_functions_map = defaultdict(
-            lambda: lambda x: x, {}
-        )
+        self._datatype_handling_functions_map = defaultdict(lambda: lambda x: x, {})
 
-    def _get_custom_collate_fn(
-        self, desired_batch_size: int | None = None
-    ) -> Any:
+    def _get_custom_collate_fn(self, desired_batch_size: int | None = None) -> partial:
         """Return a collate function bound to the desired batch size.
 
         Args:
@@ -269,10 +254,10 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     def _process_train_dataloader(
         self,
         *,
-        dataset_object: Any,
+        dataset_object: object,
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
-        extra_args: dict[str, Any] | None = None,
+        extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
         """Build the training DataLoader.
 
@@ -289,7 +274,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         """
         if shuffle is None:
             shuffle = self.shuffle
-        dataloader_args: dict[str, Any] = {
+        dataloader_args: dict[str, object] = {
             'dataset': dataset_object,
             'batch_size': self.batch_size,
             'num_workers': self.num_workers,
@@ -305,9 +290,9 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     def _process_test_dataloader(
         self,
         *,
-        dataset_object: Any,
+        dataset_object: object,
         strict_batch_size: bool = False,
-        extra_args: dict[str, Any] | None = None,
+        extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader.
 
@@ -323,7 +308,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Returns:
             Configured DataLoader for testing.
         """
-        dataloader_args: dict[str, Any] = {
+        dataloader_args: dict[str, object] = {
             'dataset': dataset_object,
             'batch_size': self.batch_size,
             'num_workers': self.num_workers,
@@ -339,9 +324,9 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     def _process_valid_dataloader(
         self,
         *,
-        dataset_object: Any,
+        dataset_object: object,
         strict_batch_size: bool = False,
-        extra_args: dict[str, Any] | None = None,
+        extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
         """Build the validation DataLoader.
 

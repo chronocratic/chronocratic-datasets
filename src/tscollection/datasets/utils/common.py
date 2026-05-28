@@ -5,10 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    import pandas as pd
 
 __all__ = [
     'FunctionComposer',
@@ -66,9 +67,7 @@ def compose(*functions: Callable) -> Callable:
     return FunctionComposer(list(functions))
 
 
-def flatten_list_of_np_arrays(
-    list_of_np_arrays: list[np.ndarray],
-) -> np.ndarray:
+def flatten_list_of_np_arrays(list_of_np_arrays: list[np.ndarray]) -> np.ndarray:
     """Flatten a list of numpy arrays into a single 1-D array.
 
     Args:
@@ -99,9 +98,12 @@ def separate_target_feature_from_df(
         KeyError: If target_feature_name is not in df.columns.
     """
     if target_feature_name not in df.columns:
-        raise KeyError(
+        msg = (
             f"Target feature '{target_feature_name}' not found in DataFrame columns. "
-            f"Available columns: {list(df.columns)}"
+            f'Available columns: {list(df.columns)}'
+        )
+        raise KeyError(
+            msg
         )
     target_feature = df[target_feature_name]
     features = df.drop(target_feature_name, axis=1)

@@ -8,7 +8,6 @@ Weather).
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -25,7 +24,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     """Base LightningDataModule for forecasting time series datasets.
 
     Extends :class:`BaseTimeSeriesDataModule` with dataset-intrinsic
-    time slicing, sklearn-based scaling (D-10), and cyclical time
+    time slicing, sklearn-based scaling, and cyclical time
     feature extraction. Overrides ``setup()`` entirely to handle
     forecasting-specific scaling (fit on train slice only).
 
@@ -76,6 +75,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._test_slice: slice | None = None
         self._full_data: np.ndarray | pd.DataFrame | None = None
         self._num_time_series_features: int | None = None
+        self._data_scaler_cache: MinMaxScaler | StandardScaler | None = None
+        self._ts_feature_scaler_cache: MinMaxScaler | StandardScaler | None = None
 
     # ------------------------------------------------------------------
     # Properties
@@ -158,22 +159,45 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # Setup — overrides base
     # ------------------------------------------------------------------
 
-    def setup(self, stage: str) -> None:
+    def setup(self, stage: str | None = None) -> None:
         """Scale data, extract time features, and split into train/val/test.
 
-        Per D-10, the forecasting branch uses sklearn scalers directly
+        The forecasting branch uses sklearn scalers directly
         (not ``create_data_scaler()``) because forecasting data has a
-        different shape (features × timesteps). Fits scaler on train
-        slice only to prevent data leakage (T-04-02-04).
+        different shape (features x timesteps). Fits scaler on train
+        slice only to prevent data leakage.
+
+        Stage branching:
+        - ``fit``/``None``: Fit scalers, transform data, split into slices.
+        - ``test``/``predict``: Reuse cached fitted scalers to transform.
+        - ``validate``: No data mutation; mark stage as complete.
+
+        Idempotency guard: Repeated calls for the same stage are
+        no-ops via ``_setup_completed_stages`` sentinel.
 
         When ``scale_data`` is False, scaling and time feature extraction
         are skipped entirely to preserve raw values.
 
         Args:
-            stage: Lightning stage identifier (``"fit"`` or ``"test"``).
+            stage: Lightning stage identifier.
+
+        Raises:
+            ValueError: If stage is not one of
+                ``{'fit', 'validate', 'test', 'predict', None}``.
         """
+        if stage not in ('fit', 'validate', 'test', 'predict', None):
+            msg = f'Unknown stage: {stage!r}'
+            raise ValueError(msg)
+        if stage in self._setup_completed_stages or None in self._setup_completed_stages:
+            return
+
         assert self._full_data is not None, 'Full data not set; call prepare_data() first'
         assert self._train_slice is not None, 'Train slice not set; call _set_data_slices() first'
+
+        # validate: no data mutation, just mark stage complete
+        if stage == 'validate':
+            self._setup_completed_stages.add(stage)
+            return
 
         # Extract time features from DataFrame index if applicable
         if isinstance(self._full_data, pd.DataFrame):
@@ -187,47 +211,75 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if time_index is not None:
             from tscollection.datasets.utils.features import extract_time_features
 
-            time_series_features = extract_time_features(
-                pd.DatetimeIndex(time_index)
-            )
+            time_series_features = extract_time_features(pd.DatetimeIndex(time_index))
             num_time_series_features = time_series_features.shape[-1]
         else:
             time_series_features = np.empty((0, 0))
             num_time_series_features = 0
 
         if self.scale_data:
-            # Fit scaler on train slice only, transform full data.
-            # Before _transform_data(), full_array has shape (time_steps, features),
-            # so time slicing is axis 0 (not axis 1).
-            data_scaler = self._prepare_data_scaler()
-            data_scaler.fit(full_array[self._train_slice])
-            self._full_data = data_scaler.transform(full_array)
+            if stage in ('fit', None):
+                # Fit scaler on train slice only, transform full data.
+                # Before _transform_data(), full_array has shape (time_steps, features),
+                # so time slicing is axis 0 (not axis 1).
+                data_scaler = self._prepare_data_scaler()
+                data_scaler.fit(full_array[self._train_slice])
+                self._data_scaler_cache = data_scaler
+                self._full_data = data_scaler.transform(full_array)
 
-            # Apply module-specific transform
-            self._transform_data()
+                # Apply module-specific transform
+                self._transform_data()
 
-            # Scale time features if present
-            if num_time_series_features > 0:
-                ts_feature_scaler = self._prepare_data_scaler()
-                ts_feature_scaler.fit(time_series_features[self._train_slice])
-                scaled_ts_features = ts_feature_scaler.transform(time_series_features)
-                scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
-                assert self._full_data is not None
-                repeated_ts = np.repeat(
-                    scaled_ts_features, self._full_data.shape[0], axis=0
-                )
-                self._full_data = np.concatenate(
-                    [repeated_ts, self._full_data], axis=-1
-                )
+                # Scale time features if present
+                if num_time_series_features > 0:
+                    ts_feature_scaler = self._prepare_data_scaler()
+                    ts_feature_scaler.fit(time_series_features[self._train_slice])
+                    self._ts_feature_scaler_cache = ts_feature_scaler
+                    scaled_ts_features = ts_feature_scaler.transform(time_series_features)
+                    scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
+                    assert self._full_data is not None
+                    repeated_ts = np.repeat(scaled_ts_features, self._full_data.shape[0], axis=0)
+                    self._full_data = np.concatenate([repeated_ts, self._full_data], axis=-1)
+                self._num_time_series_features = num_time_series_features
+                self._calculate_num_features()
+                self._split_data()
+            elif stage in ('test', 'predict'):
+                # Reuse cached fitted scalers
+                if self._data_scaler_cache is not None and self._train_data_samples is None:
+                    # Standalone test/predict (fit hasn't run yet)
+                    self._full_data = self._data_scaler_cache.transform(full_array)
+                    self._transform_data()
+
+                    if num_time_series_features > 0 and self._ts_feature_scaler_cache is not None:
+                        scaled_ts_features = self._ts_feature_scaler_cache.transform(
+                            time_series_features
+                        )
+                        scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
+                        assert self._full_data is not None
+                        repeated_ts = np.repeat(
+                            scaled_ts_features, self._full_data.shape[0], axis=0
+                        )
+                        self._full_data = np.concatenate([repeated_ts, self._full_data], axis=-1)
+                    self._num_time_series_features = num_time_series_features
+                    self._calculate_num_features()
+                    self._split_data()
+                elif self._train_data_samples is not None:
+                    # fit already ran; data is already transformed and split.
+                    # Do nothing — scaler is already cached.
+                    pass
+                else:
+                    # No cached scaler and no prior fit; transform without scaling
+                    self._transform_data()
+                    self._calculate_num_features()
+                    self._split_data()
         else:
             # No scaling: apply module-specific transform on raw data.
-            # Keep original _full_data (may be DataFrame with DatetimeIndex)
-            # so _transform_data can convert it properly.
             self._transform_data()
+            self._num_time_series_features = num_time_series_features
+            self._calculate_num_features()
+            self._split_data()
 
-        self._num_time_series_features = num_time_series_features
-        self._calculate_num_features()
-        self._split_data()
+        self._setup_completed_stages.add(stage)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -237,7 +289,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         """Instantiate the appropriate sklearn scaler.
 
         Compares ``self.data_scaling_method`` against ``ScalingMethod``
-        enum members (D-03), NOT string literals.
+        enum members, NOT string literals.
 
         Returns:
             A scaler instance ready for fitting.
@@ -250,10 +302,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             return MinMaxScaler(feature_range=self.data_scaling_range)
         if self.data_scaling_method == ScalingMethod.STANDARD:
             return StandardScaler()
-        raise ValueError(
-            f'Unsupported scaling method for forecasting: '
-            f'{self.data_scaling_method}'
-        )
+        msg = f'Unsupported scaling method for forecasting: {self.data_scaling_method}'
+        raise ValueError(msg)
 
     def _calculate_num_features(self) -> None:
         """Calculate number of features from full data shape."""

@@ -1,8 +1,9 @@
 """Tests for ETT, ElectricityLoad, and Weather forecasting DataModules.
 
 Covers constructor params, variant validation, _set_data_slices,
-_csv parsing, transform patterns, TensorDataset usage, and
-FileNotFoundError for missing paths.
+_csv parsing, transform patterns, TensorDataset usage,
+FileNotFoundError for missing paths, and lifecycle integration tests
+(idempotency, prepare_data sentinel, finalize hook, dimensions, stage gating).
 """
 
 from pathlib import Path
@@ -11,14 +12,9 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 
-from tscollection.datasets.enums.data import (
-    ForecastingMode,
-    ScalingMethod,
-    TimeSeriesDatasetMode,
-)
-
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -30,13 +26,7 @@ def synthetic_csv_file(tmp_path: Path) -> Path:
     """Create a minimal CSV file for forecasting module tests."""
     csv_file = tmp_path / 'synthetic.csv'
     dates = pd.date_range('2020-01-01', periods=100, freq='h')
-    df = pd.DataFrame(
-        {
-            'date': dates,
-            'col1': np.random.randn(100),
-            'col2': np.random.randn(100),
-        }
-    )
+    df = pd.DataFrame({'date': dates, 'col1': np.random.randn(100), 'col2': np.random.randn(100)})
     df.to_csv(csv_file, index=False)
     return csv_file
 
@@ -51,11 +41,7 @@ def electricity_csv_file(tmp_path: Path) -> Path:
     # Generate data spanning 2011-2014 to cover the '2012:' slice
     dates = pd.date_range('2011-01-01', periods=10000, freq='h')
     df = pd.DataFrame(
-        {
-            'MT_001': np.random.randn(10000),
-            'MT_002': np.random.randn(10000),
-        },
-        index=dates,
+        {'MT_001': np.random.randn(10000), 'MT_002': np.random.randn(10000)}, index=dates
     )
     df.index.name = 'datetime'
     df.to_csv(csv_file, sep=';', decimal=',')
@@ -77,7 +63,7 @@ class TestETTDataModuleConstructor:
         assert ETTDataModule is not None
 
     def test_constructor_accepts_variant(self, synthetic_csv_file: Path) -> None:
-        """Constructor accepts explicit variant parameter (D-06)."""
+        """Constructor accepts explicit variant parameter."""
         from tscollection.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
@@ -93,24 +79,18 @@ class TestETTDataModuleConstructor:
         assert module.batch_size == 16
 
     def test_variant_validation_rejects_invalid(self, synthetic_csv_file: Path) -> None:
-        """Constructor raises ValueError for unknown variant (T-04-03-01)."""
+        """Constructor raises ValueError for unknown variant."""
         from tscollection.datasets.modules.ett import ETTDataModule
 
         with pytest.raises(ValueError, match='Unknown ETT variant'):
-            ETTDataModule(
-                dataset_file_path=synthetic_csv_file,
-                variant='unknown_variant',
-            )
+            ETTDataModule(dataset_file_path=synthetic_csv_file, variant='unknown_variant')
 
     def test_all_variants_accepted(self, synthetic_csv_file: Path) -> None:
         """All four valid variants are accepted without error."""
         from tscollection.datasets.modules.ett import ETTDataModule
 
         for variant in ['ETTh1', 'ETTh2', 'ETTm1', 'ETTm2']:
-            module = ETTDataModule(
-                dataset_file_path=synthetic_csv_file,
-                variant=variant,
-            )
+            module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
             assert module.variant == variant
 
 
@@ -122,10 +102,7 @@ class TestETTSetDataSlices:
         from tscollection.datasets.modules.ett import ETTDataModule
 
         for variant in ['ETTh1', 'ETTh2']:
-            module = ETTDataModule(
-                dataset_file_path=synthetic_csv_file,
-                variant=variant,
-            )
+            module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
             module._dataset_name = variant
             module._set_data_slices()
 
@@ -139,10 +116,7 @@ class TestETTSetDataSlices:
         from tscollection.datasets.modules.ett import ETTDataModule
 
         for variant in ['ETTm1', 'ETTm2']:
-            module = ETTDataModule(
-                dataset_file_path=synthetic_csv_file,
-                variant=variant,
-            )
+            module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
             module._dataset_name = variant
             module._set_data_slices()
 
@@ -156,13 +130,10 @@ class TestETTPrepareData:
     """Tests for ETT prepare_data method."""
 
     def test_prepare_data_raises_file_not_found(self) -> None:
-        """prepare_data raises FileNotFoundError for missing file (D-16)."""
+        """prepare_data raises FileNotFoundError for missing file."""
         from tscollection.datasets.modules.ett import ETTDataModule
 
-        module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/ETT.csv'),
-            variant='ETTh1',
-        )
+        module = ETTDataModule(dataset_file_path=Path('/nonexistent/ETT.csv'), variant='ETTh1')
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
@@ -202,24 +173,18 @@ class TestElectricityLoadPrepareData:
     """Tests for ElectricityLoadModule prepare_data."""
 
     def test_prepare_data_raises_file_not_found(self) -> None:
-        """prepare_data raises FileNotFoundError for missing file (D-16)."""
+        """prepare_data raises FileNotFoundError for missing file."""
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
-        module = ElectricityLoadModule(
-            dataset_file_path=Path('/nonexistent/electricity.csv'),
-        )
+        module = ElectricityLoadModule(dataset_file_path=Path('/nonexistent/electricity.csv'))
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
-    def test_dataset_name_is_electricity_load(
-        self, electricity_csv_file: Path
-    ) -> None:
+    def test_dataset_name_is_electricity_load(self, electricity_csv_file: Path) -> None:
         """_dataset_name is set to 'ElectricityLoad'."""
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
-        module = ElectricityLoadModule(
-            dataset_file_path=electricity_csv_file,
-        )
+        module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
         module.prepare_data()
         assert module._dataset_name == 'ElectricityLoad'
 
@@ -227,19 +192,14 @@ class TestElectricityLoadPrepareData:
 class TestElectricityLoadTransform:
     """Tests for ElectricityLoadModule _transform_data."""
 
-    def test_transform_uses_transpose_and_expand_dims(
-        self, electricity_csv_file: Path
-    ) -> None:
+    def test_transform_uses_transpose_and_expand_dims(self, electricity_csv_file: Path) -> None:
         """_transform_data applies transpose + expand_dims(axis=-1)."""
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
-        module = ElectricityLoadModule(
-            dataset_file_path=electricity_csv_file,
-        )
+        module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
         # Set synthetic full_data
         module._full_data = pd.DataFrame(
-            {'A': [1, 2, 3], 'B': [4, 5, 6]},
-            index=pd.date_range('2012-01-01', periods=3, freq='h'),
+            {'A': [1, 2, 3], 'B': [4, 5, 6]}, index=pd.date_range('2012-01-01', periods=3, freq='h')
         )
         module._transform_data()
 
@@ -282,12 +242,10 @@ class TestWeatherPrepareData:
     """Tests for WeatherModule prepare_data."""
 
     def test_prepare_data_raises_file_not_found(self) -> None:
-        """prepare_data raises FileNotFoundError for missing file (D-16)."""
+        """prepare_data raises FileNotFoundError for missing file."""
         from tscollection.datasets.modules.weather import WeatherModule
 
-        module = WeatherModule(
-            dataset_file_path=Path('/nonexistent/weather.csv'),
-        )
+        module = WeatherModule(dataset_file_path=Path('/nonexistent/weather.csv'))
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
@@ -299,13 +257,10 @@ class TestWeatherTransform:
         """_transform_data applies expand_dims(axis=0)."""
         from tscollection.datasets.modules.weather import WeatherModule
 
-        module = WeatherModule(
-            dataset_file_path=synthetic_csv_file,
-        )
+        module = WeatherModule(dataset_file_path=synthetic_csv_file)
         # Set synthetic full_data
         module._full_data = pd.DataFrame(
-            {'A': [1, 2, 3], 'B': [4, 5, 6]},
-            index=pd.date_range('2012-01-01', periods=3, freq='h'),
+            {'A': [1, 2, 3], 'B': [4, 5, 6]}, index=pd.date_range('2012-01-01', periods=3, freq='h')
         )
         module._transform_data()
 
@@ -319,11 +274,12 @@ class TestWeatherTransform:
 
 
 class TestForecastingModulesUseTensorDataset:
-    """Tests that all three modules use TensorDataset (D-13)."""
+    """Tests that all three modules use TensorDataset."""
 
     def test_ett_uses_tensordataset_in_source(self) -> None:
         """ETT source code references TensorDataset."""
         import tscollection.datasets.modules.ett as ett_module
+
         source = open(
             Path(ett_module.__file__).parent / 'ett.py'  # type: ignore[arg-type]
         ).read()
@@ -332,6 +288,7 @@ class TestForecastingModulesUseTensorDataset:
     def test_electricity_uses_tensordataset_in_source(self) -> None:
         """Electricity source code references TensorDataset."""
         import tscollection.datasets.modules.electricity as elec_module
+
         source = open(
             Path(elec_module.__file__).parent / 'electricity.py'  # type: ignore[arg-type]
         ).read()
@@ -340,6 +297,7 @@ class TestForecastingModulesUseTensorDataset:
     def test_weather_uses_tensordataset_in_source(self) -> None:
         """Weather source code references TensorDataset."""
         import tscollection.datasets.modules.weather as weather_module
+
         source = open(
             Path(weather_module.__file__).parent / 'weather.py'  # type: ignore[arg-type]
         ).read()
@@ -353,12 +311,9 @@ class TestForecastingSlices:
         """Weather uses 60/20/20 fractional split."""
         from tscollection.datasets.modules.weather import WeatherModule
 
-        module = WeatherModule(
-            dataset_file_path=synthetic_csv_file,
-        )
+        module = WeatherModule(dataset_file_path=synthetic_csv_file)
         module._full_data = pd.DataFrame(
-            {'A': range(100)},
-            index=pd.date_range('2012-01-01', periods=100, freq='h'),
+            {'A': range(100)}, index=pd.date_range('2012-01-01', periods=100, freq='h')
         )
         module._set_data_slices()
 
@@ -370,12 +325,9 @@ class TestForecastingSlices:
         """Electricity uses 60/20/20 fractional split."""
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
-        module = ElectricityLoadModule(
-            dataset_file_path=electricity_csv_file,
-        )
+        module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
         module._full_data = pd.DataFrame(
-            {'A': range(100)},
-            index=pd.date_range('2012-01-01', periods=100, freq='h'),
+            {'A': range(100)}, index=pd.date_range('2012-01-01', periods=100, freq='h')
         )
         module._set_data_slices()
 
@@ -385,7 +337,7 @@ class TestForecastingSlices:
 
 
 # ---------------------------------------------------------------------------
-# WeatherModule Integration Smoke Tests (D-03)
+# WeatherModule Integration Smoke Tests
 # ---------------------------------------------------------------------------
 
 
@@ -402,7 +354,7 @@ class TestWeatherModuleIntegration:
         """Create a synthetic Weather CSV with 200 rows and DatetimeIndex.
 
         Columns: 'date' (DatetimeIndex), 'wbng', 'wbhh', 'wbat', 'sbfg'.
-        Written via df.to_csv(index=False) per D-07.
+        Written via df.to_csv(index=False).
         """
         csv_path = tmp_path / 'weather.csv'
         dates = pd.date_range('2006-01-01', periods=200, freq='h')
@@ -419,9 +371,7 @@ class TestWeatherModuleIntegration:
         df.to_csv(csv_path, index=False)
         return csv_path
 
-    def test_weather_golden_path_integration(
-        self, weather_csv_file: Path
-    ) -> None:
+    def test_weather_golden_path_integration(self, weather_csv_file: Path) -> None:
         """Weather golden path: prepare_data + setup produces valid splits.
 
         Full pipeline with CSV fixture (200 rows, DatetimeIndex,
@@ -448,10 +398,8 @@ class TestWeatherModuleIntegration:
         # DatetimeIndex present, so time features should be extracted
         assert module.num_time_series_features > 0
 
-    def test_weather_fractional_split_bounds(
-        self, weather_csv_file: Path
-    ) -> None:
-        """Weather uses 60/20/20 fractional split (D-03).
+    def test_weather_fractional_split_bounds(self, weather_csv_file: Path) -> None:
+        """Weather uses 60/20/20 fractional split.
 
         Verifies _train_slice == slice(None, 120), _valid_slice ==
         slice(120, 160), _test_slice == slice(160, None) for 200-row
@@ -460,9 +408,7 @@ class TestWeatherModuleIntegration:
         """
         from tscollection.datasets.modules.weather import WeatherModule
 
-        module = WeatherModule(
-            dataset_file_path=weather_csv_file,
-        )
+        module = WeatherModule(dataset_file_path=weather_csv_file)
         module.prepare_data()
         module.setup(stage='fit')
 
@@ -471,9 +417,7 @@ class TestWeatherModuleIntegration:
         assert module._valid_slice == slice(120, 160)
         assert module._test_slice == slice(160, None)
 
-    def test_weather_dataloader_shapes(
-        self, weather_csv_file: Path
-    ) -> None:
+    def test_weather_dataloader_shapes(self, weather_csv_file: Path) -> None:
         """Weather dataloaders return DataLoader with correct batch shapes.
 
         After prepare_data + setup, train_dataloader() must return a
@@ -517,7 +461,7 @@ class TestWeatherModuleIntegration:
 
 
 # ---------------------------------------------------------------------------
-# ETT Golden-Path Integration Tests (D-01, D-07, D-08)
+# ETT Golden-Path Integration Tests
 # ---------------------------------------------------------------------------
 
 
@@ -525,7 +469,7 @@ class TestETTGoldenPathIntegration:
     """Integration tests exercising the full ETT forecasting pipeline.
 
     Verifies prepare_data() -> setup('fit') -> train_dataloader() using
-    synthetic CSV fixtures with DatetimeIndex (D-07).
+    synthetic CSV fixtures with DatetimeIndex.
     """
 
     @pytest.fixture
@@ -533,8 +477,7 @@ class TestETTGoldenPathIntegration:
         """Create a synthetic ETT-style CSV with 500 rows and DatetimeIndex.
 
         Columns match ETT schema: 'date' (DatetimeIndex), 'HUFL', 'HT',
-        'OT' (target), 'Wsp' (wind speed). Written via df.to_csv(index=False)
-        per D-07.
+        'OT' (target), 'Wsp' (wind speed). Written via df.to_csv(index=False).
         """
         csv_file = tmp_path / 'ETT_synthetic.csv'
         dates = pd.date_range('2016-01-01', periods=500, freq='h')
@@ -555,7 +498,7 @@ class TestETTGoldenPathIntegration:
     def synthetic_forecasting_csv(self, tmp_path: Path) -> Path:
         """Create a minimal forecasting CSV with DatetimeIndex and features.
 
-        Per D-08, provides a reusable fixture for forecasting integration tests.
+        Provides a reusable fixture for forecasting integration tests.
         DataFrame has DatetimeIndex and 2-3 feature columns.
         """
         csv_file = tmp_path / 'synthetic_forecasting.csv'
@@ -598,7 +541,7 @@ class TestETTGoldenPathIntegration:
         assert module._valid_data_samples is not None
         assert module._test_data_samples is not None
         assert module.num_features is not None
-        # D-01: exercises time feature extraction (DatetimeIndex present)
+        # exercises time feature extraction (DatetimeIndex present)
         assert module.num_time_series_features > 0
 
     def test_ett_multivariate_golden_path(self, ett_csv_file: Path) -> None:
@@ -689,7 +632,7 @@ class TestETTGoldenPathIntegration:
 
 
 # ---------------------------------------------------------------------------
-# Forecasting setup() Edge-Case Tests (D-02)
+# Forecasting setup() Edge-Case Tests
 # ---------------------------------------------------------------------------
 
 
@@ -719,7 +662,7 @@ class TestForecastingSetupEdgeCases:
             scale_data=True,
             data_scaling_method=ScalingMethod.MINMAX,
         )
-        # D-02: pure numpy, no DatetimeIndex
+        # pure numpy, no DatetimeIndex
         rng = np.random.default_rng(42)
         module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
         module._train_slice = slice(None, 60)
@@ -793,20 +736,20 @@ class TestForecastingSetupEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# ElectricityLoadModule Integration Smoke Tests (D-03)
+# ElectricityLoadModule Integration Smoke Tests
 # ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
-# Bug Fix Tests (CR-01, CR-02, CR-03)
+# Bug Fix Tests
 # ---------------------------------------------------------------------------
 
 
 class TestForecastingBugFixes:
-    """Tests for CR-01 (scaler axis) and CR-02 (scale_data ignored)."""
+    """Tests for scaler axis and scale_data flag."""
 
     def test_scaler_fits_train_only(self) -> None:
-        """Scaler fits only on training time steps, not validation/test (CR-01).
+        """Scaler fits only on training time steps, not validation/test.
 
         Pre-populate numpy _full_data (100, 5) where validation rows (60-79)
         have values 100x larger than training rows (0-59). After setup, the
@@ -850,7 +793,7 @@ class TestForecastingBugFixes:
         )
 
     def test_scale_data_false_preserves_values(self) -> None:
-        """scale_data=False produces unscaled data identical to input (CR-02).
+        """scale_data=False produces unscaled data identical to input.
 
         Pre-populate _full_data with known random values, copy to original,
         call setup. Assert values are unchanged after setup.
@@ -921,10 +864,10 @@ class TestForecastingBugFixes:
 
 
 class TestElectricityBugFixes:
-    """Tests for CR-03 (hardcoded iloc[8920])."""
+    """Tests for hardcoded iloc[8920] fix."""
 
     def test_prepare_data_small_dataset(self, tmp_path: Path) -> None:
-        """ElectricityLoadModule.prepare_data() does not crash on small CSV (CR-03).
+        """ElectricityLoadModule.prepare_data() does not crash on small CSV.
 
         Create a synthetic electricity CSV with only 100 rows (semicolon-
         delimited, comma decimal, with MT_001 and MT_002 columns).
@@ -937,19 +880,12 @@ class TestElectricityBugFixes:
         dates = pd.date_range('2012-01-01', periods=100, freq='h')
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
-            {
-                'MT_001': rng.standard_normal(100),
-                'MT_002': rng.standard_normal(100),
-            },
-            index=dates,
+            {'MT_001': rng.standard_normal(100), 'MT_002': rng.standard_normal(100)}, index=dates
         )
         df.index.name = 'datetime'
         df.to_csv(csv_file, sep=';', decimal=',')
 
-        module = ElectricityLoadModule(
-            dataset_file_path=csv_file,
-            mode=ForecastingMode.UNIVARIATE,
-        )
+        module = ElectricityLoadModule(dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE)
         # Should NOT raise IndexError
         module.prepare_data()
 
@@ -966,9 +902,7 @@ class TestElectricityModuleIntegration:
     split path (60/20/20) with transpose + expand_dims(axis=-1) transform.
     """
 
-    def test_electricity_golden_path_integration(
-        self, electricity_csv_file: Path
-    ) -> None:
+    def test_electricity_golden_path_integration(self, electricity_csv_file: Path) -> None:
         """Electricity golden path: prepare_data + setup produces valid splits.
 
         Full pipeline with existing electricity CSV fixture (10000 rows,
@@ -996,9 +930,7 @@ class TestElectricityModuleIntegration:
         # Hardcoded dataset name
         assert module._dataset_name == 'ElectricityLoad'
 
-    def test_electricity_transform_shape(
-        self, electricity_csv_file: Path
-    ) -> None:
+    def test_electricity_transform_shape(self, electricity_csv_file: Path) -> None:
         """Electricity transform produces (features, samples, 1) pattern.
 
         After prepare_data + setup, _full_data should have shape
@@ -1026,3 +958,394 @@ class TestElectricityModuleIntegration:
         assert module._full_data.shape[0] == 1
         # Second dimension = number of samples (from '2012:' onwards)
         assert module._full_data.shape[1] > 0
+
+
+# ---------------------------------------------------------------------------
+# Integration: Lifecycle Behavior Tests
+# ---------------------------------------------------------------------------
+
+
+class TestSetupIdempotency:
+    """Verify setup('fit') called twice does not double-scale data.
+
+    Uses attribute injection (numpy _full_data + slices) to bypass I/O,
+    exercising the full MRO chain on each concrete forecasting module.
+    """
+
+    def test_ett_setup_fit_twice_no_double_scale(self) -> None:
+        """ETT: setup('fit') called twice produces identical train samples."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        rng = np.random.default_rng(42)
+        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+        snapshot = module._train_data_samples.copy()
+        module.setup(stage='fit')
+
+        np.testing.assert_array_equal(snapshot, module._train_data_samples)
+
+    def test_weather_setup_fit_twice_no_double_scale(self) -> None:
+        """Weather: setup('fit') called twice produces identical train samples."""
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        module = WeatherModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        rng = np.random.default_rng(42)
+        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+        snapshot = module._train_data_samples.copy()
+        module.setup(stage='fit')
+
+        np.testing.assert_array_equal(snapshot, module._train_data_samples)
+
+    def test_electricity_setup_fit_twice_no_double_scale(self) -> None:
+        """Electricity: setup('fit') called twice produces identical train samples."""
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        module = ElectricityLoadModule(
+            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        rng = np.random.default_rng(42)
+        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._train_slice = slice(None, 60)
+        module._valid_slice = slice(60, 80)
+        module._test_slice = slice(80, None)
+
+        module.setup(stage='fit')
+        snapshot = module._train_data_samples.copy()
+        module.setup(stage='fit')
+
+        np.testing.assert_array_equal(snapshot, module._train_data_samples)
+
+
+class TestPrepareDataIdempotency:
+    """Verify prepare_data() called twice runs I/O only once.
+
+    Uses synthetic CSV fixtures and patches pd.read_csv to spy on
+    the call count.
+    """
+
+    @pytest.fixture
+    def ett_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
+        csv_file = tmp_path / 'ett.csv'
+        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'HUFL': np.random.default_rng(42).standard_normal(100),
+                'OT': np.random.default_rng(43).standard_normal(100),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    def test_ett_prepare_data_runs_io_once(self, ett_csv: Path) -> None:
+        """ETT: prepare_data() twice → pd.read_csv called once."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+
+        with patch('pandas.read_csv', wraps=pd.read_csv) as spy:
+            module.prepare_data()
+            module.prepare_data()
+            assert spy.call_count == 1
+
+    def test_weather_prepare_data_runs_io_once(self, synthetic_csv_file: Path) -> None:
+        """Weather: prepare_data() twice → pd.read_csv called once."""
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        module = WeatherModule(
+            dataset_file_path=synthetic_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.MULTIVARIATE,
+        )
+
+        with patch('pandas.read_csv', wraps=pd.read_csv) as spy:
+            module.prepare_data()
+            module.prepare_data()
+            assert spy.call_count == 1
+
+    def test_electricity_prepare_data_runs_io_once(self, electricity_csv_file: Path) -> None:
+        """Electricity: prepare_data() twice → pd.read_csv called once."""
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        module = ElectricityLoadModule(
+            dataset_file_path=electricity_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+
+        with patch('pandas.read_csv', wraps=pd.read_csv) as spy:
+            module.prepare_data()
+            module.prepare_data()
+            assert spy.call_count == 1
+
+
+class TestFinalizePrepareData:
+    """Verify prepare_data() sets slices via _finalize_prepare_data.
+
+    The base wrapper drives _finalize_prepare_data, which calls
+    _set_data_slices() on forecasting modules. Concrete modules no longer
+    call _post_prepare_data() manually.
+    """
+
+    @pytest.fixture
+    def ett_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
+        csv_file = tmp_path / 'ett.csv'
+        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'HUFL': np.random.default_rng(42).standard_normal(100),
+                'OT': np.random.default_rng(43).standard_normal(100),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    def test_ett_slices_set_after_prepare_data(self, ett_csv: Path) -> None:
+        """ETT: after prepare_data(), slices are populated by base wrapper."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+
+        assert module._train_slice is not None
+        assert module._valid_slice is not None
+        assert module._test_slice is not None
+
+    def test_weather_slices_set_after_prepare_data(self, synthetic_csv_file: Path) -> None:
+        """Weather: after prepare_data(), slices are populated by base wrapper."""
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        module = WeatherModule(
+            dataset_file_path=synthetic_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.MULTIVARIATE,
+        )
+        module.prepare_data()
+
+        assert module._train_slice is not None
+        assert module._valid_slice is not None
+        assert module._test_slice is not None
+
+    def test_electricity_slices_set_after_prepare_data(self, electricity_csv_file: Path) -> None:
+        """Electricity: after prepare_data(), slices are populated by base wrapper."""
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        module = ElectricityLoadModule(
+            dataset_file_path=electricity_csv_file,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+
+        assert module._train_slice is not None
+        assert module._valid_slice is not None
+        assert module._test_slice is not None
+
+
+class TestPrepareDimensions:
+    """Verify prepare_dimensions() works pre-setup and post-setup.
+
+    Tests the D4 invariant: dimensions computed from _full_data
+    (pre-setup) agree with cached values (post-setup).
+    """
+
+    @pytest.fixture
+    def ett_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
+        csv_file = tmp_path / 'ett.csv'
+        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'HUFL': np.random.default_rng(42).standard_normal(100),
+                'OT': np.random.default_rng(43).standard_normal(100),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    def test_pre_setup_dimensions(self, ett_csv: Path) -> None:
+        """ETT: prepare_dimensions() after prepare_data() alone returns correct dims."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+        n_features, seq_len = module.prepare_dimensions()
+
+        assert n_features is not None
+        assert seq_len == 96
+
+    def test_post_setup_dimensions(self, ett_csv: Path) -> None:
+        """ETT: prepare_dimensions() after setup() returns cached values."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+        n_features, seq_len = module.prepare_dimensions()
+
+        assert n_features is not None
+        assert seq_len == 96
+
+    def test_pre_setup_matches_post_setup(self, ett_csv: Path) -> None:
+        """ETT: dimensions agree whether computed pre-setup or post-setup (D4)."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module.prepare_data()
+        pre_dims = module.prepare_dimensions()
+
+        module.setup(stage='fit')
+        post_dims = module.prepare_dimensions()
+
+        assert pre_dims == post_dims
+
+
+class TestSetupStageGating:
+    """Verify stage-specific behavior in setup().
+
+    Tests that setup caches fitted scalers and reuses them across
+    stage calls. Tests that validate stage does not mutate data.
+    """
+
+    @pytest.fixture
+    def ett_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
+        csv_file = tmp_path / 'ett.csv'
+        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'HUFL': np.random.default_rng(42).standard_normal(100),
+                'OT': np.random.default_rng(43).standard_normal(100),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    def test_fit_populates_scaler_cache(self, ett_csv: Path) -> None:
+        """ETT: setup('fit') populates _data_scaler_cache."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._data_scaler_cache is not None
+
+    def test_test_stage_reuses_scaler(self, ett_csv: Path) -> None:
+        """ETT: setup('fit') then setup('test') reuses same scaler instance."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+        scaler_id = id(module._data_scaler_cache)
+
+        module.setup(stage='test')
+
+        assert id(module._data_scaler_cache) == scaler_id
+
+    def test_validate_does_not_mutate(self, ett_csv: Path) -> None:
+        """ETT: setup('validate') does not mutate _train_data_samples."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module.prepare_data()
+        module.setup(stage='fit')
+        snapshot = module._train_data_samples.copy()
+
+        module.setup(stage='validate')
+
+        np.testing.assert_array_equal(snapshot, module._train_data_samples)

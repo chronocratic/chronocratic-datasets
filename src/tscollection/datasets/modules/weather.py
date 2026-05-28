@@ -2,31 +2,24 @@
 
 Reads the 7-year weather CSV and splits 60/20/20.
 
-Per D-13, uses TensorDataset for dataloaders.
-Per D-16, raises FileNotFoundError for missing paths.
+Uses TensorDataset for dataloaders.
+Raises FileNotFoundError for missing paths.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from tscollection.datasets.enums.data import (
-    ForecastingMode,
-    ScalingMethod,
-    TimeSeriesDatasetMode,
-)
-from tscollection.datasets.modules._base.forecasting import (
-    BaseForecastingTimeSeriesDataModule,
-)
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
+from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 __all__ = ['WeatherModule']
 
@@ -92,9 +85,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
 
     def _set_data_slices(self) -> None:
         """Set 60/20/20 fractional split based on data length."""
-        assert self._full_data is not None, (
-            '_full_data was not set by prepare_data()'
-        )
+        assert self._full_data is not None, '_full_data was not set by prepare_data()'
         num_samples = len(self._full_data)
         self._train_slice = slice(None, int(0.6 * num_samples))
         self._valid_slice = slice(int(0.6 * num_samples), int(0.8 * num_samples))
@@ -106,9 +97,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         Produces shape (1, samples, features). Different from
         ElectricityLoadModule which uses transpose + expand_dims(axis=-1).
         """
-        assert self._full_data is not None, (
-            '_full_data was not set by prepare_data()'
-        )
+        assert self._full_data is not None, '_full_data was not set by prepare_data()'
         if isinstance(self._full_data, pd.DataFrame):
             self._full_data = self._full_data.to_numpy()
         if isinstance(self._full_data, np.ndarray):
@@ -121,19 +110,16 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
     def _do_prepare_data(self) -> None:
         """Validate file path, read CSV, and prepare data.
 
-        Per D-16, raises ``FileNotFoundError`` if the CSV file does not
+        Raises ``FileNotFoundError`` if the CSV file does not
         exist. Reads standard CSV format with date index column.
         """
         if not self.dataset_file_path.exists():
-            raise FileNotFoundError(
-                f'Dataset file not found: {self.dataset_file_path}'
-            )
+            msg = f'Dataset file not found: {self.dataset_file_path}'
+            raise FileNotFoundError(msg)
 
         self._dataset_name = self.dataset_file_path.name
 
-        df = pd.read_csv(
-            self.dataset_file_path, parse_dates=True, index_col='date'
-        )
+        df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col='date')
 
         if self._mode == ForecastingMode.UNIVARIATE:
             df = df.iloc[:, -1:]  # Last column for univariate
@@ -141,7 +127,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         self._full_data = df
 
     # ------------------------------------------------------------------
-    # Dataloaders (D-13: TensorDataset)
+    # Dataloaders
     # ------------------------------------------------------------------
 
     def train_dataloader(
