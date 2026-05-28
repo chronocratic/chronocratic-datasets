@@ -178,11 +178,11 @@ def _scale_multi_file_data(
     Returns:
         Scaled (train, valid, test) lists of arrays.
     """
-    train_arrays = [x.values if isinstance(x, pd.DataFrame) else x for x in train_data]
-    test_arrays = [x.values if isinstance(x, pd.DataFrame) else x for x in test_data]
+    train_arrays = [x.to_numpy() if isinstance(x, pd.DataFrame) else x for x in train_data]
+    test_arrays = [x.to_numpy() if isinstance(x, pd.DataFrame) else x for x in test_data]
 
     if valid_data is not None:
-        valid_arrays = [x.values if isinstance(x, pd.DataFrame) else x for x in valid_data]
+        valid_arrays = [x.to_numpy() if isinstance(x, pd.DataFrame) else x for x in valid_data]
     else:
         valid_arrays = None
 

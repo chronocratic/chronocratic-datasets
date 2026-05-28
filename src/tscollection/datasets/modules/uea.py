@@ -141,10 +141,11 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
 
         for sample, label in data:
             sample_list = []
-            for point in sample:
-                point = point.tolist()
+            for sample_point in sample:
+                point_list = sample_point.tolist()
                 point = [
-                    float(d.decode('utf-8')) if isinstance(d, bytes) else float(d) for d in point
+                    (float(d.decode('utf-8')) if isinstance(d, bytes) else float(d))
+                    for d in point_list
                 ]
                 sample_list.append(point)
             processed_data.append(np.array(sample_list))
@@ -276,7 +277,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         shuffle: bool | None = None,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
-    ) -> DataLoader:
+    ) -> DataLoader:  # ty:ignore[invalid-method-override]
         """Build the training DataLoader.
 
         Args:
@@ -291,7 +292,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for training.
         """
         dataset = UEAClassificationMultivariateDataset(
-            data=self._train_data_samples, labels=self._train_data_labels, mode=mode
+            data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
+            labels=self._train_data_labels,
+            mode=mode,
         )
         return self._process_train_dataloader(
             dataset_object=dataset,
@@ -306,7 +309,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.WITHOUT_LABELS,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
-    ) -> DataLoader | None:
+    ) -> DataLoader | None:  # ty:ignore[invalid-method-override]
         """Build the validation DataLoader.
 
         Returns ``None`` when :attr:`valid_size` is ``0.0``.
@@ -324,7 +327,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
         dataset = UEAClassificationMultivariateDataset(
-            data=self._valid_data_samples, labels=self._valid_data_labels, mode=mode
+            data=self._valid_data_samples,  # ty:ignore[invalid-argument-type]
+            labels=self._valid_data_labels,
+            mode=mode,
         )
         return self._process_valid_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
@@ -336,7 +341,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.WITHOUT_LABELS,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
-    ) -> DataLoader:
+    ) -> DataLoader:  # ty:ignore[invalid-method-override]
         """Build the test DataLoader.
 
         Args:
@@ -350,7 +355,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for testing.
         """
         dataset = UEAClassificationMultivariateDataset(
-            data=self._test_data_samples, labels=self._test_data_labels, mode=mode
+            data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
+            labels=self._test_data_labels,
+            mode=mode,
         )
         return self._process_test_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args

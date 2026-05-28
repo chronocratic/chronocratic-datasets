@@ -102,9 +102,7 @@ def separate_target_feature_from_df(
             f"Target feature '{target_feature_name}' not found in DataFrame columns. "
             f'Available columns: {list(df.columns)}'
         )
-        raise KeyError(
-            msg
-        )
+        raise KeyError(msg)
     target_feature = df[target_feature_name]
     features = df.drop(target_feature_name, axis=1)
     return features, target_feature
