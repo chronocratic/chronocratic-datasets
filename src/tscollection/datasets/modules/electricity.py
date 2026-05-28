@@ -3,31 +3,24 @@
 Reads the French electricity load CSV (semicolon-delimited, comma decimal),
 resamples to hourly, and splits 60/20/20.
 
-Per D-13, uses TensorDataset for dataloaders.
-Per D-16, raises FileNotFoundError for missing paths.
+Uses TensorDataset for dataloaders.
+Raises FileNotFoundError for missing paths.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from tscollection.datasets.enums.data import (
-    ForecastingMode,
-    ScalingMethod,
-    TimeSeriesDatasetMode,
-)
-from tscollection.datasets.modules._base.forecasting import (
-    BaseForecastingTimeSeriesDataModule,
-)
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
+from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 __all__ = ['ElectricityLoadModule']
 
@@ -92,9 +85,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
 
     def _set_data_slices(self) -> None:
         """Set 60/20/20 fractional split based on data length."""
-        assert self._full_data is not None, (
-            '_full_data was not set by prepare_data()'
-        )
+        assert self._full_data is not None, '_full_data was not set by prepare_data()'
         num_samples = len(self._full_data)
         self._train_slice = slice(None, int(0.6 * num_samples))
         self._valid_slice = slice(int(0.6 * num_samples), int(0.8 * num_samples))
@@ -106,9 +97,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         Produces shape (features, samples, 1). Different from
         WeatherModule which uses expand_dims(axis=0).
         """
-        assert self._full_data is not None, (
-            '_full_data was not set by prepare_data()'
-        )
+        assert self._full_data is not None, '_full_data was not set by prepare_data()'
         if isinstance(self._full_data, pd.DataFrame):
             self._full_data = self._full_data.to_numpy()
         if isinstance(self._full_data, np.ndarray):
@@ -122,23 +111,18 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
     def _do_prepare_data(self) -> None:
         """Validate file path, read CSV, and prepare data.
 
-        Per D-16, raises ``FileNotFoundError`` if the CSV file does not
+        Raises ``FileNotFoundError`` if the CSV file does not
         exist. Reads semicolon-delimited CSV with comma decimals,
         resamples to hourly, and filters columns.
         """
         if not self.dataset_file_path.exists():
-            raise FileNotFoundError(
-                f'Dataset file not found: {self.dataset_file_path}'
-            )
+            msg = f'Dataset file not found: {self.dataset_file_path}'
+            raise FileNotFoundError(msg)
 
         self._dataset_name = 'ElectricityLoad'
 
         df = pd.read_csv(
-            self.dataset_file_path,
-            parse_dates=True,
-            sep=';',
-            decimal=',',
-            index_col=[0],
+            self.dataset_file_path, parse_dates=True, sep=';', decimal=',', index_col=[0]
         )
         df = df.resample('1h', closed='right').sum()
         df = df.loc[:, (df != 0).any(axis=0)]
@@ -151,7 +135,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         self._full_data = df
 
     # ------------------------------------------------------------------
-    # Dataloaders (D-13: TensorDataset)
+    # Dataloaders
     # ------------------------------------------------------------------
 
     def train_dataloader(

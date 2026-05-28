@@ -1,14 +1,15 @@
-"""Tests for time feature extraction utilities (UTI-03).
+"""Tests for time feature extraction utilities.
 
 Verifies that extract_time_features produces correct (N, 7) float32
 arrays from pandas DatetimeIndex objects.
 """
 
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 
 from tscollection.datasets.utils.features import extract_time_features
-
 
 # --------------------------------------------------------------------------- #
 # extract_time_features tests                                                  #
@@ -16,7 +17,7 @@ from tscollection.datasets.utils.features import extract_time_features
 
 
 def test_extract_time_features_shape() -> None:
-    """UTI-03: extract_time_features returns (N, 7) float32 array."""
+    """extract_time_features returns (N, 7) float32 array."""
     dti = pd.date_range('2020-01-01', periods=10, freq='h')
     result = extract_time_features(dti)
     assert result.shape == (10, 7)
@@ -24,15 +25,15 @@ def test_extract_time_features_shape() -> None:
 
 
 def test_extract_time_features_minute_hour() -> None:
-    """UTI-03: First two columns are minute and hour."""
+    """First two columns are minute and hour."""
     dti = pd.date_range('2020-01-01 02:30:00', periods=1, freq='h')
     result = extract_time_features(dti)
     assert result[0, 0] == 30.0  # minute
-    assert result[0, 1] == 2.0   # hour
+    assert result[0, 1] == 2.0  # hour
 
 
 def test_extract_time_features_dayofweek() -> None:
-    """UTI-03: Third column is day of week (Monday=0)."""
+    """Third column is day of week (Monday=0)."""
     # 2020-01-01 is Wednesday
     dti = pd.date_range('2020-01-01', periods=1, freq='D')
     result = extract_time_features(dti)
@@ -40,7 +41,7 @@ def test_extract_time_features_dayofweek() -> None:
 
 
 def test_extract_time_features_multiple_dates() -> None:
-    """UTI-03: Works with multiple dates at different intervals."""
+    """Works with multiple dates at different intervals."""
     dti = pd.date_range('2020-01-01', periods=5, freq='D')
     result = extract_time_features(dti)
     assert result.shape == (5, 7)
@@ -50,7 +51,7 @@ def test_extract_time_features_multiple_dates() -> None:
 
 
 def test_extract_time_features_empty_index() -> None:
-    """UTI-03: Empty DatetimeIndex returns (0, 7) array."""
+    """Empty DatetimeIndex returns (0, 7) array."""
     dti = pd.DatetimeIndex([])
     result = extract_time_features(dti)
     assert result.shape == (0, 7)

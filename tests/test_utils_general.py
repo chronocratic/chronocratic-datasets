@@ -1,4 +1,4 @@
-"""Tests for general utility functions (UTI-04).
+"""Tests for general utility functions.
 
 Verifies that custom_collate_fn pads short batches by cycling,
 centralize_variable_length_series centers NaN-padded data, and
@@ -8,7 +8,6 @@ process_data_with_varying_sequence_lengths_single handles 2-D/3-D data.
 import numpy as np
 import pandas as pd
 import torch
-import pytest
 
 from tscollection.datasets.utils.general import (
     centralize_variable_length_series,
@@ -16,28 +15,27 @@ from tscollection.datasets.utils.general import (
     process_data_with_varying_sequence_lengths_single,
 )
 
-
 # --------------------------------------------------------------------------- #
 # custom_collate_fn tests                                                      #
 # --------------------------------------------------------------------------- #
 
 
 def test_custom_collate_fn_pads_last_batch() -> None:
-    """UTI-04: custom_collate_fn pads short batches by cycling."""
+    """custom_collate_fn pads short batches by cycling."""
     batch = [torch.tensor([1.0]), torch.tensor([2.0])]
     result = custom_collate_fn(batch, desired_batch_size=4)
     assert result.shape[0] == 4
 
 
 def test_custom_collate_fn_no_padding_needed() -> None:
-    """UTI-04: custom_collate_fn returns collated batch when size is sufficient."""
+    """custom_collate_fn returns collated batch when size is sufficient."""
     batch = [torch.tensor([1.0]), torch.tensor([2.0]), torch.tensor([3.0])]
     result = custom_collate_fn(batch, desired_batch_size=2)
     assert result.shape[0] == 3
 
 
 def test_custom_collate_fn_cycling_pattern() -> None:
-    """UTI-04: custom_collate_fn cycles backwards through batch for padding."""
+    """custom_collate_fn cycles backwards through batch for padding."""
     batch = [torch.tensor([1.0]), torch.tensor([2.0])]
     result = custom_collate_fn(batch, desired_batch_size=5)
     # Original: [1, 2], pad 3 more: cycle backwards -> [2, 1, 2]
@@ -50,7 +48,7 @@ def test_custom_collate_fn_cycling_pattern() -> None:
 
 
 def test_custom_collate_fn_keyword_only() -> None:
-    """UTI-04: desired_batch_size is keyword-only."""
+    """desired_batch_size is keyword-only."""
     batch = [torch.tensor([1.0]), torch.tensor([2.0])]
     # Should work with keyword
     result = custom_collate_fn(batch, desired_batch_size=4)
@@ -63,11 +61,12 @@ def test_custom_collate_fn_keyword_only() -> None:
 
 
 def test_centralize_variable_length_series() -> None:
-    """UTI-04: Centering shifts valid data to middle of sequence."""
+    """Centering shifts valid data to middle of sequence."""
     # batch=1, seq=5, features=2
     # Valid data at indices 0 and 1 (right-padded pattern)
-    series = np.array([[[1.0, 2.0], [3.0, 4.0], [np.nan, np.nan],
-                        [np.nan, np.nan], [np.nan, np.nan]]])
+    series = np.array(
+        [[[1.0, 2.0], [3.0, 4.0], [np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan]]]
+    )
     result = centralize_variable_length_series(series)
 
     # Shape should be preserved
@@ -75,7 +74,7 @@ def test_centralize_variable_length_series() -> None:
 
 
 def test_centralize_variable_length_series_already_centered() -> None:
-    """UTI-04: Already centered data stays centered."""
+    """Already centered data stays centered."""
     # batch=1, seq=5, features=1
     # NaN at start and end, valid in middle
     series = np.array([[[np.nan], [np.nan], [1.0], [2.0], [np.nan]]])
@@ -85,7 +84,7 @@ def test_centralize_variable_length_series_already_centered() -> None:
 
 
 def test_centralize_variable_length_series_batch() -> None:
-    """UTI-04: Centering works on batch of sequences."""
+    """Centering works on batch of sequences."""
     batch = np.zeros((2, 6, 3)) + np.nan
     # First sample: valid at indices 0, 1
     batch[0, 0, :] = [1.0, 2.0, 3.0]
@@ -106,7 +105,7 @@ def test_centralize_variable_length_series_batch() -> None:
 
 
 def test_process_data_2d_array() -> None:
-    """UTI-04: process_data handles 2-D numpy arrays."""
+    """process_data handles 2-D numpy arrays."""
     data = np.array([[1.0, 2.0, np.nan], [3.0, 4.0, np.nan]])
     result = process_data_with_varying_sequence_lengths_single(data)
 
@@ -114,7 +113,7 @@ def test_process_data_2d_array() -> None:
 
 
 def test_process_data_3d_array() -> None:
-    """UTI-04: process_data handles 3-D numpy arrays."""
+    """process_data handles 3-D numpy arrays."""
     data = np.zeros((2, 4, 3)) + np.nan
     data[0, 0, :] = [1.0, 2.0, 3.0]
     data[0, 1, :] = [4.0, 5.0, 6.0]
@@ -127,7 +126,7 @@ def test_process_data_3d_array() -> None:
 
 
 def test_process_data_dataframe() -> None:
-    """UTI-04: process_data handles pandas DataFrame."""
+    """process_data handles pandas DataFrame."""
     data = pd.DataFrame({0: [1.0, 2.0, np.nan], 1: [3.0, 4.0, np.nan]})
     result = process_data_with_varying_sequence_lengths_single(data)
 
@@ -136,7 +135,7 @@ def test_process_data_dataframe() -> None:
 
 
 def test_process_data_no_temporal_missing() -> None:
-    """UTI-04: process_data skips centering when no edge NaN."""
+    """process_data skips centering when no edge NaN."""
     # Valid data at edges, NaN only in middle
     data = np.array([[1.0, np.nan, 2.0], [3.0, np.nan, 4.0]])
     result = process_data_with_varying_sequence_lengths_single(data)
@@ -150,7 +149,7 @@ def test_process_data_no_temporal_missing() -> None:
 
 
 def test_all_exports() -> None:
-    """UTI-04: __all__ exports three public functions alphabetically."""
+    """__all__ exports three public functions alphabetically."""
     import tscollection.datasets.utils.general as general_mod
 
     assert general_mod.__all__ == [

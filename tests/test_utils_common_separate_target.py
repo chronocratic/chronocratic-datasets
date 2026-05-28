@@ -1,10 +1,9 @@
 """Tests for ClassificationSplittingStrategy enum and separate_target_feature_from_df.
 
-Verifies the enum rename (D-04) and the new utility function port
+Verifies the enum rename and the new utility function port
 that are foundational for Phase 4 data modules.
 """
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -85,7 +84,7 @@ class TestSeparateTargetFeatureFromDf:
         assert len(features.columns) == len(sample_df.columns) - 1
 
     def test_missing_column_raises_keyerror(self, sample_df: pd.DataFrame) -> None:
-        """KeyError raised when target column doesn't exist (T-04-01-02 mitigation)."""
+        """KeyError raised when target column doesn't exist."""
         from tscollection.datasets.utils import separate_target_feature_from_df
 
         with pytest.raises(KeyError):
@@ -104,11 +103,7 @@ class TestSeparateTargetFeatureFromDf:
     def test_target_in_middle_position(self) -> None:
         """Target sandwiched between features preserves column order."""
         df = pd.DataFrame(
-            {
-                'feat1': [1.0, 2.0, 3.0],
-                'label': ['A', 'B', 'A'],
-                'feat2': [10.0, 20.0, 30.0],
-            }
+            {'feat1': [1.0, 2.0, 3.0], 'label': ['A', 'B', 'A'], 'feat2': [10.0, 20.0, 30.0]}
         )
         from tscollection.datasets.utils import separate_target_feature_from_df
 

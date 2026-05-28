@@ -1,9 +1,11 @@
-"""Tests for UCR univariate classification wrapper (DST-01, DST-05).
+"""Tests for UCR univariate classification wrapper.
 
 Verifies that UCRClassificationUnivariateDataset correctly inherits from
 FixedTimeSeriesDatasetUnivariate, applies default transforms, and yields
 (data, label) tuples in WITH_LABELS mode.
 """
+
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -12,7 +14,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 
 def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classification_labels):
-    """DST-01: UCRClassificationUnivariateDataset yields (Tensor, int) in WITH_LABELS mode."""
+    """UCRClassificationUnivariateDataset yields (Tensor, int) in WITH_LABELS mode."""
     from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(
@@ -36,9 +38,7 @@ def test_ucr_without_labels(synthetic_classification_df):
     from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(
-        data=synthetic_classification_df,
-        labels=None,
-        mode=TimeSeriesDatasetMode.WITHOUT_LABELS,
+        data=synthetic_classification_df, labels=None, mode=TimeSeriesDatasetMode.WITHOUT_LABELS
     )
     result = ds[0]
     assert not isinstance(result, tuple)
