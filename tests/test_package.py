@@ -37,7 +37,6 @@ def test_enum_exports_in_root():
     from tscollection.datasets import (
         ClassificationSplitMode,
         ForecastingMode,
-        ForecastingSplitMode,
         ScalingMethod,
         TimeSeriesDatasetMode,
     )
@@ -46,8 +45,6 @@ def test_enum_exports_in_root():
     assert ScalingMethod.MINMAX == 'minmax'
     assert ClassificationSplitMode.AS_DEFINED == 'as_defined'
     assert ForecastingMode.UNIVARIATE == 'univariate'
-    assert ForecastingSplitMode.INDEXED == 'indexed'
-    assert ForecastingSplitMode.FRACTIONAL == 'fractional'
 
 
 def test_init_files_exist():

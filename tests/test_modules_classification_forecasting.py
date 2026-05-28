@@ -8,10 +8,7 @@ import pandas as pd
 import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from tscollection.datasets.enums.data import (
-    ForecastingMode,
-    ScalingMethod,
-)
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
@@ -116,33 +113,10 @@ class TestBaseForecastingTimeSeriesDataModule:
         sig = inspect.signature(module_class.__init__)
         assert 'seq_len' in sig.parameters
 
-    def test_set_data_slices_dispatches_split_mode(self, module_class: type) -> None:
-        """Forecasting base _set_data_slices raises for INDEXED, computes for FRACTIONAL."""
-        from pathlib import Path
-        import pandas as pd
-        import numpy as np
-        import torch
-
-        from tscollection.datasets.enums.data import ForecastingMode, ForecastingSplitMode
-        from tscollection.datasets.datatypes import TimeSeriesDataset
-
-        # INDEXED raises NotImplementedError
-        class IndexedModule(module_class):  # noqa: F821
-            def _do_prepare_data(self) -> None:
-                self._dataset_name = 'test'
-                self._full_data = pd.DataFrame(np.random.randn(100, 3))
-            def _transform_data(self) -> None:
-                self._full_data = np.expand_dims(self._full_data, axis=0)
-            def train_dataloader(self, **kwargs):
-                return torch.utils.data.DataLoader(torch.utils.data.TensorDataset(torch.zeros(1)))
-
-        mod_idx = IndexedModule(
-            mode=ForecastingMode.UNIVARIATE,
-            split_mode=ForecastingSplitMode.INDEXED,
-        )
-        mod_idx._full_data = pd.DataFrame(np.random.randn(100, 3))
-        with pytest.raises(NotImplementedError, match='INDEXED split requires overriding'):
-            mod_idx._set_data_slices()
+    def test_has_abstract_set_data_slices(self, module_class: type) -> None:
+        """Forecasting base _set_data_slices is abstract."""
+        assert hasattr(module_class, '_set_data_slices')
+        assert getattr(module_class._set_data_slices, '__isabstractmethod__', False)
 
     def test_has_abstract_transform_data(self, module_class: type) -> None:
         """Forecasting base has abstract _transform_data method."""

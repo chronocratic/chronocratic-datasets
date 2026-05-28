@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from tscollection.datasets.enums.data import ForecastingMode, ForecastingSplitMode, ScalingMethod
+from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
@@ -29,11 +29,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     feature extraction. Overrides ``setup()`` entirely to handle
     forecasting-specific scaling (fit on train slice only).
 
-    Split boundaries are driven by ``split_mode``:
-    - ``ForecastingSplitMode.INDEXED`` — subclasses override
-      ``_set_data_slices()`` with absolute index positions.
-    - ``ForecastingSplitMode.FRACTIONAL`` — base class computes
-      slices from ``split_ratios`` (train_frac, valid_frac).
+    Subclasses implement ``_set_data_slices()`` to define train/val/test
+    boundaries.
 
     Args:
         batch_size: Batch size for dataloaders.
@@ -49,11 +46,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         num_workers: Number of DataLoader worker processes.
         mode: Forecasting mode (univariate or multivariate), typed as
             :class:`~tscollection.datasets.enums.data.ForecastingMode`.
-        split_mode: How to compute train/valid/test boundaries, typed as
-            :class:`~tscollection.datasets.enums.data.ForecastingSplitMode`.
-        split_ratios: ``(train_frac, valid_frac)`` fractions for
-            :data:`ForecastingSplitMode.FRACTIONAL`. Test fraction
-            is the remainder. Defaults to ``(0.6, 0.2)``.
     """
 
     def __init__(
@@ -69,8 +61,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
         mode: ForecastingMode = ForecastingMode.UNIVARIATE,
-        split_mode: ForecastingSplitMode = ForecastingSplitMode.FRACTIONAL,
-        split_ratios: tuple[float, float] = (0.6, 0.2),
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -84,8 +74,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             num_workers=num_workers,
         )
         self._mode = mode
-        self._split_mode = split_mode
-        self._split_ratios = split_ratios
         self._train_slice: slice | None = None
         self._valid_slice: slice | None = None
         self._test_slice: slice | None = None
@@ -123,39 +111,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         """Number of cyclical time features extracted."""
         return self._num_time_series_features
 
-    @property
-    def split_mode(self) -> ForecastingSplitMode:
-        """Train/valid/test split strategy (INDEXED or FRACTIONAL)."""
-        return self._split_mode
-
     # ------------------------------------------------------------------
     # Abstract methods
     # ------------------------------------------------------------------
 
+    @abstractmethod
     def _set_data_slices(self) -> None:
-        """Define train/valid/test slice boundaries.
-
-        Dispatches on ``split_mode``:
-        - ``ForecastingSplitMode.FRACTIONAL``: computes slices from
-          ``split_ratios`` (train_frac, valid_frac). Test is remainder.
-        - ``ForecastingSplitMode.INDEXED``: raises ``NotImplementedError`` —
-          subclasses must override with absolute index positions
-          (e.g., ETT's 16/4/4 months).
-        """
-        if self._split_mode == ForecastingSplitMode.INDEXED:
-            msg = (
-                'INDEXED split requires overriding _set_data_slices(). '
-                'Define _train_slice, _valid_slice, _test_slice.'
-            )
-            raise NotImplementedError(msg)
-        assert self._full_data is not None, '_full_data was not set by prepare_data()'
-        num_samples = len(self._full_data)
-        train_frac, valid_frac = self._split_ratios
-        train_end = int(train_frac * num_samples)
-        valid_end = int((train_frac + valid_frac) * num_samples)
-        self._train_slice = slice(None, train_end)
-        self._valid_slice = slice(train_end, valid_end)
-        self._test_slice = slice(valid_end, None)
+        """Define train/valid/test slice boundaries."""
 
     @abstractmethod
     def _transform_data(self) -> None:
