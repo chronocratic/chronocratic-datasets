@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from tscollection.datasets._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 from tscollection.datasets._base.strategies import ForecastingStrategySingleFile
 from tscollection.datasets.enums import TimeSeriesDatasetMode
-from tscollection.datasets.transformations import convert_numpy_to_tensor
+from tscollection.datasets.utils.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:
     from collections.abc import Callable
