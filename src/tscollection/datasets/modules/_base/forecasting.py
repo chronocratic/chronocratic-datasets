@@ -188,7 +188,12 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if stage not in ('fit', 'validate', 'test', 'predict', None):
             msg = f'Unknown stage: {stage!r}'
             raise ValueError(msg)
-        if stage in self._setup_completed_stages or None in self._setup_completed_stages:
+        if stage in self._setup_completed_stages:
+            return
+        # fit and None are equivalent -- skip if the other already ran
+        if stage in ('fit', None) and (
+            'fit' in self._setup_completed_stages or None in self._setup_completed_stages
+        ):
             return
 
         assert self._full_data is not None, 'Full data not set; call prepare_data() first'
