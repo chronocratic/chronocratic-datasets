@@ -18,6 +18,7 @@ ignore = [
     "D101", # Allow missing docstring in public classes
     "RET504", # Allow unnecessary assignment of variables in return statements. It is useful for readability in AI code.
     "PLR0913", # Allow too many arguments in functions. It is useful for readability in AI code.
+    "C901",    # Allow complex functions — typical for AI/ML data pipeline code.
 ]
 
 [lint.pydocstyle]
