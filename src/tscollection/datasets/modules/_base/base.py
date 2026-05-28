@@ -285,6 +285,21 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._setup_completed_stages.add(stage)
 
     # ------------------------------------------------------------------
+    # Lifecycle management
+    # ------------------------------------------------------------------
+
+    def reset(self) -> None:
+        """Clear lifecycle sentinels to allow re-use of this DataModule.
+
+        Resets the setup stage tracking and prepare_data sentinel so that
+        subsequent calls to setup() or prepare_data() will re-execute
+        their logic. Useful for hyperparameter sweeps or re-training
+        scenarios that reuse the same DataModule instance.
+        """
+        self._setup_completed_stages.clear()
+        self._prepare_data_called = False
+
+    # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
