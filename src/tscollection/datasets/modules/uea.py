@@ -20,6 +20,7 @@ from scipy.io import arff
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
+from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 from tscollection.datasets.enums.data import (
     ClassificationSplittingStrategy,
     DataForm,
@@ -29,7 +30,6 @@ from tscollection.datasets.enums.data import (
 from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
-from tscollection.datasets.uea import UEAClassificationMultivariateDataset
 
 if TYPE_CHECKING:
     from pathlib import Path

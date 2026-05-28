@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from tscollection.datasets._base.base import TimeSeriesDataset
+from tscollection.datasets.datatypes._base.base import TimeSeriesDataset
 
 if TYPE_CHECKING:
     from collections.abc import Callable

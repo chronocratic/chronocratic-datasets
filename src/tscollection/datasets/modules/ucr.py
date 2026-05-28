@@ -14,6 +14,7 @@ from typing import Any, TYPE_CHECKING
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+from tscollection.datasets.datatypes.ucr import UCRClassificationUnivariateDataset
 from tscollection.datasets.enums.data import (
     ClassificationSplittingStrategy,
     DataForm,
@@ -23,7 +24,6 @@ from tscollection.datasets.enums.data import (
 from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
-from tscollection.datasets.ucr import UCRClassificationUnivariateDataset
 from tscollection.datasets.utils.arff import process_df_according_to_dtypes, read_arff_as_df
 
 if TYPE_CHECKING:

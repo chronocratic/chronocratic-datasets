@@ -11,7 +11,7 @@ from bisect import bisect
 from itertools import accumulate
 from typing import TYPE_CHECKING
 
-from tscollection.datasets._base.base import TimeSeriesDataset
+from tscollection.datasets.datatypes._base.base import TimeSeriesDataset
 from tscollection.datasets.utils import get_num_samples_from_ts
 from tscollection.datasets.utils.transformations import convert_numpy_to_tensor
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     import numpy as np
 
-    from tscollection.datasets._base.strategies import (
+    from tscollection.datasets.datatypes._base.strategies import (
         SequenceHandlingStrategy,
         SequenceHandlingStrategyMultipleFiles,
         SequenceHandlingStrategySingleFile,
