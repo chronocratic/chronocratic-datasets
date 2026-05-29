@@ -76,17 +76,17 @@ Phase 8: Forecasting Mode Wiring [==== FOR-01..03 ====]      depends on Phase 7 
 - `prepare_dimensions()` reads metadata without loading arrays
 - Second `setup()` call produces identical output (idempotent without sentinel)
 
-**Plans:** 8 plans
+**Plans:** 8/8 plans executed
 
 **Plan list:**
-- [ ] 07-01-PLAN.md — Cache utility module (build_cache_key, resolve_cache_dir, atomic save/load, scaler persistence) — TDD
-- [ ] 07-02-PLAN.md — synthetic_cache_dir fixture for tests
-- [ ] 07-03-PLAN.md — Base module: cache_dir param, prepare_data_per_node, metadata-based prepare_dimensions, extended reset
-- [ ] 07-04-PLAN.md — Forecasting base: split _full_data into typed attrs, cache-read setup, scaler persistence
-- [ ] 07-05-PLAN.md — ETT module: cache-aware _do_prepare_data, typed _transform_data
-- [ ] 07-06-PLAN.md — Weather + Electricity modules: cache-aware _do_prepare_data, typed _transform_data
-- [ ] 07-07-PLAN.md — UCR + UEA classification modules: cache-aware _do_prepare_data, cache-read setup
-- [ ] 07-08-PLAN.md — DDP smoke test (gloo, 2 ranks), isinstance elimination verification, full regression
+- [x] 07-01-PLAN.md — Cache utility module (build_cache_key, resolve_cache_dir, atomic save/load, scaler persistence) — TDD
+- [x] 07-02-PLAN.md — synthetic_cache_dir fixture for tests
+- [x] 07-03-PLAN.md — Base module: cache_dir param, prepare_data_per_node, metadata-based prepare_dimensions, extended reset
+- [x] 07-04-PLAN.md — Forecasting base: split _full_data into typed attrs, cache-read setup, scaler persistence
+- [x] 07-05-PLAN.md — ETT module: cache-aware _do_prepare_data, typed _transform_data
+- [x] 07-06-PLAN.md — Weather + Electricity modules: cache-aware _do_prepare_data, typed _transform_data
+- [x] 07-07-PLAN.md — UCR + UEA classification modules: cache-aware _do_prepare_data, cache-read setup
+- [x] 07-08-PLAN.md — DDP smoke test (gloo, 2 ranks), isinstance elimination verification, full regression
 
 **Status:** PLANNED (on `phase-07` branch)
 
