@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from pathlib import Path
     from typing import Any
 
 import lightning.pytorch as pl
@@ -21,6 +22,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 from tscollection.datasets.enums.data import DataForm, ScalingMethod
+from tscollection.datasets.utils.cache import load_metadata, resolve_cache_dir
 from tscollection.datasets.utils.general import custom_collate_fn
 from tscollection.datasets.utils.scaling import create_data_scaler
 
@@ -49,7 +51,11 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         num_workers: Number of DataLoader worker processes.
         data_form: Data shape category for scaling, typed as
             :class:`~tscollection.datasets.enums.data.DataForm`.
+        cache_dir: Custom cache directory. ``None`` uses the default
+            ``~/.cache/tsdatasets/<dataset_name>``.
     """
+
+    prepare_data_per_node: bool = True
 
     def __init__(
         self,
@@ -64,6 +70,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
         data_form: DataForm = DataForm.REGULAR,
+        cache_dir: Path | None = None,
     ) -> None:
         super().__init__()
         self.batch_size = batch_size
@@ -76,6 +83,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self.data_scaling_range = data_scaling_range
         self.num_workers = num_workers
         self._data_form = data_form
+        self._cache_dir = cache_dir
         self._datatype_handling_functions_map: dict[str, object] | None = None
         self._initiate_datatypes_handling_functions_map()
         self._dataset_name: str | None = None
@@ -87,6 +95,34 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._setup_completed_stages: set[str | None] = set()
         self._prepare_data_called: bool = False
         self._scaler_cache: Callable[..., tuple[Any, Any, Any]] | None = None
+        # Cache-related typed attributes (D-01)
+        self._full_data_raw: np.ndarray | None = None
+        self._time_index: pd.DatetimeIndex | None = None
+        self._full_data_scaled: np.ndarray | None = None
+        self._cache_key: str | None = None
+        self._data_scaler_cache = None
+        self._ts_feature_scaler_cache = None
+
+    # ------------------------------------------------------------------
+    # Cache directory resolution
+    # ------------------------------------------------------------------
+
+    def _get_cache_dir(self) -> Path:
+        """Return the resolved cache directory for the current dataset name.
+
+        Computes the cache path lazily so that it always uses the most
+        recent value of ``_dataset_name`` (which is set by
+        ``_do_prepare_data()``).  If ``_dataset_name`` is not yet set,
+        a placeholder name ``default`` is used.
+
+        Returns:
+            Absolute path to the cache directory.
+        """
+        name = self._dataset_name or 'default'
+        return resolve_cache_dir(
+            cache_dir=self._cache_dir,
+            dataset_name=name,
+        )
 
     # ------------------------------------------------------------------
     # Properties
@@ -173,23 +209,44 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     # ------------------------------------------------------------------
 
     def prepare_dimensions(self) -> tuple[int | None, int | None]:
-        """Return (n_features, sequence_len) populated by prepare_data().
+        """Return (n_features, sequence_len) from cached attrs or metadata.
 
-        Caller must invoke prepare_data() first. setup() is NOT required.
-        Safe to call before or after setup() — returns cached attrs once
-        populated.
+        Short-circuits if ``_num_features`` is already populated (e.g. after
+        ``setup()``).  Otherwise attempts to read ``metadata.json`` from the
+        cache directory so that dimensions are available without loading any
+        arrays — the DDP-safe flow (D-07).
 
-        Branch-specific prerequisites:
-        - Forecasting: prepare_data() must have populated _full_data.
-        - Classification: prepare_data() must have populated
-          _train_data_samples.
+        If ``_cache_key`` is not yet set or metadata cannot be found, falls
+        back to ``_compute_dimensions()`` for backward compatibility with
+        subclasses that set ``_num_features`` in ``_do_prepare_data()``.
 
         Returns:
             Tuple of (n_features, sequence_len). Values may be None if
             dimensions have not yet been computed.
+
+        Raises:
+            FileNotFoundError: If metadata file does not exist and
+                ``_cache_key`` is set.
+            ValueError: If metadata schema version does not match
+                :data:`~tscollection.datasets.utils.cache.CACHE_SCHEMA_VERSION`.
         """
         if self._num_features is not None:
             return self._num_features, self._seq_len
+        if self._cache_key is not None:
+            meta_path = self._get_cache_dir() / f'{self._cache_key}_metadata.json'
+            try:
+                meta = load_metadata(meta_path)
+            except FileNotFoundError:
+                msg = (
+                    f'Cache metadata not found: {meta_path}. '
+                    f'Call prepare_data() first or delete stale cache.'
+                )
+                raise FileNotFoundError(msg) from None
+            else:
+                n_features = meta['n_features']
+                seq_len = meta['seq_len']
+                self._num_features = n_features
+                return n_features, seq_len
         return self._compute_dimensions()
 
     def _compute_dimensions(self) -> tuple[int | None, int | None]:
@@ -298,11 +355,24 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
 
         Resets the setup stage tracking and prepare_data sentinel so that
         subsequent calls to setup() or prepare_data() will re-execute
-        their logic. Useful for hyperparameter sweeps or re-training
-        scenarios that reuse the same DataModule instance.
+        their logic. Also clears all cache-related attributes
+        (_full_data_raw, _time_index, _full_data_scaled, scaler caches,
+        data samples, _cache_key) to prevent stale state across resets.
+
+        Useful for hyperparameter sweeps or re-training scenarios that
+        reuse the same DataModule instance.
         """
         self._setup_completed_stages.clear()
         self._prepare_data_called = False
+        self._full_data_raw = None
+        self._time_index = None
+        self._full_data_scaled = None
+        self._data_scaler_cache = None
+        self._ts_feature_scaler_cache = None
+        self._train_data_samples = None
+        self._valid_data_samples = None
+        self._test_data_samples = None
+        self._cache_key = None
 
     # ------------------------------------------------------------------
     # Internal helpers
