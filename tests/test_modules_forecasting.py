@@ -1119,11 +1119,10 @@ class TestPrepareDataIdempotency:
 
 
 class TestFinalizePrepareData:
-    """Verify prepare_data() sets slices via _finalize_prepare_data.
+    """Verify slices are set during setup() after cache read.
 
-    The base wrapper drives _finalize_prepare_data, which calls
-    _set_data_slices() on forecasting modules. Concrete modules no longer
-    call _post_prepare_data() manually.
+    _finalize_prepare_data() is a no-op for forecasting modules.
+    Slices are computed in setup() after raw data is available.
     """
 
     @pytest.fixture
@@ -1141,8 +1140,8 @@ class TestFinalizePrepareData:
         df.to_csv(csv_file, index=False)
         return csv_file
 
-    def test_ett_slices_set_after_prepare_data(self, ett_csv: Path) -> None:
-        """ETT: after prepare_data(), slices are populated by base wrapper."""
+    def test_ett_slices_set_after_setup(self, ett_csv: Path) -> None:
+        """ETT: slices are populated by setup() after cache read."""
         from tscollection.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
@@ -1153,13 +1152,14 @@ class TestFinalizePrepareData:
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
+        module.setup(stage='fit')
 
         assert module._train_slice is not None
         assert module._valid_slice is not None
         assert module._test_slice is not None
 
-    def test_weather_slices_set_after_prepare_data(self, synthetic_csv_file: Path) -> None:
-        """Weather: after prepare_data(), slices are populated by base wrapper."""
+    def test_weather_slices_set_after_setup(self, synthetic_csv_file: Path) -> None:
+        """Weather: slices are populated by setup() after cache read."""
         from tscollection.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(
@@ -1169,13 +1169,14 @@ class TestFinalizePrepareData:
             mode=ForecastingMode.MULTIVARIATE,
         )
         module.prepare_data()
+        module.setup(stage='fit')
 
         assert module._train_slice is not None
         assert module._valid_slice is not None
         assert module._test_slice is not None
 
-    def test_electricity_slices_set_after_prepare_data(self, electricity_csv_file: Path) -> None:
-        """Electricity: after prepare_data(), slices are populated by base wrapper."""
+    def test_electricity_slices_set_after_setup(self, electricity_csv_file: Path) -> None:
+        """Electricity: slices are populated by setup() after cache read."""
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(
@@ -1185,6 +1186,7 @@ class TestFinalizePrepareData:
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
+        module.setup(stage='fit')
 
         assert module._train_slice is not None
         assert module._valid_slice is not None

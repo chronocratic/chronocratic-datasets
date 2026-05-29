@@ -57,8 +57,6 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         ValueError: If variant is not one of the four valid ETT variants.
     """
 
-    _full_data: pd.DataFrame | np.ndarray | None = None
-
     def __init__(
         self,
         *,

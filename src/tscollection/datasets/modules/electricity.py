@@ -48,8 +48,6 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         num_workers: DataLoader worker count.
     """
 
-    _full_data: pd.DataFrame | np.ndarray | None = None
-
     def __init__(
         self,
         *,

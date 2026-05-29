@@ -251,6 +251,9 @@ class TestPrepareDimensions:
             def _do_prepare_data(self) -> None:
                 pass
 
+            def _load_cached_data(self) -> None:
+                pass
+
             def train_dataloader(self, **kwargs):
                 pass
 
@@ -374,3 +377,194 @@ class TestPrepareDimensions:
         n_features, seq_len = module.prepare_dimensions()
         assert n_features == 42
         assert seq_len == 96
+
+
+class TestForecastingTypedAttrs:
+    """Tests for _full_data split into typed attributes."""
+
+    def test_has_typed_attributes(self) -> None:
+        """Forecasting base has _full_data_raw, _time_index, _full_data_scaled."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
+
+            def _set_data_slices(self) -> None:
+                pass
+
+            def _transform_data(self) -> None:
+                pass
+
+        mod = ConcreteForecasting(
+            batch_size=32,
+            seq_len=128,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+            data_scaling_range=(0, 1),
+            num_workers=0,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        assert hasattr(mod, '_full_data_raw')
+        assert hasattr(mod, '_time_index')
+        assert hasattr(mod, '_full_data_scaled')
+        assert mod._full_data_raw is None
+        assert mod._time_index is None
+        assert mod._full_data_scaled is None
+
+    def test_full_data_property_routes_to_raw_before_scaling(self) -> None:
+        """_full_data property returns _full_data_raw before scaling."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
+
+            def _set_data_slices(self) -> None:
+                pass
+
+            def _transform_data(self) -> None:
+                pass
+
+        mod = ConcreteForecasting(
+            batch_size=32,
+            seq_len=128,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+            data_scaling_range=(0, 1),
+            num_workers=0,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        raw = np.random.default_rng(42).standard_normal((100, 5)).astype(np.float32)
+        mod._full_data = raw
+        assert mod._full_data is not None
+        np.testing.assert_array_equal(mod._full_data, raw)
+        np.testing.assert_array_equal(mod._full_data_raw, raw)
+
+    def test_dataframe_injection_sets_time_index(self) -> None:
+        """Setting _full_data with a DataFrame extracts the DatetimeIndex."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
+
+            def _set_data_slices(self) -> None:
+                pass
+
+            def _transform_data(self) -> None:
+                pass
+
+        mod = ConcreteForecasting(
+            batch_size=32,
+            seq_len=128,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+            data_scaling_range=(0, 1),
+            num_workers=0,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        dates = pd.date_range('2020-01-01', periods=100, freq='h')
+        df = pd.DataFrame(
+            np.random.default_rng(42).standard_normal((100, 5)).astype(np.float32), index=dates
+        )
+        mod._full_data = df
+        assert mod._time_index is not None
+        assert isinstance(mod._time_index, pd.DatetimeIndex)
+        assert len(mod._time_index) == 100
+        np.testing.assert_array_equal(mod._full_data_raw, df.to_numpy())
+
+    def test_cache_helpers_exist(self) -> None:
+        """Forecasting base has cache helper methods."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        assert hasattr(
+            BaseForecastingTimeSeriesDataModule, '_resolve_cache_dir'
+        )
+        assert hasattr(
+            BaseForecastingTimeSeriesDataModule, '_save_scaler_to_cache'
+        )
+        assert hasattr(
+            BaseForecastingTimeSeriesDataModule, '_load_scaler_from_cache'
+        )
+
+    def test_resolve_cache_dir_returns_path(self) -> None:
+        """_resolve_cache_dir returns a Path object."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
+
+            def _set_data_slices(self) -> None:
+                pass
+
+            def _transform_data(self) -> None:
+                pass
+
+        mod = ConcreteForecasting(
+            batch_size=32,
+            seq_len=128,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+            data_scaling_range=(0, 1),
+            num_workers=0,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        mod._dataset_name = 'TestDataset'
+        result = mod._resolve_cache_dir()
+        assert isinstance(result, Path)
+        assert 'TestDataset' in str(result)
+
+    def test_finalize_prepare_data_is_noop(self) -> None:
+        """_finalize_prepare_data does not set slices for forecasting."""
+        from tscollection.datasets.modules._base.forecasting import (
+            BaseForecastingTimeSeriesDataModule,
+        )
+
+        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+            def _do_prepare_data(self) -> None:
+                pass
+
+            def _set_data_slices(self) -> None:
+                self._train_slice = slice(0, 10)
+
+            def _transform_data(self) -> None:
+                pass
+
+        mod = ConcreteForecasting(
+            batch_size=32,
+            seq_len=128,
+            valid_size=0.1,
+            test_size=0.5,
+            shuffle=False,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+            data_scaling_range=(0, 1),
+            num_workers=0,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        mod._finalize_prepare_data()
+        assert mod._train_slice is None
