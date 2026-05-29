@@ -193,19 +193,20 @@ class TestElectricityLoadTransform:
     """Tests for ElectricityLoadModule _transform_data."""
 
     def test_transform_uses_transpose_and_expand_dims(self, electricity_csv_file: Path) -> None:
-        """_transform_data applies transpose + expand_dims(axis=-1)."""
+        """_transform_data applies transpose + expand_dims(axis=-1).
+
+        Operates on _full_data_scaled (the already-scaled data array),
+        transposing from (samples, features) to (features, samples, 1).
+        """
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
-        # Set synthetic full_data
-        module._full_data = pd.DataFrame(
-            {'A': [1, 2, 3], 'B': [4, 5, 6]}, index=pd.date_range('2012-01-01', periods=3, freq='h')
-        )
+        # Set synthetic scaled data: (3 samples, 2 features)
+        module._full_data_scaled = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32)
         module._transform_data()
 
         # After transform: .T -> (2,3), expand_dims(-1) -> (2,3,1)
-        assert module._full_data.shape[-1] == 1
-        assert module._full_data.shape[0] == 2  # features after transpose
+        assert module._full_data_scaled.shape == (2, 3, 1)
 
 
 # ---------------------------------------------------------------------------
@@ -254,18 +255,20 @@ class TestWeatherTransform:
     """Tests for WeatherModule _transform_data."""
 
     def test_transform_uses_expand_dims_axis_0(self, synthetic_csv_file: Path) -> None:
-        """_transform_data applies expand_dims(axis=0)."""
+        """_transform_data applies expand_dims(axis=0).
+
+        Operates on _full_data_scaled (the already-scaled data array),
+        expanding from (samples, features) to (1, samples, features).
+        """
         from tscollection.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(dataset_file_path=synthetic_csv_file)
-        # Set synthetic full_data
-        module._full_data = pd.DataFrame(
-            {'A': [1, 2, 3], 'B': [4, 5, 6]}, index=pd.date_range('2012-01-01', periods=3, freq='h')
-        )
+        # Set synthetic scaled data: (3 samples, 2 features)
+        module._full_data_scaled = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32)
         module._transform_data()
 
         # After transform: expand_dims(0) -> (1, 3, 2)
-        assert module._full_data.shape[0] == 1
+        assert module._full_data_scaled.shape == (1, 3, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -770,6 +773,280 @@ class TestETTCacheIntegration:
 
 
 # ---------------------------------------------------------------------------
+# Weather Cache Integration Tests
+# ---------------------------------------------------------------------------
+
+
+class TestWeatherCacheIntegration:
+    """Integration tests for Weather's cache-based prepare_data flow.
+
+    Verifies that prepare_data() writes npz + metadata.json to the cache
+    directory, and that setup() reads from the cache correctly.
+    """
+
+    @pytest.fixture
+    def weather_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal Weather-style CSV with date index and features."""
+        csv_file = tmp_path / 'weather.csv'
+        dates = pd.date_range('2006-01-01', periods=200, freq='h')
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'wbng': rng.standard_normal(200),
+                'wbhh': rng.standard_normal(200),
+                'wbat': rng.standard_normal(200),
+                'sbfg': rng.standard_normal(200),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    def test_prepare_data_writes_npz(self, weather_csv: Path, tmp_path: Path) -> None:
+        """Weather: prepare_data() writes .npz file to cache directory."""
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        cache_dir = tmp_path / 'cache'
+        module = WeatherModule(
+            dataset_file_path=weather_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        npz_path = cache_dir / f'{module._cache_key}.npz'
+        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+
+        loaded = np.load(str(npz_path))
+        assert 'data' in loaded, 'Cache .npz missing data array'
+        assert 'index' in loaded, 'Cache .npz missing index array'
+        assert loaded['data'].dtype == np.float32
+        assert loaded['data'].shape == (200, 1)  # 200 rows, univariate (last col)
+
+    def test_prepare_data_writes_metadata(self, weather_csv: Path, tmp_path: Path) -> None:
+        """Weather: prepare_data() writes metadata.json with version=1 and splits."""
+        import json
+
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        cache_dir = tmp_path / 'cache'
+        module = WeatherModule(
+            dataset_file_path=weather_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        meta_path = cache_dir / f'{module._cache_key}_metadata.json'
+        assert meta_path.exists(), 'Expected metadata.json in cache directory'
+
+        with meta_path.open() as f:
+            meta = json.load(f)
+
+        assert meta['version'] == 1
+        assert meta['n_features'] == 8  # 1 (univariate) + 7 (time features)
+        assert meta['seq_len'] == 96
+        assert meta['has_datetime_index'] is True
+        assert 'splits' in meta
+        # 60/20/20 of 200 rows: train[:120], valid[120:160], test[160:]
+        assert meta['splits']['train'] == [0, 120]
+        assert meta['splits']['valid'] == [120, 160]
+        assert meta['splits']['test'] == [160, 200]
+
+    def test_setup_reads_cache_and_sets_raw(self, weather_csv: Path, tmp_path: Path) -> None:
+        """Weather: setup('fit') reads .npz from cache and sets _full_data_raw."""
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        cache_dir = tmp_path / 'cache'
+        module = WeatherModule(
+            dataset_file_path=weather_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        # Reset setup state to verify setup reads from cache
+        module._full_data_raw = None
+        module._setup_completed_stages.clear()
+
+        module.setup(stage='fit')
+
+        assert module._full_data_raw is not None
+        assert module._full_data_raw.shape == (200, 1)  # 200 rows, univariate
+        assert module._time_index is not None
+        assert len(module._time_index) == 200
+
+    def test_transform_data_produces_correct_shape(self, weather_csv: Path, tmp_path: Path) -> None:
+        """Weather: _transform_data produces (1, samples, features) shape."""
+        from tscollection.datasets.modules.weather import WeatherModule
+
+        cache_dir = tmp_path / 'cache'
+        module = WeatherModule(
+            dataset_file_path=weather_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._full_data_scaled is not None
+        assert module._full_data_scaled.shape[0] == 1  # expanded dimension
+        assert module._full_data_scaled.shape[1] == 200  # samples
+
+
+# ---------------------------------------------------------------------------
+# Electricity Cache Integration Tests
+# ---------------------------------------------------------------------------
+
+
+class TestElectricityCacheIntegration:
+    """Integration tests for Electricity's cache-based prepare_data flow.
+
+    Verifies that prepare_data() writes npz + metadata.json to the cache
+    directory, and that setup() reads from the cache correctly.
+    """
+
+    @pytest.fixture
+    def elec_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal Electricity-style CSV with semicolon separator.
+
+        Uses 501 input rows to account for the first row being consumed
+        by resample('1h', closed='right'), yielding exactly 500 rows
+        after processing.
+        """
+        csv_file = tmp_path / 'electricity.csv'
+        dates = pd.date_range('2012-01-01', periods=501, freq='h')
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame(
+            {
+                'MT_001': rng.standard_normal(501),
+                'MT_002': rng.standard_normal(501),
+            },
+            index=dates,
+        )
+        df.index.name = 'datetime'
+        df.to_csv(csv_file, sep=';', decimal=',')
+        return csv_file
+
+    def test_prepare_data_writes_npz(self, elec_csv: Path, tmp_path: Path) -> None:
+        """Electricity: prepare_data() writes .npz file to cache directory."""
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ElectricityLoadModule(
+            dataset_file_path=elec_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        npz_path = cache_dir / f'{module._cache_key}.npz'
+        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+
+        loaded = np.load(str(npz_path))
+        assert 'data' in loaded, 'Cache .npz missing data array'
+        assert 'index' in loaded, 'Cache .npz missing index array'
+        assert loaded['data'].dtype == np.float32
+        assert loaded['data'].shape == (500, 1)  # 500 rows, univariate (MT_001)
+
+    def test_prepare_data_writes_metadata(self, elec_csv: Path, tmp_path: Path) -> None:
+        """Electricity: prepare_data() writes metadata.json with version=1."""
+        import json
+
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ElectricityLoadModule(
+            dataset_file_path=elec_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        meta_path = cache_dir / f'{module._cache_key}_metadata.json'
+        assert meta_path.exists(), 'Expected metadata.json in cache directory'
+
+        with meta_path.open() as f:
+            meta = json.load(f)
+
+        assert meta['version'] == 1
+        assert meta['dataset_name'] == 'ElectricityLoad'
+        assert meta['n_features'] == 8  # 1 (univariate) + 7 (time features)
+        assert meta['seq_len'] == 96
+        assert meta['has_datetime_index'] is True
+        assert 'splits' in meta
+        # 60/20/20 of 500 rows: train[:300], valid[300:400], test[400:]
+        assert meta['splits']['train'] == [0, 300]
+        assert meta['splits']['valid'] == [300, 400]
+        assert meta['splits']['test'] == [400, 500]
+
+    def test_setup_reads_cache_and_sets_raw(self, elec_csv: Path, tmp_path: Path) -> None:
+        """Electricity: setup('fit') reads .npz from cache and sets _full_data_raw."""
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ElectricityLoadModule(
+            dataset_file_path=elec_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        # Reset setup state to verify setup reads from cache
+        module._full_data_raw = None
+        module._setup_completed_stages.clear()
+
+        module.setup(stage='fit')
+
+        assert module._full_data_raw is not None
+        assert module._full_data_raw.shape == (500, 1)  # 500 rows, univariate
+        assert module._time_index is not None
+        assert len(module._time_index) == 500
+
+    def test_transform_data_produces_correct_shape(self, elec_csv: Path, tmp_path: Path) -> None:
+        """Electricity: transform produces (features, samples, 1) shape."""
+        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ElectricityLoadModule(
+            dataset_file_path=elec_csv,
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._full_data_scaled is not None
+        # transpose + expand_dims(-1): (500,1) -> (1,500) -> (1,500,1), then time features
+        assert module._full_data_scaled.shape[0] == 1  # features (1 column)
+        assert module._full_data_scaled.shape[1] == 500  # samples
+
+
+# ---------------------------------------------------------------------------
 # Forecasting setup() Edge-Case Tests
 # ---------------------------------------------------------------------------
 
@@ -781,7 +1058,7 @@ class TestForecastingSetupEdgeCases:
     and scale_data=False behavior.
     """
 
-    def test_setup_numpy_full_data_skips_time_features(self) -> None:
+    def test_setup_numpy_full_data_skips_time_features(self, tmp_path: Path) -> None:
         """setup() with numpy _full_data_raw produces num_time_series_features == 0.
 
         Pre-populates module._full_data_raw with a pure numpy array (no
@@ -799,6 +1076,8 @@ class TestForecastingSetupEdgeCases:
             scale_data=True,
             data_scaling_method=ScalingMethod.MINMAX,
         )
+        # Isolated cache dir to prevent cache pollution from prior tests
+        module._cache_dir = tmp_path / 'cache'
         # pure numpy, no DatetimeIndex
         rng = np.random.default_rng(42)
         module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
@@ -813,7 +1092,7 @@ class TestForecastingSetupEdgeCases:
         assert module._train_data_samples is not None
         assert module._train_data_samples.shape == (1, 60, 5)
 
-    def test_setup_standard_scaling(self) -> None:
+    def test_setup_standard_scaling(self, tmp_path: Path) -> None:
         """setup() with ScalingMethod.STANDARD uses StandardScaler.
 
         Verifies the StandardScaler branch in forecasting.py is exercised.
@@ -830,6 +1109,8 @@ class TestForecastingSetupEdgeCases:
             scale_data=True,
             data_scaling_method=ScalingMethod.STANDARD,
         )
+        # Isolated cache dir to prevent cache pollution from prior tests
+        module._cache_dir = tmp_path / 'cache'
         rng = np.random.default_rng(42)
         module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
         module._time_index = None
@@ -860,6 +1141,8 @@ class TestForecastingSetupEdgeCases:
             scale_data=False,
             data_scaling_method=ScalingMethod.MINMAX,
         )
+        # Bypass cache read to use injected _full_data_raw
+        module._cache_dir = Path('/nonexistent-cache-dir')
         rng = np.random.default_rng(42)
         module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
         module._time_index = None
@@ -887,7 +1170,7 @@ class TestForecastingSetupEdgeCases:
 class TestForecastingBugFixes:
     """Tests for scaler axis and scale_data flag."""
 
-    def test_scaler_fits_train_only(self) -> None:
+    def test_scaler_fits_train_only(self, tmp_path: Path) -> None:
         """Scaler fits only on training time steps, not validation/test.
 
         Pre-populate numpy _full_data_raw (100, 5) where validation rows (60-79)
@@ -907,6 +1190,8 @@ class TestForecastingBugFixes:
             scale_data=True,
             data_scaling_method=ScalingMethod.MINMAX,
         )
+        # Isolated cache dir to prevent cache pollution from prior tests
+        module._cache_dir = tmp_path / 'cache'
         rng = np.random.default_rng(42)
         raw_data = rng.standard_normal((100, 5)).astype(np.float32)
         # Make validation rows (60-79) have large values
@@ -952,6 +1237,8 @@ class TestForecastingBugFixes:
             scale_data=False,
             data_scaling_method=ScalingMethod.MINMAX,
         )
+        # Bypass cache read to use injected _full_data_raw
+        module._cache_dir = Path('/nonexistent-cache-dir')
         module._full_data_raw = original.copy()
         module._time_index = None
         module._train_slice = slice(None, 60)
@@ -970,7 +1257,7 @@ class TestForecastingBugFixes:
             'Data was modified despite scale_data=False'
         )
 
-    def test_scale_data_true_modifies_values(self) -> None:
+    def test_scale_data_true_modifies_values(self, tmp_path: Path) -> None:
         """scale_data=True actually transforms data values.
 
         Same setup as test_scale_data_false_preserves_values but with
@@ -990,6 +1277,8 @@ class TestForecastingBugFixes:
             scale_data=True,
             data_scaling_method=ScalingMethod.MINMAX,
         )
+        # Isolated cache dir to prevent cache pollution from prior tests
+        module._cache_dir = tmp_path / 'cache'
         module._full_data_raw = original.copy()
         module._time_index = None
         module._train_slice = slice(None, 60)
@@ -1014,7 +1303,7 @@ class TestElectricityBugFixes:
         Create a synthetic electricity CSV with only 100 rows (semicolon-
         delimited, comma decimal, with MT_001 and MT_002 columns).
         Instantiate ElectricityLoadModule, call prepare_data().
-        Assert no IndexError is raised and _full_data is set.
+        Assert no IndexError is raised and cache files are written.
         """
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
@@ -1027,12 +1316,20 @@ class TestElectricityBugFixes:
         df.index.name = 'datetime'
         df.to_csv(csv_file, sep=';', decimal=',')
 
-        module = ElectricityLoadModule(dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE)
+        cache_dir = tmp_path / 'cache'
+        module = ElectricityLoadModule(
+            dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE
+        )
+        module._cache_dir = cache_dir
         # Should NOT raise IndexError
         module.prepare_data()
 
-        assert module._full_data is not None
-        assert len(module._full_data) > 0
+        # Verify cache files were written
+        npz_path = cache_dir / f'{module._cache_key}.npz'
+        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+
+        loaded = np.load(str(npz_path))
+        assert loaded['data'].shape[0] > 0
 
 
 class TestElectricityModuleIntegration:
