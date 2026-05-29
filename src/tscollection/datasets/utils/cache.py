@@ -156,7 +156,7 @@ def load_metadata(path: Path) -> dict[str, Any]:
     return data
 
 
-def save_scaler(scaler: Any, path: Path) -> None:  # noqa: ANN401
+def save_scaler(scaler: Any, path: Path) -> None:
     """Persist a fitted sklearn scaler via ``torch.save``.
 
     Uses ``pickle_protocol=5`` and writes atomically through a
@@ -172,7 +172,7 @@ def save_scaler(scaler: Any, path: Path) -> None:  # noqa: ANN401
     tmp.replace(path)
 
 
-def load_scaler(path: Path) -> Any:  # noqa: ANN401
+def load_scaler(path: Path) -> Any:
     """Load a persisted sklearn scaler via ``torch.load``.
 
     Args:
