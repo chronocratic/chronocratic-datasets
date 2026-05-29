@@ -2,7 +2,7 @@
 
 Reads nested ARFF files via scipy.io.arff.loadarff, encodes
 labels with LabelEncoder, and manages splits with variable-length
-handling.
+handling. Caches post-processed splits for DDP-safe setup().
 
 ``data_form`` is hardcoded as ``DataForm.NESTED``.
 Uses raw scipy loading (not utils/arff.py).
@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -30,9 +30,16 @@ from tscollection.datasets.enums.data import (
 from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
+from tscollection.datasets.utils.cache import (
+    atomic_save_metadata,
+    atomic_save_npz,
+    build_cache_key,
+    CACHE_SCHEMA_VERSION,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Any
 
     from torch.utils.data import DataLoader
 
@@ -82,9 +89,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         scale_data: bool = True,
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
-        splitting_strategy: ClassificationSplitMode = (
-            ClassificationSplitMode.AS_DEFINED
-        ),
+        splitting_strategy: ClassificationSplitMode = (ClassificationSplitMode.AS_DEFINED),
         test_size: float = 0.5,
         num_workers: int = 0,
     ) -> None:
@@ -101,6 +106,15 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             test_size=test_size,
             num_workers=num_workers,
             data_form=DataForm.NESTED,
+        )
+        self._cache_key = build_cache_key(
+            dataset_name=dataset_folder_path.name,
+            params={
+                'splitting_strategy': splitting_strategy.value,
+                'test_size': test_size,
+                'valid_size': valid_size,
+                'data_scaling_method': data_scaling_method.value,
+            },
         )
 
     # ------------------------------------------------------------------
@@ -163,12 +177,13 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     def _do_prepare_data(self) -> None:
-        """Validate paths, read ARFF files, split, and prepare data.
+        """Validate paths, read ARFF files, split, and cache data.
 
         Raises ``FileNotFoundError`` if the dataset folder
         does not exist. Reads train/test ARFF files via scipy.io.arff,
         applies optional manual re-splitting, creates validation split,
-        and processes variable-length sequences.
+        processes variable-length sequences, and writes cache
+        (npz + metadata.json).
         """
         # Validate folder exists
         if not self.dataset_folder_path.exists():
@@ -236,7 +251,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                     r' number of classes = \d+'
                 )
                 if re.match(pattern, str(e)):
-                    test_size = len(set(filtered_labels))
+                    num_classes = len(set(filtered_labels))
                     (
                         self._train_data_samples,
                         self._valid_data_samples,
@@ -245,12 +260,12 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                     ) = train_test_split(
                         filtered_samples,
                         filtered_labels,
-                        test_size=test_size,
+                        test_size=num_classes,
                         stratify=filtered_labels,
                         random_state=42,
                     )
                     logger.warning(
-                        'Validation size adjusted to %d samples to cover all classes', test_size
+                        'Validation size adjusted to %d samples to cover all classes', num_classes
                     )
 
         # Variable-length processing
@@ -265,6 +280,63 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         # Compute module state
         self._num_classes = len(self._train_data_labels.unique())
         self._seq_len, self._num_features = self._train_data_samples[0].shape
+
+        # Write cache
+        cache_dir = self._get_cache_dir()
+        cache_path = cache_dir / f'{self._cache_key}.npz'
+
+        valid_samples_arr = (
+            self._valid_data_samples
+            if self._valid_data_samples is not None
+            else np.empty((0, 1, 1), dtype=self._train_data_samples.dtype)
+        )
+
+        atomic_save_npz(
+            path=cache_path,
+            train_samples=self._train_data_samples,
+            train_labels=self._train_data_labels.to_numpy(),
+            test_samples=self._test_data_samples,
+            test_labels=self._test_data_labels.to_numpy(),
+            valid_samples=valid_samples_arr,
+            valid_labels=self._valid_data_labels.to_numpy()
+            if self._valid_data_labels is not None
+            else np.empty((0,), dtype=self._train_data_labels.to_numpy().dtype),
+        )
+
+        atomic_save_metadata(
+            path=cache_dir / f'{self._cache_key}_metadata.json',
+            data={
+                'version': CACHE_SCHEMA_VERSION,
+                'dataset_name': self._dataset_name,
+                'n_features': self._num_features,
+                'seq_len': self._seq_len,
+                'has_datetime_index': False,
+                'data_scaling_method': self.data_scaling_method.value,
+                'data_scaling_range': self.data_scaling_range,
+            },
+        )
+
+    def _load_cached_data(self) -> None:
+        """Load cached data splits from the npz cache file."""
+        if self._train_data_samples is not None:
+            return
+
+        cache_dir = self._get_cache_dir()
+        cache_path = cache_dir / f'{self._cache_key}.npz'
+        loaded = np.load(str(cache_path), allow_pickle=True)
+
+        self._train_data_samples = loaded['train_samples']
+        self._train_data_labels = pd.Series(loaded['train_labels'], dtype='category')
+        self._test_data_samples = loaded['test_samples']
+        self._test_data_labels = pd.Series(loaded['test_labels'], dtype='category')
+
+        valid_samples = loaded['valid_samples']
+        if valid_samples.size > 0:
+            self._valid_data_samples = valid_samples
+            self._valid_data_labels = pd.Series(loaded['valid_labels'], dtype='category')
+        else:
+            self._valid_data_samples = None
+            self._valid_data_labels = None
 
     # ------------------------------------------------------------------
     # Dataloaders

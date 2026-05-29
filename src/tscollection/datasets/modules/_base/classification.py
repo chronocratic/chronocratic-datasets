@@ -1,29 +1,27 @@
 """Base LightningDataModule for classification time series datasets.
 
 Provides label handling, target column separation, splitting strategy
-management, and variable-length sequence processing for classification
-datasets (UCR, UEA).
+management, variable-length sequence processing, and cache-aware setup
+for classification datasets (UCR, UEA).
 """
 
 from __future__ import annotations
 
 from abc import abstractmethod
 from functools import partial
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from tscollection.datasets.enums.data import (
-    ClassificationSplitMode,
-    DataForm,
-    ScalingMethod,
-)
+import pandas as pd
+
+from tscollection.datasets.enums.data import ClassificationSplitMode, DataForm, ScalingMethod
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.common import separate_target_feature_from_df
 from tscollection.datasets.utils.general import process_data_with_varying_sequence_lengths_single
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Any
 
-    import pandas as pd
     from torch.utils.data import DataLoader
 
 
@@ -72,9 +70,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
         target_column_name: str,
-        splitting_strategy: ClassificationSplitMode = (
-            ClassificationSplitMode.AS_DEFINED
-        ),
+        splitting_strategy: ClassificationSplitMode = (ClassificationSplitMode.AS_DEFINED),
         test_size: float = 0.5,
         num_workers: int = 0,
         data_form: DataForm = DataForm.REGULAR,
@@ -97,11 +93,12 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._separate_target_feature = partial(
             separate_target_feature_from_df, target_feature_name=self.target_column_name
         )
+        self._cache_key: str | None = None
         self._data_column_names: str | None = None
         self._num_classes: int | None = None
-        self._train_data_labels: Any = None
-        self._test_data_labels: Any = None
-        self._valid_data_labels: Any = None
+        self._train_data_labels: pd.Series | None = None
+        self._test_data_labels: pd.Series | None = None
+        self._valid_data_labels: pd.Series | None = None
 
     # ------------------------------------------------------------------
     # Properties
@@ -130,8 +127,6 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     @property
     def all_data_labels(self) -> pd.Series:
         """Concatenation of all label splits."""
-        import pandas as pd
-
         return pd.concat(
             [self._train_data_labels, self._test_data_labels, self._valid_data_labels], axis=0
         )
@@ -141,23 +136,54 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     def _compute_dimensions(self) -> tuple[int | None, int | None]:
-        """Compute dimensions from classification train data samples.
+        """Fallback dimension computation when metadata is unavailable.
 
-        Raises RuntimeError if prepare_data() was never called, as
-        train samples are required to determine feature count and
-        sequence length.
+        Raises RuntimeError since classification relies on cached attrs
+        or metadata.json for dimensions. This path should only be hit if
+        neither ``prepare_data()`` nor cache metadata are available.
 
         Returns:
             Tuple of (n_features, sequence_len).
 
         Raises:
-            RuntimeError: If _train_data_samples is None (prepare_data
-                not yet called).
+            RuntimeError: If dimensions cannot be resolved.
         """
-        if self._train_data_samples is None:
-            msg = 'prepare_dimensions() requires prepare_data() to have run first'
-            raise RuntimeError(msg)
-        return self._num_features, self._seq_len
+        if self._num_features is not None:
+            return self._num_features, self._seq_len
+        msg = 'prepare_dimensions() requires prepare_data() to have run first'
+        raise RuntimeError(msg)
+
+    def setup(self, stage: str | None = None) -> None:
+        """Load cached splits and apply data scaling.
+
+        Calls ``_load_cached_data()`` to populate in-memory data arrays
+        from the cache written by ``prepare_data()``, then delegates to
+        the base class for scaling.
+
+        Args:
+            stage: Lightning stage identifier. Defaults to ``None``
+                (equivalent to ``"fit"``).
+
+        Raises:
+            ValueError: If stage is not one of
+                ``{'fit', 'validate', 'test', 'predict', None}``.
+        """
+        if stage not in ('fit', 'validate', 'test', 'predict', None):
+            msg = f'Unknown stage: {stage!r}'
+            raise ValueError(msg)
+        self._load_cached_data()
+        super().setup(stage=stage)
+
+    @abstractmethod
+    def _load_cached_data(self) -> None:
+        """Load cached data splits from the npz cache file.
+
+        Subclasses must implement this method to read the npz file
+        written by ``_do_prepare_data()`` and populate
+        ``_train_data_samples``, ``_test_data_samples``,
+        ``_valid_data_samples``, ``_train_data_labels``,
+        ``_test_data_labels``, and ``_valid_data_labels``.
+        """
 
     @abstractmethod
     def _do_prepare_data(self) -> None:

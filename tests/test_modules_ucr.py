@@ -283,3 +283,83 @@ def test_setup_fit_then_test_reuses_scaler(tmp_path: Path) -> None:
         assert mod._scaler_cache is not None
         mod.setup(stage='test')
         assert call_count == 1
+
+
+def test_cache_round_trip(tmp_path: Path) -> None:
+    """UCR: prepare_data writes cache, setup reads it back correctly.
+
+    Verifies the cache round-trip: after prepare_data() writes the npz
+    and metadata.json, clearing in-memory state and calling setup()
+    restores data from cache that matches the original.
+    """
+    import numpy as np
+
+    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+
+    arff_content = """@relation test
+
+@attribute t1 numeric
+@attribute t2 numeric
+@attribute t3 numeric
+@attribute class {0,1}
+
+@data
+0.1,0.2,0.3,0
+0.4,0.5,0.6,1
+0.7,0.8,0.9,0
+0.2,0.3,0.4,1
+0.5,0.6,0.7,0
+0.8,0.9,1.0,1
+0.1,0.2,0.3,0
+0.4,0.5,0.6,1
+0.7,0.8,0.9,0
+0.2,0.3,0.4,1
+0.5,0.6,0.7,0
+0.8,0.9,1.0,1
+0.1,0.2,0.3,0
+0.4,0.5,0.6,1
+0.7,0.8,0.9,0
+"""
+    dataset_dir = tmp_path / 'synthetic'
+    dataset_dir.mkdir()
+    (dataset_dir / 'synthetic_TRAIN.arff').write_text(arff_content)
+    (dataset_dir / 'synthetic_TEST.arff').write_text(arff_content)
+
+    mod = UCRClassificationDataModule(
+        dataset_folder_path=dataset_dir,
+        target_column_name='class',
+        valid_size=0.1,
+        scale_data=False,
+    )
+    mod.prepare_data()
+
+    # Snapshot original data
+    orig_train = mod._train_data_samples.copy()
+    orig_test = mod._test_data_samples.copy()
+    orig_train_labels = mod._train_data_labels.copy()
+    orig_test_labels = mod._test_data_labels.copy()
+
+    # Clear in-memory state (simulates fresh process reading from cache)
+    mod._train_data_samples = None
+    mod._test_data_samples = None
+    mod._valid_data_samples = None
+    mod._train_data_labels = None
+    mod._test_data_labels = None
+    mod._valid_data_labels = None
+
+    # setup() should read from cache
+    mod.setup(stage='fit')
+
+    # Verify data matches (before scaling since scale_data=False)
+    np.testing.assert_array_equal(
+        mod._train_data_samples.to_numpy(), orig_train.to_numpy()
+    )
+    np.testing.assert_array_equal(
+        mod._test_data_samples.to_numpy(), orig_test.to_numpy()
+    )
+    np.testing.assert_array_equal(
+        mod._train_data_labels.to_numpy(), orig_train_labels.to_numpy()
+    )
+    np.testing.assert_array_equal(
+        mod._test_data_labels.to_numpy(), orig_test_labels.to_numpy()
+    )
