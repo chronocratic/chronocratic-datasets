@@ -632,6 +632,144 @@ class TestETTGoldenPathIntegration:
 
 
 # ---------------------------------------------------------------------------
+# ETT Cache Integration Tests
+# ---------------------------------------------------------------------------
+
+
+class TestETTCacheIntegration:
+    """Integration tests for ETT's cache-based prepare_data flow.
+
+    Verifies that prepare_data() writes npz + metadata.json to the cache
+    directory, and that setup() reads from the cache correctly.
+    """
+
+    @pytest.fixture
+    def ett_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal ETT-style CSV with 'date', 'HUFL', 'OT', 'Wsp' columns."""
+        csv_file = tmp_path / 'ett.csv'
+        dates = pd.date_range('2016-01-01', periods=200, freq='h')
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame(
+            {
+                'date': dates,
+                'HUFL': rng.standard_normal(200),
+                'HT': rng.standard_normal(200),
+                'OT': rng.standard_normal(200),
+                'Wsp': rng.standard_normal(200),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    def test_prepare_data_writes_npz(self, ett_csv: Path, tmp_path: Path) -> None:
+        """ETT: prepare_data() writes .npz file to cache directory."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        npz_path = cache_dir / f'{module._cache_key}.npz'
+        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+
+        loaded = np.load(str(npz_path))
+        assert 'data' in loaded, 'Cache .npz missing data array'
+        assert 'index' in loaded, 'Cache .npz missing index array'
+        assert loaded['data'].dtype == np.float32
+        assert loaded['data'].shape == (200, 1)  # 200 rows, univariate (OT only)
+
+    def test_prepare_data_writes_metadata(self, ett_csv: Path, tmp_path: Path) -> None:
+        """ETT: prepare_data() writes metadata.json with version=1 and split ranges."""
+        import json
+
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        meta_path = cache_dir / f'{module._cache_key}_metadata.json'
+        assert meta_path.exists(), 'Expected metadata.json in cache directory'
+
+        with meta_path.open() as f:
+            meta = json.load(f)
+
+        assert meta['version'] == 1
+        assert meta['dataset_name'] == 'ETTh1'
+        assert meta['n_features'] == 8  # 1 (univariate OT) + 7 (time features)
+        assert meta['seq_len'] == 96
+        assert meta['has_datetime_index'] is True
+        assert 'splits' in meta
+        assert meta['splits']['train'] == [None, 12 * 30 * 24]
+        assert meta['splits']['valid'] == [12 * 30 * 24, 16 * 30 * 24]
+        assert meta['splits']['test'] == [16 * 30 * 24, 20 * 30 * 24]
+
+    def test_setup_reads_cache_and_sets_raw(self, ett_csv: Path, tmp_path: Path) -> None:
+        """ETT: setup('fit') reads .npz from cache and sets _full_data_raw."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+
+        # Reset setup state to verify setup reads from cache
+        module._full_data_raw = None
+        module._setup_completed_stages.clear()
+
+        module.setup(stage='fit')
+
+        assert module._full_data_raw is not None
+        assert module._full_data_raw.shape == (200, 1)  # 200 rows, univariate
+        assert module._time_index is not None
+        assert len(module._time_index) == 200
+
+    def test_transform_data_produces_correct_shape(self, ett_csv: Path, tmp_path: Path) -> None:
+        """ETT: _transform_data produces _full_data_scaled with shape (1, samples, features)."""
+        from tscollection.datasets.modules.ett import ETTDataModule
+
+        cache_dir = tmp_path / 'cache'
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant='ETTh1',
+            seq_len=96,
+            batch_size=16,
+            mode=ForecastingMode.UNIVARIATE,
+            scale_data=True,
+            data_scaling_method=ScalingMethod.MINMAX,
+        )
+        module._cache_dir = cache_dir
+        module.prepare_data()
+        module.setup(stage='fit')
+
+        assert module._full_data_scaled is not None
+        assert module._full_data_scaled.shape[0] == 1  # expanded dimension
+        assert module._full_data_scaled.shape[1] == 200  # samples
+
+
+# ---------------------------------------------------------------------------
 # Forecasting setup() Edge-Case Tests
 # ---------------------------------------------------------------------------
 
@@ -644,12 +782,11 @@ class TestForecastingSetupEdgeCases:
     """
 
     def test_setup_numpy_full_data_skips_time_features(self) -> None:
-        """setup() with numpy _full_data produces num_time_series_features == 0.
+        """setup() with numpy _full_data_raw produces num_time_series_features == 0.
 
-        Pre-populates module._full_data with a pure numpy array (no
+        Pre-populates module._full_data_raw with a pure numpy array (no
         DatetimeIndex), sets slices, and calls setup(). Verifies that
-        the no-DatetimeIndex branch (line 165-167 in forecasting.py)
-        is hit.
+        the no-DatetimeIndex branch in forecasting.py is hit.
         """
         from tscollection.datasets.modules.ett import ETTDataModule
 
@@ -664,7 +801,8 @@ class TestForecastingSetupEdgeCases:
         )
         # pure numpy, no DatetimeIndex
         rng = np.random.default_rng(42)
-        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
+        module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
@@ -678,9 +816,8 @@ class TestForecastingSetupEdgeCases:
     def test_setup_standard_scaling(self) -> None:
         """setup() with ScalingMethod.STANDARD uses StandardScaler.
 
-        Verifies the StandardScaler branch (line 214-215 in
-        forecasting.py) is exercised. Pre-populates numpy _full_data,
-        sets slices, and calls setup().
+        Verifies the StandardScaler branch in forecasting.py is exercised.
+        Pre-populates numpy _full_data_raw, sets slices, and calls setup().
         """
         from tscollection.datasets.modules.ett import ETTDataModule
 
@@ -694,7 +831,8 @@ class TestForecastingSetupEdgeCases:
             data_scaling_method=ScalingMethod.STANDARD,
         )
         rng = np.random.default_rng(42)
-        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
+        module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
@@ -723,7 +861,8 @@ class TestForecastingSetupEdgeCases:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         rng = np.random.default_rng(42)
-        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
+        module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
@@ -751,7 +890,7 @@ class TestForecastingBugFixes:
     def test_scaler_fits_train_only(self) -> None:
         """Scaler fits only on training time steps, not validation/test.
 
-        Pre-populate numpy _full_data (100, 5) where validation rows (60-79)
+        Pre-populate numpy _full_data_raw (100, 5) where validation rows (60-79)
         have values 100x larger than training rows (0-59). After setup, the
         scaled training data should reflect ONLY training statistics. If the
         scaler leaked validation data, the range would be wider (min would be
@@ -772,7 +911,8 @@ class TestForecastingBugFixes:
         raw_data = rng.standard_normal((100, 5)).astype(np.float32)
         # Make validation rows (60-79) have large values
         raw_data[60:80] = raw_data[60:80] * 100.0 + 500.0
-        module._full_data = raw_data
+        module._full_data_raw = raw_data
+        module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
@@ -795,7 +935,7 @@ class TestForecastingBugFixes:
     def test_scale_data_false_preserves_values(self) -> None:
         """scale_data=False produces unscaled data identical to input.
 
-        Pre-populate _full_data with known random values, copy to original,
+        Pre-populate _full_data_raw with known random values, copy to original,
         call setup. Assert values are unchanged after setup.
         """
         from tscollection.datasets.modules.ett import ETTDataModule
@@ -812,16 +952,17 @@ class TestForecastingBugFixes:
             scale_data=False,
             data_scaling_method=ScalingMethod.MINMAX,
         )
-        module._full_data = original.copy()
+        module._full_data_raw = original.copy()
+        module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
         module.setup(stage='fit')
 
-        # _full_data after _transform_data has shape (1, 100, 5) due to
+        # _full_data_scaled after _transform_data has shape (1, 100, 5) due to
         # expand_dims(axis=0). Extract the actual data plane.
-        transformed = module._full_data
+        transformed = module._full_data_scaled
         # Compare the data plane (squeeze axis 0 added by _transform_data)
         actual_data = transformed.squeeze(axis=0)
         assert actual_data.shape == (100, 5), f'Unexpected shape {actual_data.shape}'
@@ -849,14 +990,15 @@ class TestForecastingBugFixes:
             scale_data=True,
             data_scaling_method=ScalingMethod.MINMAX,
         )
-        module._full_data = original.copy()
+        module._full_data_raw = original.copy()
+        module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
         module.setup(stage='fit')
 
-        transformed = module._full_data
+        transformed = module._full_data_scaled
         actual_data = transformed.squeeze(axis=0)
         assert not np.allclose(actual_data, original, atol=1e-6), (
             'Data was NOT modified despite scale_data=True'
@@ -986,7 +1128,8 @@ class TestSetupIdempotency:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         rng = np.random.default_rng(42)
-        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
+        module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)

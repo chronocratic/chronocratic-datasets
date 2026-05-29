@@ -24,6 +24,7 @@ from tscollection.datasets.utils.cache import (
     atomic_save_npz,
     build_cache_key,
 )
+from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -176,10 +177,12 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             "valid": [self._valid_slice.start, self._valid_slice.stop],
             "test": [self._test_slice.start, self._test_slice.stop],
         }
+        # n_features includes time features (always present for ETT via DatetimeIndex)
+        n_features = data.shape[1] + TIME_FEATURE_COUNT
         metadata = {
             "version": 1,
             "dataset_name": self.variant,
-            "n_features": data.shape[1],
+            "n_features": n_features,
             "seq_len": self._seq_len,
             "splits": splits,
             "has_datetime_index": True,
