@@ -393,7 +393,7 @@ All 8 `isinstance` branches are eliminated because types are known at definition
 ### Pitfall 5: `_set_data_slices()` depends on `len(self._full_data)` for Weather/Electricity
 **What goes wrong:** Weather and Electricity `_set_data_slices()` call `len(self._full_data)` to compute fractional splits (60/20/20). Under Option B, `_full_data` is split into `_full_data_raw` (set in `setup()`) and `_time_index`. `_set_data_slices()` is called from `_finalize_prepare_data()`, which runs after `_do_prepare_data()` — but `_full_data_raw` isn't set until `setup()`.
 **Why it happens:** `_set_data_slices()` needs the data length to compute split boundaries, but under DDP, `_full_data` is no longer set in `prepare_data()`.
-**How to avoid:** Option B says `_full_data_raw` is set in `setup()`. Therefore `_set_data_slices()` must move from `_finalize_prepare_data()` (runs in `prepare_data()`) to the beginning of `setup()`. For ETT, slices are variant-based (not data-length-based), so this doesn't matter. For Weather/Electricity, slices depend on `len(_full_data_raw)` which is only available post-cache-read.
+**How to avoid:** Option B says `_full_data_raw` is set in `setup()`. Therefore `_set_data_slices()` must move from `_finalize_prepare_data()` (runs in `prepare_data()`) to the beginning of `setup()`. For ETT, slices are variant-based (not data-length-based), so this does not matter. For Weather/Electricity, slices depend on `len(_full_data_raw)` which is only available post-cache-read.
 **This is a critical sequencing change:** `_finalize_prepare_data()` should NOT call `_set_data_slices()` after phase 7. Instead, `setup()` reads cache -> sets `_full_data_raw` -> calls `_set_data_slices()` -> continues with scaling.
 
 ### Pitfall 6: `reset()` needs to clear new cache-related attrs
@@ -693,27 +693,31 @@ assert np.allclose(raw_data, original_df.to_numpy())
 | A5 | Classification modules cache `np.ndarray` samples with varying shapes (UEA 3-D) via `savez_compressed` | Pitfall 7 | MEDIUM. UEA data is `(samples, timesteps, features)` — variable-length processing pads to max. Need to verify `savez_compressed` handles 3-D arrays correctly (it does — numpy saves arbitrary ND arrays). |
 | A6 | `prepare_data_per_node = True` (Lightning default) means each node has its own LOCAL_RANK=0 writing the cache | Standard Stack | HIGH-CONFIDENCE. Verified via `LightningDataModule.prepare_data_per_node` attribute. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `_set_data_slices()` move from `_finalize_prepare_data()` to `setup()`?**
    - What we know: Weather and Electricity compute fractional splits from `len(self._full_data)`. Under D-01, `_full_data` is not set until `setup()` reads cache.
-   - What's unclear: Whether ETT's variant-based slices (already independent of data length) can stay in `_finalize_prepare_data()`, or if ALL slicing should move to `setup()` for consistency.
+   - What was unclear: Whether ETT's variant-based slices (already independent of data length) can stay in `_finalize_prepare_data()`, or if ALL slicing should move to `setup()` for consistency.
    - Recommendation: **Move all `_set_data_slices()` to `setup()`** (after cache read). `_finalize_prepare_data()` becomes no-op for forecasting too. This is a clean architectural change — slicing is a setup concern, not a prepare concern.
+   - **RESOLVED:** Plan 07-04 Task 1 makes `_finalize_prepare_data()` a no-op and plan 07-04 Task 2 moves `_set_data_slices()` to `setup()` after cache read. Plans 07-05 and 07-06 follow the same pattern for ETT, Weather, and Electricity modules.
 
 2. **How to cache classification data (UCR/UEA)?**
    - What we know: UCR caches `pd.DataFrame` (train/test samples) and `pd.Series` (labels). UEA caches `np.ndarray` (3-D samples) and `np.ndarray` (1-D labels). Both modules run variable-length processing in `_do_prepare_data()`.
-   - What's unclear: Whether to cache pre-processed (after variable-length centering) or raw data. Caching pre-processed means `setup()` is trivially a cache read. Caching raw means `setup()` re-runs centering (deterministic, cheap).
+   - What was unclear: Whether to cache pre-processed (after variable-length centering) or raw data. Caching pre-processed means `setup()` is trivially a cache read. Caching raw means `setup()` re-runs centering (deterministic, cheap).
    - Recommendation: **Cache post-processed data** (after splitting + variable-length centering). This makes `setup()` a pure cache read + scaler application. The cache key encodes `splitting_strategy`, `test_size`, `valid_size` so different configs produce different caches.
+   - **RESOLVED:** Plan 07-07 Task 2 implements post-processed caching: UCR writes train/test/valid samples and labels as numpy arrays after all processing; UEA writes 3-D arrays and label arrays. Cache key includes splitting_strategy, test_size, valid_size per D-03.
 
 3. **Should `reset()` clear new cache-related attrs?**
    - What we know: Phase 6 added `reset()` clearing `_setup_completed_stages` and `_prepare_data_called`. Phase 7 adds `_full_data_raw`, `_time_index`, `_full_data_scaled`, scaler caches.
-   - What's unclear: Whether `reset()` should also delete cache files (probably not — cache is valid across resets).
+   - What was unclear: Whether `reset()` should also delete cache files (probably not — cache is valid across resets).
    - Recommendation: **`reset()` clears in-memory attrs only.** Cache files persist. `prepare_data()` is guarded by `_prepare_data_called` sentinel; if reset clears the sentinel, `prepare_data()` re-runs but skips writes if cache exists (`if not cache_path.exists():`).
+   - **RESOLVED:** Plan 07-03 Task 1 extends `reset()` to clear `_full_data_raw`, `_time_index`, `_full_data_scaled`, `_data_scaler_cache`, `_ts_feature_scaler_cache`, and data sample attrs. Cache files on disk are NOT deleted by reset.
 
 4. **Cache key params for forecasting modules — minimal set?**
    - What we know: D-03 locks hybrid key with readable param suffix.
-   - What's unclear: Which params distinguish layouts vs. which are cosmetic.
+   - What was unclear: Which params distinguish layouts vs. which are cosmetic.
    - Recommendation: `seq_len`, `mode` (UNIVARIATE/MULTIVARIATE), `data_scaling_method`, `data_scaling_range` for forecasting. For classification: `splitting_strategy`, `test_size`, `valid_size`, `data_scaling_method`. These are the params that change data shape or split boundaries.
+   - **RESOLVED:** Plans 07-05, 07-06 use `seq_len`, `mode`, `data_scaling_method`, `data_scaling_range` for forecasting cache keys. Plan 07-07 uses `splitting_strategy`, `test_size`, `valid_size`, `data_scaling_method` for classification cache keys.
 
 ## Environment Availability
 
@@ -830,11 +834,11 @@ assert np.allclose(raw_data, original_df.to_numpy())
 | Architecture | HIGH | DDP pattern tested locally; `_full_data` usage mapped; cache format verified. |
 | Pitfalls | HIGH | All derived from concrete code reading + grep verification. |
 
-### Open Questions
-1. `_set_data_slices()` migration to `setup()` vs. keeping variant-based slices in `prepare_data()` (recommend: move all to `setup()`).
-2. Classification cache granularity — pre-processed vs. raw data (recommend: cache post-processed).
-3. `reset()` scope for new attrs (recommend: clear in-memory only, cache persists).
-4. Cache key param set (recommend: `seq_len`, `mode`, `scaling_method`, `scaling_range` for forecasting; `splitting_strategy`, `test_size`, `valid_size` for classification).
+### Open Questions (RESOLVED)
+1. `_set_data_slices()` migration to `setup()` — RESOLVED in plan 07-04 (moved to setup after cache read).
+2. Classification cache granularity — RESOLVED in plan 07-07 (post-processed caching).
+3. `reset()` scope for new attrs — RESOLVED in plan 07-03 (in-memory only, cache persists).
+4. Cache key param set — RESOLVED in plans 07-05, 07-06, 07-07 (forecasting: seq_len, mode, scaling; classification: splitting_strategy, test_size, valid_size).
 
 ### Ready for Planning
-Research complete. Planner can now create PLAN.md files.
+Research complete. All open questions resolved by plans.
