@@ -1196,8 +1196,8 @@ class TestFinalizePrepareData:
 class TestPrepareDimensions:
     """Verify prepare_dimensions() works pre-setup and post-setup.
 
-    Tests the D4 invariant: dimensions computed from _full_data
-    (pre-setup) agree with cached values (post-setup).
+    Dimensions computed from _full_data (pre-setup) agree with
+    cached values (post-setup).
     """
 
     @pytest.fixture
@@ -1251,7 +1251,7 @@ class TestPrepareDimensions:
         assert seq_len == 96
 
     def test_pre_setup_matches_post_setup(self, ett_csv: Path) -> None:
-        """ETT: dimensions agree whether computed pre-setup or post-setup (D4)."""
+        """ETT: dimensions agree whether computed pre-setup or post-setup."""
         from tscollection.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(

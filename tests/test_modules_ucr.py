@@ -238,10 +238,7 @@ def test_setup_unknown_stage_raises(tmp_path: Path) -> None:
 
 
 def test_setup_fit_then_test_reuses_scaler(tmp_path: Path) -> None:
-    """UCR: setup('fit') then setup('test') creates scaler only once.
-
-    Verifies D2: _scaler_cache is populated by fit, reused by test.
-    """
+    """UCR: setup('fit') then setup('test') creates scaler only once."""
     from tscollection.datasets.modules.ucr import UCRClassificationDataModule
 
     # Create synthetic UCR folder

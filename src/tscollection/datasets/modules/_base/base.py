@@ -95,7 +95,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._setup_completed_stages: set[str | None] = set()
         self._prepare_data_called: bool = False
         self._scaler_cache: Callable[..., tuple[Any, Any, Any]] | None = None
-        # Cache-related typed attributes (D-01)
+        # Cache-related typed attributes
         self._full_data_raw: np.ndarray | None = None
         self._time_index: pd.DatetimeIndex | None = None
         self._full_data_scaled: np.ndarray | None = None
@@ -214,7 +214,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Short-circuits if ``_num_features`` is already populated (e.g. after
         ``setup()``).  Otherwise attempts to read ``metadata.json`` from the
         cache directory so that dimensions are available without loading any
-        arrays — the DDP-safe flow (D-07).
+        arrays — the DDP-safe flow.
 
         If ``_cache_key`` is not yet set or metadata cannot be found, falls
         back to ``_compute_dimensions()`` for backward compatibility with

@@ -1,4 +1,4 @@
-"""Tests for cache utility functions (MOD-01).
+"""Tests for cache utility functions.
 
 Verifies deterministic key derivation, atomic file I/O, metadata
 versioning, scaler persistence, and DatetimeIndex round-trips.
@@ -32,7 +32,7 @@ from tscollection.datasets.utils.cache import (
 
 
 def test_cache_schema_version_is_one() -> None:
-    """MOD-01: CACHE_SCHEMA_VERSION equals 1."""
+    """CACHE_SCHEMA_VERSION equals 1."""
     assert CACHE_SCHEMA_VERSION == 1
 
 
@@ -42,7 +42,7 @@ def test_cache_schema_version_is_one() -> None:
 
 
 def test_build_cache_key_produces_deterministic_output() -> None:
-    """MOD-01: Same inputs always produce the same key."""
+    """Same inputs always produce the same key."""
     params = {"seq_len": 128, "mode": "UNIVARIATE", "data_scaling_method": "MINMAX"}
     key1 = build_cache_key(dataset_name="ETTm1", params=params)
     key2 = build_cache_key(dataset_name="ETTm1", params=params)
@@ -50,7 +50,7 @@ def test_build_cache_key_produces_deterministic_output() -> None:
 
 
 def test_build_cache_key_format_matches_pattern() -> None:
-    """MOD-01: Key matches <8-char-sha256>_<dataset>_<params>.cache."""
+    """Key matches <8-char-sha256>_<dataset>_<params>.cache."""
     pattern = re.compile(r'^[0-9a-f]{8}_[^.]+\.[cC]ache$')
     params = {"seq_len": 128, "mode": "UNIVARIATE"}
     key = build_cache_key(dataset_name="ETTm1", params=params)
@@ -58,14 +58,14 @@ def test_build_cache_key_format_matches_pattern() -> None:
 
 
 def test_build_cache_key_includes_dataset_name() -> None:
-    """MOD-01: Dataset name appears in the key suffix."""
+    """Dataset name appears in the key suffix."""
     params = {"seq_len": 64}
     key = build_cache_key(dataset_name="Weather", params=params)
     assert "Weather" in key
 
 
 def test_build_cache_key_invariant_to_param_order() -> None:
-    """MOD-01: Key is the same regardless of param dict ordering."""
+    """Key is the same regardless of param dict ordering."""
     params_a = {"seq_len": 128, "mode": "UNIVARIATE", "data_scaling_method": "MINMAX"}
     params_b = {"data_scaling_method": "MINMAX", "seq_len": 128, "mode": "UNIVARIATE"}
     key_a = build_cache_key(dataset_name="ETTm1", params=params_a)
@@ -74,7 +74,7 @@ def test_build_cache_key_invariant_to_param_order() -> None:
 
 
 def test_build_cache_key_different_params_produce_different_keys() -> None:
-    """MOD-01: Different params produce different keys."""
+    """Different params produce different keys."""
     params_a = {"seq_len": 128}
     params_b = {"seq_len": 256}
     key_a = build_cache_key(dataset_name="ETTm1", params=params_a)
@@ -83,7 +83,7 @@ def test_build_cache_key_different_params_produce_different_keys() -> None:
 
 
 def test_build_cache_key_includes_hash_prefix() -> None:
-    """MOD-01: Key starts with 8-character hex SHA-256 prefix."""
+    """Key starts with 8-character hex SHA-256 prefix."""
     params = {"seq_len": 128}
     key = build_cache_key(dataset_name="ETTm1", params=params)
     prefix = key.split("_")[0]
@@ -97,21 +97,21 @@ def test_build_cache_key_includes_hash_prefix() -> None:
 
 
 def test_resolve_cache_dir_default_returns_expected_path() -> None:
-    """MOD-01: resolve_cache_dir(None) returns ~/.cache/tsdatasets/<name>."""
+    """resolve_cache_dir(None) returns ~/.cache/tsdatasets/<name>."""
     result = resolve_cache_dir(cache_dir=None, dataset_name="ETTm1")
     expected = Path.home() / '.cache' / 'tsdatasets' / 'ETTm1'
     assert result == expected.resolve()
 
 
 def test_resolve_cache_dir_custom_path_passes_through() -> None:
-    """MOD-01: Custom path is resolved and expanded."""
+    """Custom path is resolved and expanded."""
     custom = Path('/tmp/custom_cache')
     result = resolve_cache_dir(cache_dir=custom, dataset_name="ETTm1")
     assert result == custom.resolve()
 
 
 def test_resolve_cache_dir_expands_user_tilde() -> None:
-    """MOD-01: Tilde in custom path is expanded."""
+    """Tilde in custom path is expanded."""
     custom = Path('~/my_cache')
     result = resolve_cache_dir(cache_dir=custom, dataset_name="ETTm1")
     assert str(result).startswith(str(Path.home()))
@@ -123,7 +123,7 @@ def test_resolve_cache_dir_expands_user_tilde() -> None:
 
 
 def test_atomic_save_npz_creates_valid_file(tmp_path: Path) -> None:
-    """MOD-01: atomic_save_npz writes a valid .npz file."""
+    """atomic_save_npz writes a valid .npz file."""
     path = tmp_path / 'test.npz'
     data = np.arange(100, dtype=np.float32).reshape(10, 10)
     atomic_save_npz(path, data=data)
@@ -133,7 +133,7 @@ def test_atomic_save_npz_creates_valid_file(tmp_path: Path) -> None:
 
 
 def test_atomic_save_npz_no_tmp_file_after_save(tmp_path: Path) -> None:
-    """MOD-01: No .tmp file remains after atomic_save_npz completes."""
+    """No .tmp file remains after atomic_save_npz completes."""
     path = tmp_path / 'test.npz'
     data = np.array([1.0, 2.0, 3.0])
     atomic_save_npz(path, data=data)
@@ -142,7 +142,7 @@ def test_atomic_save_npz_no_tmp_file_after_save(tmp_path: Path) -> None:
 
 
 def test_atomic_save_npz_multiple_arrays(tmp_path: Path) -> None:
-    """MOD-01: Multiple arrays saved and loaded correctly."""
+    """Multiple arrays saved and loaded correctly."""
     path = tmp_path / 'multi.npz'
     arr_a = np.array([1, 2, 3], dtype=np.int64)
     arr_b = np.array([4.0, 5.0, 6.0], dtype=np.float32)
@@ -160,7 +160,7 @@ def test_atomic_save_npz_multiple_arrays(tmp_path: Path) -> None:
 
 
 def test_atomic_save_metadata_creates_valid_json(tmp_path: Path) -> None:
-    """MOD-01: atomic_save_metadata writes a valid JSON file."""
+    """atomic_save_metadata writes a valid JSON file."""
     path = tmp_path / 'metadata.json'
     data = {"version": 1, "dataset_name": "ETTm1", "seq_len": 128}
     atomic_save_metadata(path, data)
@@ -170,7 +170,7 @@ def test_atomic_save_metadata_creates_valid_json(tmp_path: Path) -> None:
 
 
 def test_atomic_save_metadata_no_tmp_file_after_save(tmp_path: Path) -> None:
-    """MOD-01: No .tmp file remains after atomic_save_metadata completes."""
+    """No .tmp file remains after atomic_save_metadata completes."""
     path = tmp_path / 'metadata.json'
     data = {"version": 1}
     atomic_save_metadata(path, data)
@@ -184,7 +184,7 @@ def test_atomic_save_metadata_no_tmp_file_after_save(tmp_path: Path) -> None:
 
 
 def test_load_metadata_returns_dict(tmp_path: Path) -> None:
-    """MOD-01: load_metadata returns the metadata dict for version 1."""
+    """load_metadata returns the metadata dict for version 1."""
     path = tmp_path / 'metadata.json'
     data = {
         "version": 1,
@@ -199,7 +199,7 @@ def test_load_metadata_returns_dict(tmp_path: Path) -> None:
 
 
 def test_load_metadata_raises_value_error_on_version_mismatch(tmp_path: Path) -> None:
-    """MOD-01: load_metadata raises ValueError when version != 1."""
+    """load_metadata raises ValueError when version != 1."""
     path = tmp_path / 'metadata.json'
     data = {"version": 2, "dataset_name": "ETTm1"}
     atomic_save_metadata(path, data)
@@ -208,7 +208,7 @@ def test_load_metadata_raises_value_error_on_version_mismatch(tmp_path: Path) ->
 
 
 def test_load_metadata_raises_file_not_found(tmp_path: Path) -> None:
-    """MOD-01: load_metadata raises FileNotFoundError for missing file."""
+    """load_metadata raises FileNotFoundError for missing file."""
     path = tmp_path / 'nonexistent.json'
     with pytest.raises(FileNotFoundError):
         load_metadata(path)
@@ -220,7 +220,7 @@ def test_load_metadata_raises_file_not_found(tmp_path: Path) -> None:
 
 
 def test_scaler_round_trip(tmp_path: Path) -> None:
-    """MOD-01: save_scaler/load_scaler produces identical transform output."""
+    """save_scaler/load_scaler produces identical transform output."""
     path = tmp_path / 'scaler.pt'
     scaler = MinMaxScaler(feature_range=(0, 1))
     train_data = np.array([[0.0, 10.0], [5.0, 20.0], [10.0, 30.0]])
@@ -235,7 +235,7 @@ def test_scaler_round_trip(tmp_path: Path) -> None:
 
 
 def test_scaler_file_exists_after_save(tmp_path: Path) -> None:
-    """MOD-01: Scaler file exists and no tmp remains after save."""
+    """Scaler file exists and no tmp remains after save."""
     path = tmp_path / 'scaler.pt'
     scaler = MinMaxScaler()
     save_scaler(scaler=scaler, path=path)
@@ -250,7 +250,7 @@ def test_scaler_file_exists_after_save(tmp_path: Path) -> None:
 
 
 def test_datetime_index_serialization_round_trip(tmp_path: Path) -> None:
-    """MOD-01: DatetimeIndex serialized as int64 nanoseconds reconstructs."""
+    """DatetimeIndex serialized as int64 nanoseconds reconstructs."""
     path = tmp_path / 'index_test.npz'
     original = pd.date_range('2020-01-01', periods=100, freq='h')
     index_ns = original.as_unit('ns').view(np.int64)
@@ -263,7 +263,7 @@ def test_datetime_index_serialization_round_trip(tmp_path: Path) -> None:
 
 
 def test_datetime_index_preserves_timezone_naive(tmp_path: Path) -> None:
-    """MOD-01: Round-trip preserves timezone-naive timestamps."""
+    """Round-trip preserves timezone-naive timestamps."""
     path = tmp_path / 'tz_test.npz'
     original = pd.DatetimeIndex(['2020-01-01', '2020-06-15', '2021-03-22'])
     assert original.tz is None
@@ -277,12 +277,12 @@ def test_datetime_index_preserves_timezone_naive(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Metadata schema validation (D-08)                                            #
+# Metadata schema validation                                                   #
 # --------------------------------------------------------------------------- #
 
 
 def test_metadata_schema_version_field(tmp_path: Path) -> None:
-    """MOD-01: Metadata with missing version field raises ValueError."""
+    """Metadata with missing version field raises ValueError."""
     path = tmp_path / 'no_version.json'
     data = {"dataset_name": "ETTm1", "seq_len": 128}
     atomic_save_metadata(path, data)

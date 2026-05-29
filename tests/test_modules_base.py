@@ -420,8 +420,8 @@ class TestPrepareDataWrapper:
 class TestSetupStageGating:
     """Tests for stage validation, branching, and scaler cache in setup().
 
-    Verifies D1 (signature with default None), D2 (scaler cache), and B4
-    (stage branching: fit scales all, test scales only test data,
+    Verifies setup signature with default None, scaler cache reuse, and
+    stage branching (fit scales all, test scales only test data,
     validate is no-op).
     """
 
@@ -470,10 +470,7 @@ class TestSetupStageGating:
     def test_setup_fit_then_test_reuses_scaler_cache(
         self, concrete_module_class
     ) -> None:
-        """setup('fit') creates scaler, setup('test') reuses it (create_data_scaler called once).
-
-        Verifies D2: _scaler_cache holds the fitted closure.
-        """
+        """setup('fit') creates scaler, setup('test') reuses it (create_data_scaler called once)."""
         passthrough = lambda t, v, te: (t, v, te)  # noqa: E731
         call_count = 0
 
@@ -525,9 +522,9 @@ class TestSetupStageGating:
 class TestCacheInfrastructure:
     """Tests for cache_dir param, prepare_data_per_node, typed attrs, and extended reset.
 
-    Verifies D-02 (cache_dir constructor param), D-05 (prepare_data_per_node = True),
-    D-01 (typed attrs _full_data_raw, _time_index, _full_data_scaled), and Pitfall 6
-    (reset clears all cache-related attrs).
+    Verifies cache_dir constructor param, prepare_data_per_node = True,
+    typed attrs (_full_data_raw, _time_index, _full_data_scaled), and
+    reset clearing all cache-related attrs.
     """
 
     @pytest.fixture
@@ -672,7 +669,7 @@ class TestCacheInfrastructure:
 
 
 class TestPrepareDimensionsCache:
-    """Tests for prepare_dimensions() reading metadata.json (D-07).
+    """Tests for prepare_dimensions() reading metadata.json.
 
     Verifies that prepare_dimensions() reads from cache metadata when
     _num_features is None, raises FileNotFoundError when metadata is
