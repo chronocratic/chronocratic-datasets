@@ -107,6 +107,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             num_workers=num_workers,
             data_form=DataForm.NESTED,
         )
+        self._dataset_name = dataset_folder_path.name
         self._cache_key = build_cache_key(
             dataset_name=dataset_folder_path.name,
             params={
@@ -189,8 +190,6 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         if not self.dataset_folder_path.exists():
             msg = f'Dataset folder not found: {self.dataset_folder_path}'
             raise FileNotFoundError(msg)
-
-        self._dataset_name = self.dataset_folder_path.name
 
         # Construct ARFF paths
         arff_train = self.dataset_folder_path / f'{self._dataset_name}_TRAIN.arff'

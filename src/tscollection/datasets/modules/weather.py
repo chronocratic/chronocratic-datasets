@@ -82,6 +82,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             mode=mode,
         )
         self.dataset_file_path = dataset_file_path
+        self._dataset_name = dataset_file_path.stem
         self._cache_key = build_cache_key(
             dataset_name=dataset_file_path.stem,
             params={
@@ -132,8 +133,6 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         if not self.dataset_file_path.exists():
             msg = f'Dataset file not found: {self.dataset_file_path}'
             raise FileNotFoundError(msg)
-
-        self._dataset_name = self.dataset_file_path.name
 
         df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col='date')
 

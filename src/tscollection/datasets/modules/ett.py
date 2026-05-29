@@ -97,6 +97,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         )
         self.dataset_file_path = dataset_file_path
         self.variant = variant
+        self._dataset_name = variant
         self._cache_key = build_cache_key(
             dataset_name=variant,
             params={
@@ -151,9 +152,6 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         if not self.dataset_file_path.exists():
             msg = f'Dataset file not found: {self.dataset_file_path}'
             raise FileNotFoundError(msg)
-
-        # _dataset_name from variant, not filename
-        self._dataset_name = self.variant
 
         df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col='date')
 

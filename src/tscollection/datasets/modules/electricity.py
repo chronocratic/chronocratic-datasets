@@ -82,6 +82,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
             mode=mode,
         )
         self.dataset_file_path = dataset_file_path
+        self._dataset_name = 'ElectricityLoad'
         self._cache_key = build_cache_key(
             dataset_name='ElectricityLoad',
             params={
@@ -134,8 +135,6 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         if not self.dataset_file_path.exists():
             msg = f'Dataset file not found: {self.dataset_file_path}'
             raise FileNotFoundError(msg)
-
-        self._dataset_name = 'ElectricityLoad'
 
         df = pd.read_csv(
             self.dataset_file_path, parse_dates=True, sep=';', decimal=',', index_col=[0]

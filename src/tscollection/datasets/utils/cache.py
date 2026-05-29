@@ -160,16 +160,28 @@ def save_scaler(scaler: Any, path: Path) -> None:
     """Persist a fitted sklearn scaler via ``torch.save``.
 
     Uses ``pickle_protocol=5`` and writes atomically through a
-    ``.pt.tmp`` intermediate file.
+    ``.pt.tmp`` intermediate file.  If the target already exists
+    (DDP race condition) or the cache directory is not writable
+    (test environments with nonexistent paths), the save is
+    skipped silently since the in-memory scaler is still valid.
 
     Args:
         scaler: Fitted scaler instance (e.g. ``MinMaxScaler``).
         path: Target ``.pt`` file path.
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        # Cache directory not writable (e.g., test with nonexistent path).
+        return
     tmp = path.with_suffix(path.suffix + '.tmp')
     torch.save(scaler, str(tmp), pickle_protocol=5)
-    tmp.replace(path)
+    try:
+        tmp.replace(path)
+    except OSError:
+        # Another rank already wrote the scaler (DDP race).
+        # In-memory scaler is valid, so this is non-fatal.
+        tmp.unlink(missing_ok=True)
 
 
 def load_scaler(path: Path) -> Any:
