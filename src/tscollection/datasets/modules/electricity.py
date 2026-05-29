@@ -18,6 +18,12 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
+from tscollection.datasets.utils.cache import (
+    atomic_save_metadata,
+    atomic_save_npz,
+    build_cache_key,
+)
+from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -76,6 +82,15 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
             mode=mode,
         )
         self.dataset_file_path = dataset_file_path
+        self._cache_key = build_cache_key(
+            dataset_name='ElectricityLoad',
+            params={
+                "seq_len": seq_len,
+                "mode": mode.value,
+                "data_scaling_method": data_scaling_method.value,
+                "data_scaling_range": list(data_scaling_range),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Abstract method implementations
@@ -83,35 +98,38 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
 
     def _set_data_slices(self) -> None:
         """Set 60/20/20 fractional train/valid/test splits."""
-        assert self._full_data is not None, '_full_data was not set by prepare_data()'
-        num_samples = len(self._full_data)
+        assert self._full_data_raw is not None, (
+            '_full_data_raw was not set by prepare_data()'
+        )
+        num_samples = len(self._full_data_raw)
         self._train_slice = slice(None, int(0.6 * num_samples))
         self._valid_slice = slice(int(0.6 * num_samples), int(0.8 * num_samples))
         self._test_slice = slice(int(0.8 * num_samples), None)
 
     def _transform_data(self) -> None:
-        """Transform ``_full_data`` using transpose + expand_dims(axis=-1).
+        """Transform ``_full_data_scaled`` using transpose + expand_dims(axis=-1).
 
         Produces shape (features, samples, 1). Different from
         WeatherModule which uses expand_dims(axis=0).
         """
-        assert self._full_data is not None, '_full_data was not set by prepare_data()'
-        if isinstance(self._full_data, pd.DataFrame):
-            self._full_data = self._full_data.to_numpy()
-        if isinstance(self._full_data, np.ndarray):
-            self._full_data = self._full_data.T
-            self._full_data = np.expand_dims(self._full_data, axis=-1)
+        assert self._full_data_scaled is not None
+        self._full_data_scaled = self._full_data_scaled.T
+        self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=-1)
 
     # ------------------------------------------------------------------
     # Lightning lifecycle
     # ------------------------------------------------------------------
 
     def _do_prepare_data(self) -> None:
-        """Validate file path, read CSV, and prepare data.
+        """Validate file path, read CSV, and write cache.
 
-        Raises ``FileNotFoundError`` if the CSV file does not
-        exist. Reads semicolon-delimited CSV with comma decimals,
-        resamples to hourly, and filters columns.
+        Reads the semicolon-delimited CSV with comma decimals, resamples
+        to hourly, and persists both the data (``.npz``) and metadata
+        (``.json``) to the cache directory.
+        ``_dataset_name`` is hardcoded to ``'ElectricityLoad'``.
+
+        Raises:
+            FileNotFoundError: If the CSV file does not exist.
         """
         if not self.dataset_file_path.exists():
             msg = f'Dataset file not found: {self.dataset_file_path}'
@@ -130,7 +148,41 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         if self._mode == ForecastingMode.UNIVARIATE:
             df = df[['MT_001']]
 
-        self._full_data = df
+        # Convert to numpy and persist to cache
+        data = df.to_numpy().astype(np.float32)
+        index_ns = df.index.astype(np.int64).to_numpy()
+
+        cache_dir = self._resolve_cache_dir()
+        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        atomic_save_npz(cache_path, data=data, index=index_ns)
+
+        # Store time index for reference
+        self._time_index = pd.DatetimeIndex(df.index)
+
+        # Compute 60/20/20 splits for metadata
+        train_end = int(0.6 * len(data))
+        valid_end = int(0.8 * len(data))
+        splits = {
+            "train": [0, train_end],
+            "valid": [train_end, valid_end],
+            "test": [valid_end, len(data)],
+        }
+        n_features = data.shape[1] + TIME_FEATURE_COUNT
+        metadata = {
+            "version": 1,
+            "dataset_name": self._dataset_name,
+            "n_features": n_features,
+            "seq_len": self._seq_len,
+            "splits": splits,
+            "has_datetime_index": True,
+            "data_scaling_method": self.data_scaling_method.value,
+            "data_scaling_range": list(self.data_scaling_range),
+        }
+        atomic_save_metadata(
+            cache_dir / f'{self._cache_key}_metadata.json', metadata
+        )
 
     # ------------------------------------------------------------------
     # Dataloaders
