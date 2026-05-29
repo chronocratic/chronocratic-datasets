@@ -188,7 +188,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if self._full_data_raw is None:
             return None, self._seq_len
         raw_cols = self._full_data_raw.shape[-1]
-        n_features = raw_cols + TIME_FEATURE_COUNT if self._time_index is not None else raw_cols
+        has_time_features = self._time_index is not None and self.scale_data
+        n_features = raw_cols + TIME_FEATURE_COUNT if has_time_features else raw_cols
         self._num_features = n_features
         return n_features, self._seq_len
 
@@ -455,3 +456,15 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def _finalize_prepare_data(self) -> None:
         """No-op -- slice computation moved to ``setup()`` after cache read."""
         return
+
+    def reset(self) -> None:
+        """Reset forecasting state, including the scaling flag.
+
+        Restores ``_cache_key`` from the original init params since it is
+        deterministic and required for cache-based ``setup()``.
+        """
+        original_cache_key = self._cache_key
+        super().reset()
+        self._cache_key = original_cache_key
+        self._scaling_done = False
+        self._num_time_series_features = None

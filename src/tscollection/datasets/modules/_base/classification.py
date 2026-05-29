@@ -174,6 +174,12 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._load_cached_data()
         super().setup(stage=stage)
 
+    def reset(self) -> None:
+        """Reset classification state while preserving the cache key."""
+        original_cache_key = self._cache_key
+        super().reset()
+        self._cache_key = original_cache_key
+
     @abstractmethod
     def _load_cached_data(self) -> None:
         """Load cached data splits from the npz cache file.

@@ -298,7 +298,7 @@ class TestPrepareDimensions:
             valid_size=0.1,
             test_size=0.5,
             shuffle=False,
-            scale_data=False,
+            scale_data=True,
             mode=ForecastingMode.UNIVARIATE,
         )
         # Inject a DataFrame with DatetimeIndex and 8 raw columns
