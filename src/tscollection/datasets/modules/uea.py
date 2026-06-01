@@ -230,6 +230,14 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             filtered_samples = self._train_data_samples[valid_mask]
             filtered_labels = self._train_data_labels[valid_mask]
 
+            dropped_count = len(self._train_data_samples) - len(filtered_samples)
+            if dropped_count > 0:
+                logger.warning(
+                    'Dropped %d samples from singleton classes in dataset %s. '
+                    'These classes will not be present in training data.',
+                    dropped_count, self._dataset_name,
+                )
+
             try:
                 (
                     self._train_data_samples,
