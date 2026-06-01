@@ -235,7 +235,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                 logger.warning(
                     'Dropped %d samples from singleton classes in dataset %s. '
                     'These classes will not be present in training data.',
-                    dropped_count, self._dataset_name,
+                    dropped_count,
+                    self._dataset_name,
                 )
 
             try:

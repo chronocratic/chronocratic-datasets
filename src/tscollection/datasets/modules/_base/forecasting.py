@@ -20,11 +20,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
-from tscollection.datasets.utils.cache import (
-    load_scaler,
-    resolve_cache_dir,
-    save_scaler,
-)
+from tscollection.datasets.utils.cache import load_scaler, resolve_cache_dir, save_scaler
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
 logger = getLogger(__name__)
@@ -253,12 +249,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if self._train_slice is None:
             self._set_data_slices()
 
-        assert self._full_data_raw is not None, (
-            'Full data not set; call prepare_data() first'
-        )
-        assert self._train_slice is not None, (
-            'Train slice not set; call _set_data_slices() first'
-        )
+        assert self._full_data_raw is not None, 'Full data not set; call prepare_data() first'
+        assert self._train_slice is not None, 'Train slice not set; call _set_data_slices() first'
 
         # validate: no data mutation, just mark stage complete
         if stage == 'validate':
@@ -309,9 +301,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
                     if num_time_series_features > 0:
                         if self._ts_feature_scaler_cache is None:
-                            self._ts_feature_scaler_cache = (
-                                self._load_scaler_from_cache('ts')
-                            )
+                            self._ts_feature_scaler_cache = self._load_scaler_from_cache('ts')
                         if self._ts_feature_scaler_cache is not None:
                             self._apply_ts_features(
                                 self._ts_feature_scaler_cache, time_series_features
@@ -347,9 +337,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     def _apply_ts_features(
-        self,
-        ts_scaler: MinMaxScaler | StandardScaler,
-        time_series_features: np.ndarray,
+        self, ts_scaler: MinMaxScaler | StandardScaler, time_series_features: np.ndarray
     ) -> None:
         """Scale, expand, repeat and concatenate time features into _full_data_scaled.
 
@@ -359,9 +347,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         assert self._full_data_scaled is not None
         scaled = np.expand_dims(ts_scaler.transform(time_series_features), axis=0)
         repeated = np.repeat(scaled, self._full_data_scaled.shape[0], axis=0)
-        self._full_data_scaled = np.concatenate(
-            [repeated, self._full_data_scaled], axis=-1
-        )
+        self._full_data_scaled = np.concatenate([repeated, self._full_data_scaled], axis=-1)
 
     # ------------------------------------------------------------------
     # Cache I/O helpers
@@ -370,10 +356,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def _resolve_cache_dir(self) -> Path:
         """Return the resolved cache directory for the current dataset."""
         name = self._dataset_name or 'default'
-        return resolve_cache_dir(
-            cache_dir=self._cache_dir,
-            dataset_name=name,
-        )
+        return resolve_cache_dir(cache_dir=self._cache_dir, dataset_name=name)
 
     def _save_scaler_to_cache(self, scaler: object, kind: str) -> None:
         """Save a fitted scaler to the cache directory.

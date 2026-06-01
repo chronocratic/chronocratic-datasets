@@ -119,10 +119,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             Absolute path to the cache directory.
         """
         name = self._dataset_name or 'default'
-        return resolve_cache_dir(
-            cache_dir=self._cache_dir,
-            dataset_name=name,
-        )
+        return resolve_cache_dir(cache_dir=self._cache_dir, dataset_name=name)
 
     # ------------------------------------------------------------------
     # Properties
@@ -161,11 +158,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     @property
     def all_data_samples(self) -> np.ndarray | pd.DataFrame:
         """Concatenation of all data splits."""
-        samples = (
-            self._train_data_samples,
-            self._test_data_samples,
-            self._valid_data_samples,
-        )
+        samples = (self._train_data_samples, self._test_data_samples, self._valid_data_samples)
         filtered = [s for s in samples if s is not None]
         if not filtered:
             msg = 'No data loaded. Call prepare_data() and setup() first.'

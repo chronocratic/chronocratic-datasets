@@ -6,18 +6,15 @@ setup idempotency with cache-backed data loading.
 """
 
 import os
-import socket
 from pathlib import Path
+import socket
 
 import numpy as np
 import pandas as pd
-import pytest
-import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from tscollection.datasets.enums.data import ForecastingMode
-
 
 # ---------------------------------------------------------------------------
 # Module-level DDP workers (must be top-level for mp.spawn pickling)
@@ -61,9 +58,7 @@ def _ddp_forecasting_worker(
         # Rank 0: prepare_data() writes cache
         if rank == 0:
             module = WeatherModule(
-                dataset_file_path=Path(csv_path),
-                seq_len=96,
-                mode=ForecastingMode.UNIVARIATE,
+                dataset_file_path=Path(csv_path), seq_len=96, mode=ForecastingMode.UNIVARIATE
             )
             module.prepare_data()
 
@@ -79,9 +74,7 @@ def _ddp_forecasting_worker(
         module.setup(stage='fit')
 
         # Verify _full_data_raw is populated from cache
-        assert module._full_data_raw is not None, (
-            f'Rank {rank}: _full_data_raw is None after setup'
-        )
+        assert module._full_data_raw is not None, f'Rank {rank}: _full_data_raw is None after setup'
 
         # Write rank results for post-spawn verification
         result_path = Path(results_dir) / f'rank_{rank}.npz'
@@ -211,8 +204,7 @@ class TestDDPSmokeTests:
             f'rank1={tuple(rank1["raw_shape"])}'
         )
         assert str(rank0['raw_dtype']) == str(rank1['raw_dtype']), (
-            f'Raw dtype mismatch: rank0={rank0["raw_dtype"]}, '
-            f'rank1={rank1["raw_dtype"]}'
+            f'Raw dtype mismatch: rank0={rank0["raw_dtype"]}, rank1={rank1["raw_dtype"]}'
         )
         assert tuple(rank0['train_shape']) == tuple(rank1['train_shape']), (
             f'Train shape mismatch: rank0={tuple(rank0["train_shape"])}, '
@@ -305,9 +297,7 @@ class TestIsinstanceBranchElimination:
                 if stripped.startswith('#'):
                     continue
                 if 'isinstance' in stripped and 'self._full_data' in stripped:
-                    matches.append(
-                        f'{py_file.relative_to(modules_dir)}:{lineno}: {stripped}'
-                    )
+                    matches.append(f'{py_file.relative_to(modules_dir)}:{lineno}: {stripped}')
         assert not matches, (
             'Found isinstance(self._full_data) branches that should be eliminated:\n'
             + '\n'.join(matches)
@@ -385,19 +375,23 @@ class TestSetupIdempotentWithCache:
 
         # Verify _full_data_raw is identical (immutable cache read)
         np.testing.assert_array_equal(
-            snapshot_raw, module._full_data_raw,
-            err_msg='_full_data_raw changed after cache re-read'
+            snapshot_raw,
+            module._full_data_raw,
+            err_msg='_full_data_raw changed after cache re-read',
         )
         # Verify data samples are identical
         np.testing.assert_array_equal(
-            snapshot_train, module._train_data_samples,
-            err_msg='_train_data_samples changed after cache re-read'
+            snapshot_train,
+            module._train_data_samples,
+            err_msg='_train_data_samples changed after cache re-read',
         )
         np.testing.assert_array_equal(
-            snapshot_valid, module._valid_data_samples,
-            err_msg='_valid_data_samples changed after cache re-read'
+            snapshot_valid,
+            module._valid_data_samples,
+            err_msg='_valid_data_samples changed after cache re-read',
         )
         np.testing.assert_array_equal(
-            snapshot_test, module._test_data_samples,
-            err_msg='_test_data_samples changed after cache re-read'
+            snapshot_test,
+            module._test_data_samples,
+            err_msg='_test_data_samples changed after cache re-read',
         )

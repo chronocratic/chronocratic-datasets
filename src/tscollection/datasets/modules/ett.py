@@ -20,10 +20,10 @@ from torch.utils.data import DataLoader, TensorDataset
 from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 from tscollection.datasets.utils.cache import (
-    CACHE_SCHEMA_VERSION,
     atomic_save_metadata,
     atomic_save_npz,
     build_cache_key,
+    CACHE_SCHEMA_VERSION,
 )
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
@@ -102,10 +102,10 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         self._cache_key = build_cache_key(
             dataset_name=variant,
             params={
-                "seq_len": seq_len,
-                "mode": mode.value,
-                "data_scaling_method": data_scaling_method.value,
-                "data_scaling_range": list(data_scaling_range),
+                'seq_len': seq_len,
+                'mode': mode.value,
+                'data_scaling_method': data_scaling_method.value,
+                'data_scaling_range': list(data_scaling_range),
             },
         )
 
@@ -172,25 +172,23 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         # Compute variant-based splits for metadata
         self._set_data_slices()
         splits = {
-            "train": [self._train_slice.start, self._train_slice.stop],
-            "valid": [self._valid_slice.start, self._valid_slice.stop],
-            "test": [self._test_slice.start, self._test_slice.stop],
+            'train': [self._train_slice.start, self._train_slice.stop],
+            'valid': [self._valid_slice.start, self._valid_slice.stop],
+            'test': [self._test_slice.start, self._test_slice.stop],
         }
         # n_features includes time features (always present for ETT via DatetimeIndex)
         n_features = data.shape[1] + TIME_FEATURE_COUNT
         metadata = {
-            "version": CACHE_SCHEMA_VERSION,
-            "dataset_name": self.variant,
-            "n_features": n_features,
-            "seq_len": self._seq_len,
-            "splits": splits,
-            "has_datetime_index": True,
-            "data_scaling_method": self.data_scaling_method.value,
-            "data_scaling_range": list(self.data_scaling_range),
+            'version': CACHE_SCHEMA_VERSION,
+            'dataset_name': self.variant,
+            'n_features': n_features,
+            'seq_len': self._seq_len,
+            'splits': splits,
+            'has_datetime_index': True,
+            'data_scaling_method': self.data_scaling_method.value,
+            'data_scaling_range': list(self.data_scaling_range),
         }
-        atomic_save_metadata(
-            cache_dir / f'{self._cache_key}_metadata.json', metadata
-        )
+        atomic_save_metadata(cache_dir / f'{self._cache_key}_metadata.json', metadata)
 
         # Store time index for reference
         self._time_index = pd.DatetimeIndex(df.index)

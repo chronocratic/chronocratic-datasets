@@ -19,10 +19,10 @@ from torch.utils.data import DataLoader, TensorDataset
 from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 from tscollection.datasets.utils.cache import (
-    CACHE_SCHEMA_VERSION,
     atomic_save_metadata,
     atomic_save_npz,
     build_cache_key,
+    CACHE_SCHEMA_VERSION,
 )
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
@@ -87,10 +87,10 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         self._cache_key = build_cache_key(
             dataset_name='ElectricityLoad',
             params={
-                "seq_len": seq_len,
-                "mode": mode.value,
-                "data_scaling_method": data_scaling_method.value,
-                "data_scaling_range": list(data_scaling_range),
+                'seq_len': seq_len,
+                'mode': mode.value,
+                'data_scaling_method': data_scaling_method.value,
+                'data_scaling_range': list(data_scaling_range),
             },
         )
 
@@ -100,9 +100,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
 
     def _set_data_slices(self) -> None:
         """Set 60/20/20 fractional train/valid/test splits."""
-        assert self._full_data_raw is not None, (
-            '_full_data_raw was not set by prepare_data()'
-        )
+        assert self._full_data_raw is not None, '_full_data_raw was not set by prepare_data()'
         num_samples = len(self._full_data_raw)
         self._train_slice = slice(None, int(0.6 * num_samples))
         self._valid_slice = slice(int(0.6 * num_samples), int(0.8 * num_samples))
@@ -165,24 +163,22 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         train_end = int(0.6 * len(data))
         valid_end = int(0.8 * len(data))
         splits = {
-            "train": [0, train_end],
-            "valid": [train_end, valid_end],
-            "test": [valid_end, len(data)],
+            'train': [0, train_end],
+            'valid': [train_end, valid_end],
+            'test': [valid_end, len(data)],
         }
         n_features = data.shape[1] + TIME_FEATURE_COUNT
         metadata = {
-            "version": CACHE_SCHEMA_VERSION,
-            "dataset_name": self._dataset_name,
-            "n_features": n_features,
-            "seq_len": self._seq_len,
-            "splits": splits,
-            "has_datetime_index": True,
-            "data_scaling_method": self.data_scaling_method.value,
-            "data_scaling_range": list(self.data_scaling_range),
+            'version': CACHE_SCHEMA_VERSION,
+            'dataset_name': self._dataset_name,
+            'n_features': n_features,
+            'seq_len': self._seq_len,
+            'splits': splits,
+            'has_datetime_index': True,
+            'data_scaling_method': self.data_scaling_method.value,
+            'data_scaling_range': list(self.data_scaling_range),
         }
-        atomic_save_metadata(
-            cache_dir / f'{self._cache_key}_metadata.json', metadata
-        )
+        atomic_save_metadata(cache_dir / f'{self._cache_key}_metadata.json', metadata)
 
     # ------------------------------------------------------------------
     # Dataloaders

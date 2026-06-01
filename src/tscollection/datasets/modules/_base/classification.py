@@ -129,9 +129,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         """Concatenation of all label splits."""
         splits = [
             s
-            for s in (
-                self._train_data_labels, self._test_data_labels, self._valid_data_labels
-            )
+            for s in (self._train_data_labels, self._test_data_labels, self._valid_data_labels)
             if s is not None
         ]
         if not splits:
