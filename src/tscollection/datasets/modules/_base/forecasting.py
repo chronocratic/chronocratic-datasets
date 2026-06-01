@@ -436,11 +436,22 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
         Uses ``_train_slice``, ``_valid_slice``, and ``_test_slice``
         defined by ``_set_data_slices()``.
+
+        Raises:
+            RuntimeError: If required attributes are not set.
         """
-        assert self._full_data_scaled is not None
-        assert self._train_slice is not None
-        assert self._valid_slice is not None
-        assert self._test_slice is not None
+        if self._full_data_scaled is None:
+            msg = '_split_data requires _full_data_scaled. Ensure scaling completed.'
+            raise RuntimeError(msg)
+        if self._train_slice is None:
+            msg = '_split_data requires _train_slice. Ensure _set_data_slices() was called.'
+            raise RuntimeError(msg)
+        if self._valid_slice is None:
+            msg = '_split_data requires _valid_slice. Ensure _set_data_slices() was called.'
+            raise RuntimeError(msg)
+        if self._test_slice is None:
+            msg = '_split_data requires _test_slice. Ensure _set_data_slices() was called.'
+            raise RuntimeError(msg)
 
         train_data = self._full_data_scaled[:, self._train_slice]
         valid_data = self._full_data_scaled[:, self._valid_slice]
