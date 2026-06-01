@@ -133,7 +133,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
         Expands the first dimension of the already-scaled data array.
         """
-        assert self._full_data_scaled is not None
+        if self._full_data_scaled is None:
+            msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
+            raise RuntimeError(msg)
         self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=0)
 
     # ------------------------------------------------------------------

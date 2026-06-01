@@ -249,8 +249,12 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if self._train_slice is None:
             self._set_data_slices()
 
-        assert self._full_data_raw is not None, 'Full data not set; call prepare_data() first'
-        assert self._train_slice is not None, 'Train slice not set; call _set_data_slices() first'
+        if self._full_data_raw is None:
+            msg = 'setup() requires _full_data_raw. Ensure prepare_data() was called.'
+            raise RuntimeError(msg)
+        if self._train_slice is None:
+            msg = 'setup() requires _train_slice. Ensure _set_data_slices() was called.'
+            raise RuntimeError(msg)
 
         # validate: no data mutation, just mark stage complete
         if stage == 'validate':
@@ -344,7 +348,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         Shared helper to avoid duplicating the expand_dims/repeat/concatenate
         pattern between the fit and test/predict branches of ``setup()``.
         """
-        assert self._full_data_scaled is not None
+        if self._full_data_scaled is None:
+            msg = '_apply_ts_features requires _full_data_scaled. Ensure scaling completed.'
+            raise RuntimeError(msg)
         scaled = np.expand_dims(ts_scaler.transform(time_series_features), axis=0)
         repeated = np.repeat(scaled, self._full_data_scaled.shape[0], axis=0)
         self._full_data_scaled = np.concatenate([repeated, self._full_data_scaled], axis=-1)
@@ -411,7 +417,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
     def _calculate_num_features(self) -> None:
         """Calculate number of features from scaled data shape."""
-        assert self._full_data_scaled is not None
+        if self._full_data_scaled is None:
+            msg = '_calculate_num_features requires _full_data_scaled. Ensure scaling completed.'
+            raise RuntimeError(msg)
         self._num_features = self._full_data_scaled.shape[-1]
 
     def _split_data(self) -> None:

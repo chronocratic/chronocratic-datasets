@@ -100,7 +100,9 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
 
     def _set_data_slices(self) -> None:
         """Set 60/20/20 fractional train/valid/test splits."""
-        assert self._full_data_raw is not None, '_full_data_raw was not set by prepare_data()'
+        if self._full_data_raw is None:
+            msg = '_set_data_slices requires _full_data_raw. Ensure prepare_data() was called.'
+            raise RuntimeError(msg)
         num_samples = len(self._full_data_raw)
         self._train_slice = slice(None, int(0.6 * num_samples))
         self._valid_slice = slice(int(0.6 * num_samples), int(0.8 * num_samples))
@@ -112,7 +114,9 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         Produces shape (1, samples, features). Different from
         ElectricityLoadModule which uses transpose + expand_dims(axis=-1).
         """
-        assert self._full_data_scaled is not None
+        if self._full_data_scaled is None:
+            msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
+            raise RuntimeError(msg)
         self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=0)
 
     # ------------------------------------------------------------------
