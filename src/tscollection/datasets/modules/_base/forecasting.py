@@ -379,15 +379,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def _save_scaler_to_cache(self, scaler: object, kind: str) -> None:
         """Save a fitted scaler to the cache directory.
 
-        Skips if the scaler file already exists (DDP race condition guard
-        when multiple ranks call setup() concurrently).
+        Relies on ``save_scaler()`` internal atomic handling for DDP race
+        safety rather than a pre-check (which is a TOCTOU vulnerability).
         """
         if self._cache_key is None:
             return
         cache_dir = self._resolve_cache_dir()
         scaler_path = cache_dir / f'{self._cache_key}_{kind}_scaler.pt'
-        if scaler_path.exists():
-            return
         save_scaler(scaler=scaler, path=scaler_path)
 
     def _load_scaler_from_cache(self, kind: str) -> MinMaxScaler | StandardScaler | None:
