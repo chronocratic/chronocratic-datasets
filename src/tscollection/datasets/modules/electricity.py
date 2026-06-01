@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 from tscollection.datasets.utils.cache import (
+    CACHE_SCHEMA_VERSION,
     atomic_save_metadata,
     atomic_save_npz,
     build_cache_key,
@@ -170,7 +171,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         }
         n_features = data.shape[1] + TIME_FEATURE_COUNT
         metadata = {
-            "version": 1,
+            "version": CACHE_SCHEMA_VERSION,
             "dataset_name": self._dataset_name,
             "n_features": n_features,
             "seq_len": self._seq_len,
