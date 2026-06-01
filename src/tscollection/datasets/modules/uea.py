@@ -322,7 +322,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
 
         cache_dir = self._get_cache_dir()
         cache_path = cache_dir / f'{self._cache_key}.npz'
-        loaded = np.load(str(cache_path), allow_pickle=True)
+        loaded = np.load(str(cache_path))
 
         self._train_data_samples = loaded['train_samples']
         self._train_data_labels = pd.Series(loaded['train_labels'], dtype='category')
