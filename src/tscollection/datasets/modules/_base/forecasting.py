@@ -294,16 +294,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                     ts_feature_scaler.fit(time_series_features[self._train_slice])
                     self._ts_feature_scaler_cache = ts_feature_scaler
                     self._save_scaler_to_cache(ts_feature_scaler, 'ts')
-                    scaled_ts_features = ts_feature_scaler.transform(
-                        time_series_features
-                    )
-                    scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
-                    repeated_ts = np.repeat(
-                        scaled_ts_features, self._full_data_scaled.shape[0], axis=0
-                    )
-                    self._full_data_scaled = np.concatenate(
-                        [repeated_ts, self._full_data_scaled], axis=-1
-                    )
+                    self._apply_ts_features(ts_feature_scaler, time_series_features)
                 self._num_time_series_features = num_time_series_features
                 self._calculate_num_features()
                 self._split_data()
@@ -322,21 +313,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                                 self._load_scaler_from_cache('ts')
                             )
                         if self._ts_feature_scaler_cache is not None:
-                            scaled_ts_features = (
-                                self._ts_feature_scaler_cache.transform(
-                                    time_series_features
-                                )
-                            )
-                            scaled_ts_features = np.expand_dims(
-                                scaled_ts_features, axis=0
-                            )
-                            repeated_ts = np.repeat(
-                                scaled_ts_features,
-                                self._full_data_scaled.shape[0],
-                                axis=0,
-                            )
-                            self._full_data_scaled = np.concatenate(
-                                [repeated_ts, self._full_data_scaled], axis=-1
+                            self._apply_ts_features(
+                                self._ts_feature_scaler_cache, time_series_features
                             )
                     self._num_time_series_features = num_time_series_features
                     self._calculate_num_features()
@@ -363,6 +341,27 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             self._split_data()
 
         self._setup_completed_stages.add(stage)
+
+    # ------------------------------------------------------------------
+    # Time feature helper
+    # ------------------------------------------------------------------
+
+    def _apply_ts_features(
+        self,
+        ts_scaler: MinMaxScaler | StandardScaler,
+        time_series_features: np.ndarray,
+    ) -> None:
+        """Scale, expand, repeat and concatenate time features into _full_data_scaled.
+
+        Shared helper to avoid duplicating the expand_dims/repeat/concatenate
+        pattern between the fit and test/predict branches of ``setup()``.
+        """
+        assert self._full_data_scaled is not None
+        scaled = np.expand_dims(ts_scaler.transform(time_series_features), axis=0)
+        repeated = np.repeat(scaled, self._full_data_scaled.shape[0], axis=0)
+        self._full_data_scaled = np.concatenate(
+            [repeated, self._full_data_scaled], axis=-1
+        )
 
     # ------------------------------------------------------------------
     # Cache I/O helpers
