@@ -1,6 +1,6 @@
 ---
 phase: 07-ddp-compliance
-reviewed: 2026-06-01T00:00:00Z
+reviewed: 2026-06-01T12:00:00Z
 depth: deep
 files_reviewed: 14
 files_reviewed_list:
@@ -19,152 +19,107 @@ files_reviewed_list:
   - tests/test_modules_ucr.py
   - tests/test_modules_uea.py
 findings:
-  critical: 1
-  warning: 1
+  critical: 0
+  warning: 0
   info: 3
-  total: 5
-status: issues_found
+  total: 3
+status: clean
 ---
 
-# Phase 7: Code Review Re-Review Report
+# Phase 7: Code Review Re-Re-Review Report
 
-**Reviewed:** 2026-06-01T00:00:00Z
+**Reviewed:** 2026-06-01T12:00:00Z
 **Depth:** deep
 **Files Reviewed:** 14
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-Re-review of the DDP-compliance phase after 12 of 15 previous findings were fixed (5 critical, 7 warning). All 12 applied fixes are verified correct and do not introduce new bugs. Three info items from the previous review remain unfixed. One new critical issue was found: metadata `n_features` unconditionally adds `TIME_FEATURE_COUNT` regardless of the `scale_data` flag, causing dimension mismatches. One new warning: the WR-06 assert-to-validation fix was incomplete, with 8 additional assert statements serving the same purpose still present.
+Deep re-review of the DDP-compliance phase after all previous CR (CR-01 through CR-06) and WR (WR-01 through WR-08) fixes have been applied. All 14 fixes are verified correct with no regressions introduced. Cross-file analysis of the import graph, error propagation chains, and DDP data flow confirms architectural consistency. Three pre-existing info items remain (cosmetic/style only). No new critical or warning issues found.
 
 ## Previous Fix Verification
 
-All 12 previously identified fixes (CR-01 through CR-05, WR-01 through WR-07) verified correct:
+All 14 previously identified fixes verified correct:
 
-- **CR-01** (UEA `allow_pickle=True`): Removed. `np.load()` without `allow_pickle` works because UEA saves numeric arrays (float32 samples, int64 labels) -- not object dtype. Verified at `uea.py:334`.
-- **CR-02** (None in `all_data_labels`/`all_data_samples`): Both properties filter `None` before concatenation and raise `RuntimeError` when no splits exist. Applied consistently at `classification.py:130-138` and `base.py:161-173`.
-- **CR-03/WR-07** (TOCTOU in `_save_scaler_to_cache`): Existence pre-check removed. Relies on `save_scaler()` internal atomic write with OSError handling. Verified at `forecasting.py:367-371`.
-- **CR-04** (Hardcoded `version: 1`): All three forecasting modules now import and use `CACHE_SCHEMA_VERSION`. Consistent with classification modules. Verified at `ett.py:182`, `electricity.py:172`, `weather.py:164`.
-- **CR-05** (In-place mutation in `custom_collate_fn`): Works on `padded = list(batch)` copy. Original batch is never mutated. Verified at `general.py:31-36`.
-- **WR-01** (UEA singleton-class warning): `logger.warning()` added at `uea.py:235-240`. Dropped count and dataset name included.
-- **WR-03** (Duplicated TS feature scaling): Extracted to `_apply_ts_features()` helper at `forecasting.py:339-350`. Both fit and test/predict branches call it.
-- **WR-04** (grep subprocess): Replaced with Python-native file scanning using `rglob` and `splitlines`. Cross-platform safe. Verified at `test_ddp_compliance.py:293-304`.
-- **WR-05** (Hardcoded DDP ports): `_get_free_port()` uses socket binding. Port passed to `mp.spawn()` args. Both workers updated.
-- **WR-06** (assert in `_split_data`): Replaced with explicit `RuntimeError` checks at `forecasting.py:426-437`. **Incomplete** -- see WR-08.
+- **CR-01** (UEA `allow_pickle=True`): Removed. `np.load()` at `uea.py:334` loads only numeric arrays (float32 samples, int64 labels). No object dtype.
+- **CR-02** (`None` in `all_data_labels`/`all_data_samples`): Both properties filter `None` before `pd.concat`/`np.concatenate` and raise `RuntimeError` when no splits exist. Verified at `classification.py:130-138` and `base.py:161-173`.
+- **CR-03/WR-07** (TOCTOU in `_save_scaler_to_cache`): Existence pre-check removed. Relies on `save_scaler()` internal atomic write with `OSError` handling. Verified at `forecasting.py:367-377`.
+- **CR-04** (Hardcoded `version: 1`): All three forecasting modules import and use `CACHE_SCHEMA_VERSION`. Verified at `ett.py:188`, `electricity.py:178`, `weather.py:170`.
+- **CR-05** (In-place mutation in `custom_collate_fn`): Works on `padded = list(batch)` copy. Original batch never mutated. Verified at `general.py:31-36`.
+- **CR-06** (Metadata `n_features` ignores `scale_data`): All three forecasting modules now conditionally add `TIME_FEATURE_COUNT` based on both `scale_data` and `_time_index` presence. Verified at `ett.py:185-187`, `electricity.py:175-177`, `weather.py:167-169`. No regression: the `if` guard matches the actual time feature extraction logic in `forecasting.py:276-294`.
+- **WR-01** (UEA singleton-class warning): `logger.warning()` reports dropped count and dataset name. Verified at `uea.py:235-240`.
+- **WR-03** (Duplicated TS feature scaling): Extracted to `_apply_ts_features()` helper at `forecasting.py:343-356`. Both fit and test/predict branches call it. Shape alignment verified: `np.repeat` uses `self._full_data_scaled.shape[0]` which matches the post-transform first dimension.
+- **WR-04** (grep subprocess): Replaced with Python-native `Path.rglob()` scanning. Cross-platform safe. Verified at `test_ddp_compliance.py:293-304`.
+- **WR-05** (Hardcoded DDP ports): `_get_free_port()` uses socket binding. Port passed to `mp.spawn()`. Verified at `test_ddp_compliance.py:24-33`.
+- **WR-06** (`assert` in `_split_data`): Replaced with explicit `RuntimeError` checks. Verified at `forecasting.py:434-445`.
+- **WR-08** (Remaining `assert` statements): All 8 remaining `assert`-as-validation replaced with `if ... is None: raise RuntimeError(...)` pattern. Verified at `forecasting.py:252-257`, `forecasting.py:351-353`, `forecasting.py:420-422`, `forecasting.py:434-436`, `electricity.py:103-105`, `electricity.py:117-119`, `ett.py:136-138`, `weather.py:103-105`, `weather.py:117-119`.
 
-## Critical Issues
+## Cross-File Analysis (Deep Review)
 
-### CR-06: Metadata `n_features` unconditionally adds TIME_FEATURE_COUNT regardless of `scale_data`
+### Import Graph
 
-**Files:**
-- `src/tscollection/datasets/modules/ett.py:180`
-- `src/tscollection/datasets/modules/electricity.py:170`
-- `src/tscollection/datasets/modules/weather.py:162`
+The module dependency chain is acyclic and well-structured:
 
-**Issue:** All three forecasting modules compute `n_features` for the metadata cache file by unconditionally adding `TIME_FEATURE_COUNT`:
-
-```python
-n_features = data.shape[1] + TIME_FEATURE_COUNT
-metadata = {
-    'version': CACHE_SCHEMA_VERSION,
-    ...
-    'n_features': n_features,
-    ...
-}
+```
+base.py --import--> cache.py, scaling.py, general.py
+classification.py --import--> base.py, common.py, general.py
+forecasting.py --import--> base.py, cache.py, features.py
+ucr.py --import--> classification.py, cache.py, arff.py
+uea.py --import--> classification.py, cache.py
+ett.py --import--> forecasting.py, cache.py, features.py
+electricity.py --import--> forecasting.py, cache.py, features.py
+weather.py --import--> forecasting.py, cache.py, features.py
 ```
 
-However, time features are only extracted during `setup()` when `scale_data=True`. When `scale_data=False`, the entire scaling and time feature extraction block is skipped (`forecasting.py:325-331`), so the actual data contains no time features.
+No circular dependencies detected.
 
-This causes `prepare_dimensions()` to return different values depending on whether it reads from the metadata cache or computes from raw data:
+### Error Propagation
 
-- **Pre-setup path** (`_compute_dimensions` at `forecasting.py:187`): Correctly checks `self.scale_data`:
-  ```python
-  has_time_features = self._time_index is not None and self.scale_data
-  n_features = raw_cols + TIME_FEATURE_COUNT if has_time_features else raw_cols
-  ```
-- **Post-setup path** (`prepare_dimensions` at `base.py:236-240`): Reads `n_features` from metadata, which is always inflated by `TIME_FEATURE_COUNT` even when `scale_data=False`.
+- `_do_prepare_data()` in all concrete modules raises `FileNotFoundError` for missing paths. This propagates through `BaseTimeSeriesDataModule.prepare_data()` without suppression.
+- `setup()` in both classification and forecasting branches validates preconditions with descriptive `RuntimeError` messages. No bare `except` blocks catch these errors silently.
+- Cache I/O errors (`FileNotFoundError` in `_load_cached_data`, `OSError` in `save_scaler`) are handled with appropriate fallbacks or re-raises.
 
-Concrete example: ETT with `scale_data=False`, 1 raw column (univariate OT):
-- Metadata writes `n_features = 8` (1 + 7 time features)
-- Actual data after setup has 1 feature (no time features extracted)
-- `prepare_dimensions()` post-setup returns `(8, seq_len)` -- off by factor of 8x
+### DDP Data Flow
 
-This silently corrupts model dimension calculations. If a model uses `n_features` to size its input layer, it allocates for 8 features but receives 1, causing shape mismatches at runtime.
+The DDP-safe pattern (rank-0 writes cache, all ranks read) is correctly implemented:
 
-The existing test `test_pre_setup_matches_post_setup` (`test_modules_forecasting.py:1693-1710`) does NOT catch this bug because it uses `scale_data=True` (default), where time features are actually added and both paths agree.
+1. `prepare_data_per_node = True` ensures each node's rank-0 writes cache.
+2. `_prepare_data_called` sentinel prevents duplicate I/O.
+3. `save_scaler()` handles `OSError` from concurrent writes (DDP race condition).
+4. `_setup_completed_stages` prevents duplicate scaling in `setup()`.
+5. Cache files use atomic writes (`Path.replace()`) for POSIX consistency.
 
-**Fix:** Conditionally add `TIME_FEATURE_COUNT` only when time features will actually be extracted:
+### Shape Consistency Across Transform Chain
 
-```python
-n_features = data.shape[1]
-if self.scale_data and self._time_index is not None:
-    n_features += TIME_FEATURE_COUNT
-metadata = {
-    'version': CACHE_SCHEMA_VERSION,
-    'n_features': n_features,
-    ...
-}
-```
+Traced the `_full_data_scaled` shape through the setup pipeline for each forecasting module:
 
-The `_time_index` check is needed because `scale_data=True` with no DatetimeIndex still produces 0 time features.
+**ETT:** `(samples, features)` -> scale -> `(samples, features)` -> `expand_dims(0)` -> `(1, samples, features)` -> concat ts on axis=-1 -> `(1, samples, features+7)` -> split on axis=1 -> `(1, split_size, features+7)`. Correct.
 
-## Warnings
+**Electricity:** `(samples, features)` -> scale -> `(samples, features)` -> `.T` -> `(features, samples)` -> `expand_dims(-1)` -> `(features, samples, 1)` -> concat ts on axis=-1 -> `(features, samples, 1+7)`. `_apply_ts_features` repeats on axis=0 (features dimension). Correct.
 
-### WR-08: WR-06 fix incomplete -- assert statements remain for input validation in 8 locations
+**Weather:** `(samples, features)` -> scale -> `(samples, features)` -> `expand_dims(0)` -> `(1, samples, features)` -> concat ts on axis=-1 -> `(1, samples, features+7)`. Same pattern as ETT. Correct.
 
-**Files:**
-- `src/tscollection/datasets/modules/_base/forecasting.py:252-253` (setup() preconditions)
-- `src/tscollection/datasets/modules/_base/forecasting.py:347` (_apply_ts_features() precondition)
-- `src/tscollection/datasets/modules/_base/forecasting.py:414` (_calculate_num_features() precondition)
-- `src/tscollection/datasets/modules/electricity.py:103` (_set_data_slices() precondition)
-- `src/tscollection/datasets/modules/electricity.py:115` (_transform_data() precondition)
-- `src/tscollection/datasets/modules/ett.py:136` (_transform_data() precondition)
-- `src/tscollection/datasets/modules/weather.py:103` (_set_data_slices() precondition)
-- `src/tscollection/datasets/modules/weather.py:115` (_transform_data() precondition)
+### Type Consistency at Module Boundaries
 
-**Issue:** WR-06 identified that `assert` statements are stripped by Python `-O` (optimize) flag and replaced `assert` with explicit `RuntimeError` in `_split_data()`. However, 8 additional `assert` statements serving the same input validation purpose remain.
-
-In `setup()` at `forecasting.py:252-253`:
-```python
-assert self._full_data_raw is not None, 'Full data not set; call prepare_data() first'
-assert self._train_slice is not None, 'Train slice not set; call _set_data_slices() first'
-```
-
-In `_apply_ts_features()` at `forecasting.py:347`:
-```python
-assert self._full_data_scaled is not None
-```
-
-In `_calculate_num_features()` at `forecasting.py:414`:
-```python
-assert self._full_data_scaled is not None
-```
-
-If the module is deployed with `python -O`, these checks silently disappear. A missing `_full_data_scaled` would cause `TypeError: 'NoneType' object is not subscriptable` rather than a descriptive error identifying which precondition failed.
-
-**Fix:** Apply the same `RuntimeError` pattern used in `_split_data()`:
-
-```python
-if self._full_data_scaled is None:
-    msg = '_apply_ts_features requires _full_data_scaled. Ensure scaling completed.'
-    raise RuntimeError(msg)
-```
+- Classification modules: `_train_data_samples` is `pd.DataFrame` (UCR) or `np.ndarray` (UEA). Both types are handled by the scaling pipeline in `base.py:166-173`.
+- Forecasting modules: `_full_data_raw` is always `np.ndarray` (float32) after cache read. Time features are `np.ndarray` (float32) from `features.py:35`.
+- DataLoader outputs: Forecasting modules use `TensorDataset` with `torch.float32` tensors. Classification modules use custom dataset wrappers.
 
 ## Info
 
 ### IN-01: Duplicated cache-write boilerplate across forecasting modules
 
-**Files:** `src/tscollection/datasets/modules/ett.py:162-191`, `electricity.py:149-181`, `weather.py:142-173`
+**Files:** `src/tscollection/datasets/modules/ett.py:162-198`, `electricity.py:142-187`, `weather.py:142-179`
 
-**Issue:** All three forecasting modules follow the identical pattern of: convert data to numpy, resolve cache directory, create cache path, mkdir, save npz with `atomic_save_npz`, build metadata dict with `atomic_save_metadata`. Approximately 30-40 lines of duplicated code per module. The concrete differences (CSV parsing, column selection, split computation) are module-specific, but the cache-write sequence could be extracted to the base class.
+**Issue:** All three forecasting modules follow the identical pattern of: convert data to numpy, resolve cache directory, create cache path, mkdir, save npz with `atomic_save_npz`, build metadata dict with `atomic_save_metadata`. Approximately 30-40 lines of duplicated code per module.
 
 **Suggestion:** Add a `_write_forecasting_cache()` helper to `BaseForecastingTimeSeriesDataModule` that accepts data, index, and metadata override fields as parameters.
 
-### IN-02: `_compute_dimensions` error message references wrong method name
+### IN-02: `_compute_dimensions` error message references `prepare_dimensions()` instead of `_compute_dimensions()`
 
 **File:** `src/tscollection/datasets/modules/_base/classification.py:159`
 
-**Issue:** The RuntimeError message says `prepare_dimensions()` when the actual failing method is `_compute_dimensions()`:
+**Issue:** The `RuntimeError` message in `_compute_dimensions()` says `prepare_dimensions()` when the actual failing method is `_compute_dimensions()`:
 
 ```python
 msg = 'prepare_dimensions() requires prepare_data() to have run first'
@@ -179,22 +134,9 @@ msg = '_compute_dimensions() requires prepare_data() to have run first'
 
 **File:** `tests/test_ddp_compliance.py:365-371`
 
-**Issue:** The idempotency test manually clears individual attributes:
-
-```python
-module._setup_completed_stages.clear()
-module._train_data_samples = None
-module._valid_data_samples = None
-module._test_data_samples = None
-module._full_data_scaled = None
-module._data_scaler_cache = None
-module._ts_feature_scaler_cache = None
-```
-
-This duplicates `reset()` logic (`base.py:356-366`) and will silently diverge if `reset()` adds new attributes. No comment explains why `reset()` is not used (it clears `_cache_key`, which would prevent the cache re-read this test verifies).
+**Issue:** The idempotency test manually clears individual attributes rather than calling `reset()`. This duplicates `reset()` logic (`base.py:344-366`) and risks divergence.
 
 **Suggestion:** Add a comment explaining the design decision:
-
 ```python
 # Do NOT call reset() -- it clears _cache_key, preventing the cache
 # re-read that this test is designed to verify. Only clear setup state:
@@ -202,6 +144,10 @@ This duplicates `reset()` logic (`base.py:356-366`) and will silently diverge if
 
 ---
 
-_Reviewed: 2026-06-01T00:00:00Z_
+_Info items IN-01 through IN-03 are cosmetic/maintainability suggestions from the previous review. They remain unfixed but do not affect correctness or security._
+
+_All critical (CR-01 through CR-06) and warning (WR-01 through WR-08) findings have been resolved with no regressions. Code is clean for this phase._
+
+_Reviewed: 2026-06-01T12:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: deep_
