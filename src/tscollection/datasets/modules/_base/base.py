@@ -161,25 +161,23 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
     @property
     def all_data_samples(self) -> np.ndarray | pd.DataFrame:
         """Concatenation of all data splits."""
+        samples = (
+            self._train_data_samples,
+            self._test_data_samples,
+            self._valid_data_samples,
+        )
+        filtered = [s for s in samples if s is not None]
+        if not filtered:
+            msg = 'No data loaded. Call prepare_data() and setup() first.'
+            raise RuntimeError(msg)
         if isinstance(self._train_data_samples, pd.DataFrame):
             return pd.concat(
-                [
-                    self._train_data_samples,  # type: ignore[arg-type]
-                    self._test_data_samples,  # type: ignore[arg-type]
-                    self._valid_data_samples,  # type: ignore[arg-type]
-                ],
+                filtered,  # type: ignore[arg-type]
                 axis=0,
             )  # ty:ignore[no-matching-overload]
         import numpy as np
 
-        return np.concatenate(
-            [
-                self._train_data_samples,  # type: ignore[arg-type]
-                self._test_data_samples,  # type: ignore[arg-type]
-                self._valid_data_samples,  # type: ignore[arg-type]
-            ],
-            axis=0,
-        )
+        return np.concatenate(filtered, axis=0)
 
     # ------------------------------------------------------------------
     # Abstract methods

@@ -127,9 +127,17 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     @property
     def all_data_labels(self) -> pd.Series:
         """Concatenation of all label splits."""
-        return pd.concat(
-            [self._train_data_labels, self._test_data_labels, self._valid_data_labels], axis=0
-        )
+        splits = [
+            s
+            for s in (
+                self._train_data_labels, self._test_data_labels, self._valid_data_labels
+            )
+            if s is not None
+        ]
+        if not splits:
+            msg = 'No data loaded. Call prepare_data() and setup() first.'
+            raise RuntimeError(msg)
+        return pd.concat(splits, axis=0)
 
     # ------------------------------------------------------------------
     # Abstract methods for subclasses
