@@ -6,6 +6,7 @@ setup idempotency with cache-backed data loading.
 """
 
 import os
+import socket
 from pathlib import Path
 
 import numpy as np
@@ -23,8 +24,20 @@ from tscollection.datasets.enums.data import ForecastingMode
 # ---------------------------------------------------------------------------
 
 
+def _get_free_port() -> int:
+    """Return a locally available TCP/UDP port for DDP MASTER_PORT.
+
+    Binds to port 0 (OS assigns) and returns the chosen port number.
+    Must be called once before ``mp.spawn()`` so all ranks use the same
+    port.
+    """
+    with socket.socket() as s:
+        s.bind(('localhost', 0))
+        return s.getsockname()[1]
+
+
 def _ddp_forecasting_worker(
-    rank: int, world_size: int, results_dir: str, csv_path: str
+    rank: int, world_size: int, results_dir: str, csv_path: str, port: int
 ) -> None:
     """DDP worker for forecasting cache round-trip test.
 
@@ -41,7 +54,7 @@ def _ddp_forecasting_worker(
     from tscollection.datasets.modules.weather import WeatherModule
 
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '29500'
+    os.environ['MASTER_PORT'] = str(port)
     dist.init_process_group('gloo', rank=rank, world_size=world_size)
 
     try:
@@ -85,7 +98,7 @@ def _ddp_forecasting_worker(
 
 
 def _ddp_classification_worker(
-    rank: int, world_size: int, results_dir: str, dataset_dir: str
+    rank: int, world_size: int, results_dir: str, dataset_dir: str, port: int
 ) -> None:
     """DDP worker for classification cache round-trip test.
 
@@ -101,7 +114,7 @@ def _ddp_classification_worker(
     from tscollection.datasets.modules.ucr import UCRClassificationDataModule
 
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '29501'
+    os.environ['MASTER_PORT'] = str(port)
     dist.init_process_group('gloo', rank=rank, world_size=world_size)
 
     try:
@@ -181,9 +194,10 @@ class TestDDPSmokeTests:
         results_dir = tmp_path / 'results'
         results_dir.mkdir()
 
+        port = _get_free_port()
         mp.spawn(
             _ddp_forecasting_worker,
-            args=(2, str(results_dir), str(csv_file)),
+            args=(2, str(results_dir), str(csv_file), port),
             nprocs=2,
             start_method='spawn',
         )
@@ -245,9 +259,10 @@ class TestDDPSmokeTests:
         results_dir = tmp_path / 'results'
         results_dir.mkdir()
 
+        port = _get_free_port()
         mp.spawn(
             _ddp_classification_worker,
-            args=(2, str(results_dir), str(dataset_dir)),
+            args=(2, str(results_dir), str(dataset_dir), port),
             nprocs=2,
             start_method='spawn',
         )
@@ -282,17 +297,20 @@ class TestIsinstanceBranchElimination:
         isinstance(_full_data, ...). These were eliminated in phase 7
         by splitting _full_data into typed attributes.
         """
-        import subprocess
-
         modules_dir = Path(__file__).parents[1] / 'src' / 'tscollection' / 'datasets' / 'modules'
-        result = subprocess.run(
-            ['grep', '-rn', 'isinstance.*_full_data', str(modules_dir), '--include=*.py'],
-            capture_output=True,
-            text=True,
-        )
-        matches = result.stdout.strip()
+        matches = []
+        for py_file in modules_dir.rglob('*.py'):
+            for lineno, line in enumerate(py_file.read_text().splitlines(), 1):
+                stripped = line.strip()
+                if stripped.startswith('#'):
+                    continue
+                if 'isinstance' in stripped and 'self._full_data' in stripped:
+                    matches.append(
+                        f'{py_file.relative_to(modules_dir)}:{lineno}: {stripped}'
+                    )
         assert not matches, (
-            f'Found isinstance(_full_data) branches that should be eliminated:\n{matches}'
+            'Found isinstance(self._full_data) branches that should be eliminated:\n'
+            + '\n'.join(matches)
         )
 
 
