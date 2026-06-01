@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-29T09:30:00Z",
+  "phase": "07",
+  "phase_name": "ddp-compliance",
+  "phase_dir": ".planning/phases/07-ddp-compliance",
+  "plan": 8,
+  "task": 0,
+  "total_tasks": 0,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Wave 1 - cache utils TDD", "status": "done", "commit": "a46ec51"},
+    {"id": 2, "name": "Wave 2 - base module cache infrastructure", "status": "done", "commit": "29b7696"},
+    {"id": 3, "name": "Wave 3 - forecasting cache (07-04 ETT, 07-05 ETT tests)", "status": "done", "commit": "87cf3cf"},
+    {"id": 4, "name": "Wave 4 - forecasting cache (07-05 continued)", "status": "done", "commit": "d6652a4"},
+    {"id": 5, "name": "Wave 5 - forecasting cache (07-06 Weather/Electricity)", "status": "done", "commit": "d1dd6f9"},
+    {"id": 6, "name": "Wave 6 - forecasting tests (07-06)", "status": "done", "commit": "0f25a77"},
+    {"id": 7, "name": "Wave 7 - classification cache (07-07)", "status": "done", "commit": "b3c4d5c"},
+    {"id": 8, "name": "Wave 8 - DDP compliance tests + cache race fixes (07-08)", "status": "done", "commit": "4813a82"}
+  ],
+  "remaining_tasks": [
+    {"id": 9, "name": "Fix CR-01: np.load allow_pickle RCE in UEA", "status": "not_started"},
+    {"id": 10, "name": "Fix CR-02: pd.concat None crash when valid_size=0", "status": "not_started"},
+    {"id": 11, "name": "Fix CR-03: DDP scaler race condition", "status": "not_started"},
+    {"id": 12, "name": "Fix CR-04: Hardcoded cache version in forecasting modules", "status": "not_started"},
+    {"id": 13, "name": "Fix CR-05: custom_collate_fn in-place batch mutation", "status": "not_started"},
+    {"id": 14, "name": "Fix 7 warnings from code review", "status": "not_started"},
+    {"id": 15, "name": "Phase 07 verification and ship", "status": "not_started"},
+    {"id": 16, "name": "Phase 08 (forecasting-mode-wiring)", "status": "not_started"}
+  ],
+  "blockers": [],
+  "human_actions_pending": [
+    {"action": "Decide whether to auto-fix review findings or address manually", "context": "Code review produced 15 findings. /gsd:code-review 07 --fix auto-applies Critical+Warning. Awaiting decision.", "blocking": false}
+  ],
+  "decisions": [],
+  "uncommitted_files": [
+    ".planning/ROADMAP.md"
+  ],
+  "next_action": "Run /gsd:code-review 07 --fix to auto-apply 12 critical+warning findings from 07-REVIEW.md, then verify with /gsd:verify-work or ship",
+  "context_notes": "Phase 07 implementation 100% complete. All 8 plans executed. Deep code review just finished with 5 critical, 7 warning, 3 info findings. Key architectural decisions: cache-based prepare_data/setup split, atomic npz+metadata writes, rank-0 writes all-ranks read pattern. CR-01 is actual security vulnerability (RCE via pickle). CR-03 is TOCTOU race in DDP scaler saves. Review committed as bfa2e23."
+}
