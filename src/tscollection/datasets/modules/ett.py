@@ -169,6 +169,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
         atomic_save_npz(cache_path, data=data, index=index_ns)
 
+        # Store time index for reference (needed before metadata computation)
+        self._time_index = pd.DatetimeIndex(df.index)
+
         # Compute variant-based splits for metadata
         self._set_data_slices()
         splits = {
@@ -176,8 +179,10 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             'valid': [self._valid_slice.start, self._valid_slice.stop],
             'test': [self._test_slice.start, self._test_slice.stop],
         }
-        # n_features includes time features (always present for ETT via DatetimeIndex)
-        n_features = data.shape[1] + TIME_FEATURE_COUNT
+        # n_features includes time features only when scaling is enabled
+        n_features = data.shape[1]
+        if self.scale_data and self._time_index is not None:
+            n_features += TIME_FEATURE_COUNT
         metadata = {
             'version': CACHE_SCHEMA_VERSION,
             'dataset_name': self.variant,
@@ -189,9 +194,6 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             'data_scaling_range': list(self.data_scaling_range),
         }
         atomic_save_metadata(cache_dir / f'{self._cache_key}_metadata.json', metadata)
-
-        # Store time index for reference
-        self._time_index = pd.DatetimeIndex(df.index)
 
     # ------------------------------------------------------------------
     # Dataloaders

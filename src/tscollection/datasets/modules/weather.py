@@ -159,7 +159,9 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             'valid': [train_end, valid_end],
             'test': [valid_end, len(data)],
         }
-        n_features = data.shape[1] + TIME_FEATURE_COUNT
+        n_features = data.shape[1]
+        if self.scale_data and self._time_index is not None:
+            n_features += TIME_FEATURE_COUNT
         metadata = {
             'version': CACHE_SCHEMA_VERSION,
             'dataset_name': self._dataset_name,
