@@ -1,8 +1,8 @@
 ---
 phase: 07-ddp-compliance
-reviewed: 2026-05-29T00:00:00Z
+reviewed: 2026-06-01T00:00:00Z
 depth: deep
-files_reviewed: 13
+files_reviewed: 14
 files_reviewed_list:
   - src/tscollection/datasets/modules/_base/classification.py
   - src/tscollection/datasets/modules/_base/forecasting.py
@@ -12,477 +12,174 @@ files_reviewed_list:
   - src/tscollection/datasets/modules/uea.py
   - src/tscollection/datasets/modules/weather.py
   - src/tscollection/datasets/utils/cache.py
+  - src/tscollection/datasets/utils/general.py
   - tests/test_ddp_compliance.py
   - tests/test_modules_classification_forecasting.py
   - tests/test_modules_forecasting.py
   - tests/test_modules_ucr.py
   - tests/test_modules_uea.py
 findings:
-  critical: 5
-  warning: 7
+  critical: 1
+  warning: 1
   info: 3
-  total: 15
+  total: 5
 status: issues_found
 ---
 
-# Phase 7: Code Review Report
+# Phase 7: Code Review Re-Review Report
 
-**Reviewed:** 2026-05-29T00:00:00Z
+**Reviewed:** 2026-06-01T00:00:00Z
 **Depth:** deep
-**Files Reviewed:** 13
+**Files Reviewed:** 14
 **Status:** issues_found
 
 ## Summary
 
-Deep review of the DDP-compliance phase covering cache infrastructure, forecasting and classification base modules, concrete implementations (ETT, Electricity, Weather, UCR, UEA), and associated tests. Five critical issues found: unsafe pickle deserialization in UEA cache loading, None-dereference crashes in aggregate properties, redundant scaler fitting across DDP ranks with TOCTOU race, inconsistent cache schema versioning across forecasting modules, and in-place mutation of batch lists in the collate function. Seven warnings cover silent data loss in UEA validation splits, lack of DistributedSampler for real DDP training, duplicated scaling logic, brittle static analysis tests, and test port-hardcoding. Three informational items note code duplication in cache-write paths, misleading error messages, and suboptimal test patterns.
+Re-review of the DDP-compliance phase after 12 of 15 previous findings were fixed (5 critical, 7 warning). All 12 applied fixes are verified correct and do not introduce new bugs. Three info items from the previous review remain unfixed. One new critical issue was found: metadata `n_features` unconditionally adds `TIME_FEATURE_COUNT` regardless of the `scale_data` flag, causing dimension mismatches. One new warning: the WR-06 assert-to-validation fix was incomplete, with 8 additional assert statements serving the same purpose still present.
+
+## Previous Fix Verification
+
+All 12 previously identified fixes (CR-01 through CR-05, WR-01 through WR-07) verified correct:
+
+- **CR-01** (UEA `allow_pickle=True`): Removed. `np.load()` without `allow_pickle` works because UEA saves numeric arrays (float32 samples, int64 labels) -- not object dtype. Verified at `uea.py:334`.
+- **CR-02** (None in `all_data_labels`/`all_data_samples`): Both properties filter `None` before concatenation and raise `RuntimeError` when no splits exist. Applied consistently at `classification.py:130-138` and `base.py:161-173`.
+- **CR-03/WR-07** (TOCTOU in `_save_scaler_to_cache`): Existence pre-check removed. Relies on `save_scaler()` internal atomic write with OSError handling. Verified at `forecasting.py:367-371`.
+- **CR-04** (Hardcoded `version: 1`): All three forecasting modules now import and use `CACHE_SCHEMA_VERSION`. Consistent with classification modules. Verified at `ett.py:182`, `electricity.py:172`, `weather.py:164`.
+- **CR-05** (In-place mutation in `custom_collate_fn`): Works on `padded = list(batch)` copy. Original batch is never mutated. Verified at `general.py:31-36`.
+- **WR-01** (UEA singleton-class warning): `logger.warning()` added at `uea.py:235-240`. Dropped count and dataset name included.
+- **WR-03** (Duplicated TS feature scaling): Extracted to `_apply_ts_features()` helper at `forecasting.py:339-350`. Both fit and test/predict branches call it.
+- **WR-04** (grep subprocess): Replaced with Python-native file scanning using `rglob` and `splitlines`. Cross-platform safe. Verified at `test_ddp_compliance.py:293-304`.
+- **WR-05** (Hardcoded DDP ports): `_get_free_port()` uses socket binding. Port passed to `mp.spawn()` args. Both workers updated.
+- **WR-06** (assert in `_split_data`): Replaced with explicit `RuntimeError` checks at `forecasting.py:426-437`. **Incomplete** -- see WR-08.
 
 ## Critical Issues
 
-### CR-01: UEA `_load_cached_data` uses `allow_pickle=True` -- arbitrary code execution via crafted cache
-
-**File:** `src/tscollection/datasets/modules/uea.py:325`
-
-**Issue:** The UEA cache loader passes `allow_pickle=True` to `np.load()`:
-
-```python
-loaded = np.load(str(cache_path), allow_pickle=True)
-```
-
-This enables arbitrary Python object deserialization via pickle. If an attacker places a malicious `.npz` file in the cache directory (shared network filesystem, compromised CI cache, or adversarial dataset distribution), code execution occurs on load. The UCR module at `ucr.py:312` correctly omits `allow_pickle`, demonstrating the team knows the safe pattern.
-
-The root cause is that UEA stores 3-D structured arrays (shape `(samples, timesteps, features)`) which numpy saves as object dtype, requiring pickle for round-trip. The fix should be to flatten the 3-D array to a regular numeric dtype rather than accepting pickle as the solution.
-
-No comment or docstring justifies the `allow_pickle=True` flag, making it appear as oversight rather than intentional trade-off.
-
-**Fix:** Save the 3-D array with explicit shape metadata and a flattened numeric array, then reconstruct on load without pickle:
-
-```python
-# In _do_prepare_data when saving:
-atomic_save_npz(
-    path=cache_path,
-    train_samples=self._train_data_samples.ravel(),
-    train_shape=np.array(self._train_data_samples.shape),
-    # ... other arrays similarly
-)
-
-# In _load_cached_data:
-loaded = np.load(str(cache_path))
-self._train_data_samples = loaded['train_samples'].reshape(loaded['train_shape'])
-```
-
-### CR-02: `all_data_labels` crashes when `_valid_data_labels` is None
-
-**File:** `src/tscollection/datasets/modules/_base/classification.py:130-132`
-
-**Issue:** The `all_data_labels` property passes `None` to `pd.concat()` when `_valid_data_labels` is unset:
-
-```python
-@property
-def all_data_labels(self) -> pd.Series:
-    return pd.concat(
-        [self._train_data_labels, self._test_data_labels, self._valid_data_labels], axis=0
-    )
-```
-
-`_valid_data_labels` is `None` when `valid_size=0.0`, before cache load completes, or after the UEA validation split drops all samples (singleton-class filtering at `uea.py:227-231`). `pd.concat()` with a `None` element raises `TypeError: cannot concatenate object of type 'NoneType'; only pd.DataFrame, pd.Series, and pd.Index are valid`.
-
-The identical bug exists in `all_data_samples` at `src/tscollection/datasets/modules/_base/base.py:162-182`. Both the numpy and pandas branches pass `_valid_data_samples` (which may be `None`) directly to the concatenation function.
-
-**Fix:** Filter out `None` values before concatenation:
-
-```python
-@property
-def all_data_labels(self) -> pd.Series:
-    splits = [
-        s for s in (
-            self._train_data_labels, self._test_data_labels, self._valid_data_labels
-        )
-        if s is not None
-    ]
-    if not splits:
-        msg = 'No data loaded. Call prepare_data() and setup() first.'
-        raise RuntimeError(msg)
-    return pd.concat(splits, axis=0)
-```
-
-Apply the same pattern to `all_data_samples` in `base.py`.
-
-### CR-03: Forecasting `setup()` fits scaler on every DDP rank -- redundant computation and race condition
-
-**File:** `src/tscollection/datasets/modules/_base/forecasting.py:281-285`
-
-**Issue:** When `scale_data=True` and `stage='fit'`, every DDP rank fits its own sklearn scaler independently and attempts to persist it:
-
-```python
-if stage in ('fit', None):
-    data_scaler = self._prepare_data_scaler()
-    data_scaler.fit(full_array[self._train_slice])
-    self._data_scaler_cache = data_scaler
-    self._save_scaler_to_cache(data_scaler, 'data')
-```
-
-In the DDP flow established by the tests (`test_ddp_compliance.py`), rank 0 writes the cache via `prepare_data()`, then all ranks call `setup(stage='fit')`. Each rank fits its own scaler. While `_save_scaler_to_cache` has an existence-check guard at lines 389-390, this is a TOCTOU race: two ranks can both pass `scaler_path.exists()` before either writes.
-
-More importantly, each rank fits the scaler independently on identical raw data. Floating-point results could differ across ranks on different hardware (CPU instruction set variations, different BLAS backends), violating the DDP invariant that all ranks see identical data. The test verifies shapes match but not that scaler parameters (scale_, min_) are bitwise identical across ranks.
-
-**Fix:** Save the fitted scaler state (numpy arrays for `scale_`, `min_`, etc.) in the cache during `_do_prepare_data()`, then restore from those arrays in `setup()`. This ensures deterministic results regardless of which rank fits:
-
-```python
-# In _do_prepare_data (rank 0 only):
-scaler.fit(train_data)
-atomic_save_npz(scaler_cache_path, scale=scaler.scale_, min_=scaler.min_)
-
-# In setup():
-scaler_state = np.load(scaler_cache_path)
-data_scaler = MinMaxScaler()
-data_scaler.scale_ = scaler_state['scale']
-data_scaler.min_ = scaler_state['min_']
-```
-
-### CR-04: Forecasting metadata hardcodes `version: 1` instead of using `CACHE_SCHEMA_VERSION`
+### CR-06: Metadata `n_features` unconditionally adds TIME_FEATURE_COUNT regardless of `scale_data`
 
 **Files:**
-- `src/tscollection/datasets/modules/ett.py:179`
-- `src/tscollection/datasets/modules/electricity.py:167`
-- `src/tscollection/datasets/modules/weather.py:165`
+- `src/tscollection/datasets/modules/ett.py:180`
+- `src/tscollection/datasets/modules/electricity.py:170`
+- `src/tscollection/datasets/modules/weather.py:162`
 
-**Issue:** All three forecasting modules write `"version": 1` as a literal integer in their metadata:
+**Issue:** All three forecasting modules compute `n_features` for the metadata cache file by unconditionally adding `TIME_FEATURE_COUNT`:
 
 ```python
+n_features = data.shape[1] + TIME_FEATURE_COUNT
 metadata = {
-    "version": 1,
-    "dataset_name": self._dataset_name,
+    'version': CACHE_SCHEMA_VERSION,
+    ...
+    'n_features': n_features,
     ...
 }
 ```
 
-Meanwhile, UCR (`ucr.py:295`) and UEA (`uea.py:308`) correctly use the `CACHE_SCHEMA_VERSION` constant imported from `cache.py`. If `CACHE_SCHEMA_VERSION` is incremented to 2 for any future schema change (e.g., adding a new field to the metadata JSON), forecasting modules will still write `1`. This causes `load_metadata()` at `cache.py:148` to reject valid cache files with:
+However, time features are only extracted during `setup()` when `scale_data=True`. When `scale_data=False`, the entire scaling and time feature extraction block is skipped (`forecasting.py:325-331`), so the actual data contains no time features.
 
-```
-ValueError: Cache version 1 does not match expected version 2.
-Delete cache dir and re-run prepare_data().
-```
+This causes `prepare_dimensions()` to return different values depending on whether it reads from the metadata cache or computes from raw data:
 
-The error message would be confusing because the cache files are actually valid -- only the version constant is stale. Classification modules would work fine while forecasting modules fail, creating an inconsistent user experience.
+- **Pre-setup path** (`_compute_dimensions` at `forecasting.py:187`): Correctly checks `self.scale_data`:
+  ```python
+  has_time_features = self._time_index is not None and self.scale_data
+  n_features = raw_cols + TIME_FEATURE_COUNT if has_time_features else raw_cols
+  ```
+- **Post-setup path** (`prepare_dimensions` at `base.py:236-240`): Reads `n_features` from metadata, which is always inflated by `TIME_FEATURE_COUNT` even when `scale_data=False`.
 
-**Fix:** Import and use `CACHE_SCHEMA_VERSION` in all three forecasting modules:
+Concrete example: ETT with `scale_data=False`, 1 raw column (univariate OT):
+- Metadata writes `n_features = 8` (1 + 7 time features)
+- Actual data after setup has 1 feature (no time features extracted)
+- `prepare_dimensions()` post-setup returns `(8, seq_len)` -- off by factor of 8x
+
+This silently corrupts model dimension calculations. If a model uses `n_features` to size its input layer, it allocates for 8 features but receives 1, causing shape mismatches at runtime.
+
+The existing test `test_pre_setup_matches_post_setup` (`test_modules_forecasting.py:1693-1710`) does NOT catch this bug because it uses `scale_data=True` (default), where time features are actually added and both paths agree.
+
+**Fix:** Conditionally add `TIME_FEATURE_COUNT` only when time features will actually be extracted:
 
 ```python
-from tscollection.datasets.utils.cache import (
-    atomic_save_metadata,
-    atomic_save_npz,
-    build_cache_key,
-    CACHE_SCHEMA_VERSION,
-)
-
+n_features = data.shape[1]
+if self.scale_data and self._time_index is not None:
+    n_features += TIME_FEATURE_COUNT
 metadata = {
-    "version": CACHE_SCHEMA_VERSION,
+    'version': CACHE_SCHEMA_VERSION,
+    'n_features': n_features,
     ...
 }
 ```
 
-### CR-05: `custom_collate_fn` mutates input batch list in-place
-
-**File:** `src/tscollection/datasets/utils/general.py:29-34`
-
-**Issue:** The collate function modifies the caller's `batch` list by appending samples:
-
-```python
-def custom_collate_fn(batch: list[Any], *, desired_batch_size: int) -> Any:
-    current_batch_size = len(batch)
-    if current_batch_size < desired_batch_size:
-        additional_needed = desired_batch_size - current_batch_size
-        for i in range(additional_needed):
-            sample_index = current_batch_size - 1 - (i % current_batch_size)
-            batch.append(batch[sample_index])
-    return default_collate(batch)
-```
-
-When `prefetch_factor > 1` (PyTorch default is 2) and `num_workers > 0`, the data loader pipeline may hold references to batches that get mutated before `default_collate()` consumes them. Even in single-worker mode, in-place mutation of the batch list is a side effect violating the principle that collate functions should be pure transformers.
-
-If the dataset's `__getitem__` returns references to shared or cached objects, appended references could cause the same sample to appear multiple times within a batch, introducing data leakage in training.
-
-**Fix:** Work on a copy of the batch list:
-
-```python
-def custom_collate_fn(batch: list[Any], *, desired_batch_size: int) -> Any:
-    current_batch_size = len(batch)
-    if current_batch_size < desired_batch_size:
-        padded = list(batch)
-        additional_needed = desired_batch_size - current_batch_size
-        for i in range(additional_needed):
-            sample_index = current_batch_size - 1 - (i % current_batch_size)
-            padded.append(padded[sample_index])
-        batch = padded
-    return default_collate(batch)
-```
+The `_time_index` check is needed because `scale_data=True` with no DatetimeIndex still produces 0 time features.
 
 ## Warnings
 
-### WR-01: UEA validation split silently drops singleton classes from training data
+### WR-08: WR-06 fix incomplete -- assert statements remain for input validation in 8 locations
 
-**File:** `src/tscollection/datasets/modules/uea.py:227-231`
+**Files:**
+- `src/tscollection/datasets/modules/_base/forecasting.py:252-253` (setup() preconditions)
+- `src/tscollection/datasets/modules/_base/forecasting.py:347` (_apply_ts_features() precondition)
+- `src/tscollection/datasets/modules/_base/forecasting.py:414` (_calculate_num_features() precondition)
+- `src/tscollection/datasets/modules/electricity.py:103` (_set_data_slices() precondition)
+- `src/tscollection/datasets/modules/electricity.py:115` (_transform_data() precondition)
+- `src/tscollection/datasets/modules/ett.py:136` (_transform_data() precondition)
+- `src/tscollection/datasets/modules/weather.py:103` (_set_data_slices() precondition)
+- `src/tscollection/datasets/modules/weather.py:115` (_transform_data() precondition)
 
-**Issue:** When creating the validation split, UEA filters out all samples belonging to classes with fewer than 2 training samples:
+**Issue:** WR-06 identified that `assert` statements are stripped by Python `-O` (optimize) flag and replaced `assert` with explicit `RuntimeError` in `_split_data()`. However, 8 additional `assert` statements serving the same input validation purpose remain.
 
+In `setup()` at `forecasting.py:252-253`:
 ```python
-label_counts = np.bincount(self._train_data_labels)
-valid_mask = np.isin(self._train_data_labels, np.where(label_counts > 1)[0])
-filtered_samples = self._train_data_samples[valid_mask]
-filtered_labels = self._train_data_labels[valid_mask]
+assert self._full_data_raw is not None, 'Full data not set; call prepare_data() first'
+assert self._train_slice is not None, 'Train slice not set; call _set_data_slices() first'
 ```
 
-This is necessary to prevent `train_test_split` from failing when `stratify` requires at least 2 samples per class. However, singleton-class samples are permanently removed from training data without any warning or logging. If a dataset has rare classes with exactly one sample, those classes vanish from the model entirely.
-
-The UCR module uses the same pattern (`ucr.py:220`) with `groupby('label').filter(lambda x: len(x) > 1)`, which is functionally equivalent but at least more transparent about the filtering operation. Neither module emits a warning.
-
-**Fix:** Log a warning when samples are dropped:
-
+In `_apply_ts_features()` at `forecasting.py:347`:
 ```python
-dropped_count = len(self._train_data_samples) - len(filtered_samples)
-if dropped_count > 0:
-    logger.warning(
-        'Dropped %d samples from singleton classes in dataset %s. '
-        'These classes will not be present in training data.',
-        dropped_count, self._dataset_name,
-    )
+assert self._full_data_scaled is not None
 ```
 
-### WR-02: No DistributedSampler support -- dataloaders load full splits on every rank
-
-**Files:** All dataloader methods across `ucr.py`, `uea.py`, `ett.py`, `electricity.py`, `weather.py`
-
-**Issue:** The dataloader methods wrap full train/valid/test splits in Dataset objects without any `DistributedSampler`. In real DDP training, each rank would see all samples, causing each sample to be processed `world_size` times per epoch. This effectively multiplies the batch size by the number of GPUs, altering training dynamics.
-
-The cache infrastructure (rank-0 writes, all-ranks read) is correct for data preparation, but the dataloader layer lacks the sampler needed to shard data across ranks. The existing DDP tests verify cache consistency but do not test distributed training loops.
-
-**Fix:** Add optional DistributedSampler support:
-
+In `_calculate_num_features()` at `forecasting.py:414`:
 ```python
-def train_dataloader(
-    self,
-    *,
-    mode: TimeSeriesDatasetMode = ...,
-    shuffle: bool | None = None,
-    strict_batch_size: bool = False,
-    extra_args: dict[str, Any] | None = None,
-    distributed_sampler: torch.utils.data.DistributedSampler | None = None,
-) -> DataLoader:
-    dataset = ...
-    dl_kwargs = {...}
-    if distributed_sampler is not None:
-        dl_kwargs['sampler'] = distributed_sampler
-        dl_kwargs['shuffle'] = False  # sampler handles shuffling
-    return self._process_train_dataloader(**dl_kwargs)
+assert self._full_data_scaled is not None
 ```
 
-### WR-03: Duplicated time-series feature scaling logic in `setup()`
+If the module is deployed with `python -O`, these checks silently disappear. A missing `_full_data_scaled` would cause `TypeError: 'NoneType' object is not subscriptable` rather than a descriptive error identifying which precondition failed.
 
-**File:** `src/tscollection/datasets/modules/_base/forecasting.py:292-306` (fit branch) and `319-340` (test/predict branch)
-
-**Issue:** The time-series feature scaling block is duplicated nearly verbatim between the `fit` and `test`/`predict` branches:
+**Fix:** Apply the same `RuntimeError` pattern used in `_split_data()`:
 
 ```python
-# fit branch
-if num_time_series_features > 0:
-    ts_feature_scaler = self._prepare_data_scaler()
-    ts_feature_scaler.fit(time_series_features[self._train_slice])
-    self._ts_feature_scaler_cache = ts_feature_scaler
-    self._save_scaler_to_cache(ts_feature_scaler, 'ts')
-    scaled_ts_features = ts_feature_scaler.transform(time_series_features)
-    scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
-    repeated_ts = np.repeat(scaled_ts_features, self._full_data_scaled.shape[0], axis=0)
-    self._full_data_scaled = np.concatenate(
-        [repeated_ts, self._full_data_scaled], axis=-1
-    )
-
-# test/predict branch -- same pattern, different scaler retrieval
-if num_time_series_features > 0:
-    if self._ts_feature_scaler_cache is None:
-        self._ts_feature_scaler_cache = self._load_scaler_from_cache('ts')
-    if self._ts_feature_scaler_cache is not None:
-        scaled_ts_features = self._ts_feature_scaler_cache.transform(time_series_features)
-        scaled_ts_features = np.expand_dims(scaled_ts_features, axis=0)
-        repeated_ts = np.repeat(scaled_ts_features, self._full_data_scaled.shape[0], axis=0)
-        self._full_data_scaled = np.concatenate(
-            [repeated_ts, self._full_data_scaled], axis=-1
-        )
-```
-
-Both blocks perform: expand_dims(axis=0), repeat along axis 0, concatenate along axis=-1. A bug fix or feature change applied to one block is likely to miss the other.
-
-**Fix:** Extract to a shared helper method:
-
-```python
-def _apply_time_features(
-    self,
-    time_series_features: np.ndarray,
-    fit: bool,
-) -> None:
-    if time_series_features.shape[-1] == 0:
-        return
-    if fit:
-        ts_scaler = self._prepare_data_scaler()
-        ts_scaler.fit(time_series_features[self._train_slice])
-        self._ts_feature_scaler_cache = ts_scaler
-        self._save_scaler_to_cache(ts_scaler, 'ts')
-    else:
-        ts_scaler = self._ts_feature_scaler_cache
-    scaled = np.expand_dims(ts_scaler.transform(time_series_features), axis=0)
-    repeated = np.repeat(scaled, self._full_data_scaled.shape[0], axis=0)
-    self._full_data_scaled = np.concatenate([repeated, self._full_data_scaled], axis=-1)
-```
-
-### WR-04: `test_isinstance_branch_elimination` uses fragile subprocess grep
-
-**File:** `tests/test_ddp_compliance.py:287-296`
-
-**Issue:** The isinstance elimination test runs `grep` via `subprocess.run()` to scan for `isinstance.*_full_data` patterns. This approach has three weaknesses:
-
-1. **Cross-platform fragility:** `grep` is not available on Windows by default. If tests run on Windows CI, this test crashes with `FileNotFoundError: [Errno 2] No such file or directory: 'grep'`.
-
-2. **False positive risk:** The regex `isinstance.*_full_data` could match comments, docstrings, or variable names containing `_full_data` in non-isinstance contexts (e.g., `self._full_data_raw` contains the substring `_full_data`).
-
-3. **No line context:** When the test fails, it reports the raw grep output without indicating which files are legitimate matches versus actual regressions.
-
-**Fix:** Use Python-native file scanning:
-
-```python
-def test_isinstance_branch_elimination(self) -> None:
-    modules_dir = Path(__file__).parents[1] / 'src' / 'tscollection' / 'datasets' / 'modules'
-    matches = []
-    for py_file in modules_dir.rglob('*.py'):
-        for lineno, line in enumerate(py_file.read_text().splitlines(), 1):
-            stripped = line.strip()
-            if stripped.startswith('#'):
-                continue
-            if 'isinstance' in stripped and 'self._full_data' in stripped:
-                matches.append(f'{py_file.relative_to(modules_dir)}:{lineno}: {stripped}')
-    assert not matches, f'Found isinstance(self._full_data) branches:\n' + '\n'.join(matches)
-```
-
-### WR-05: DDP test workers use hardcoded ports without randomization
-
-**File:** `tests/test_ddp_compliance.py:44` and `104`
-
-**Issue:** Both DDP worker functions hardcode `MASTER_PORT`:
-
-```python
-os.environ['MASTER_ADDR'] = 'localhost'
-os.environ['MASTER_PORT'] = '29500'  # forecasting worker
-```
-
-and:
-
-```python
-os.environ['MASTER_PORT'] = '29501'  # classification worker
-```
-
-If tests run in parallel (common on CI with concurrent jobs) or the ports are already in use by other processes, `init_process_group()` fails with `OSError: [Errno 98] Address already in use`. The DDP compliance tests themselves become flaky, undermining their value as reliability gates.
-
-**Fix:** Use socket-based port discovery:
-
-```python
-def _get_free_port() -> int:
-    import socket
-    with socket.socket() as s:
-        s.bind(('localhost', 0))
-        return s.getsockname()[1]
-
-os.environ['MASTER_PORT'] = str(_get_free_port())
-```
-
-Note: each rank must use the SAME port, so `_get_free_port()` should be called once before `mp.spawn()` and passed as an argument.
-
-### WR-06: `_split_data` uses `assert` for input validation -- stripped with Python `-O`
-
-**File:** `src/tscollection/datasets/modules/_base/forecasting.py:443-446`
-
-**Issue:** The `_split_data` method uses `assert` statements to validate preconditions:
-
-```python
-def _split_data(self) -> None:
-    assert self._full_data_scaled is not None
-    assert self._train_slice is not None
-    assert self._valid_slice is not None
-    assert self._test_slice is not None
-```
-
-Python's `-O` (optimize) flag strips all assert statements at compile time. If the module is deployed with `python -O` (common in production to reduce overhead), these checks disappear silently. The subsequent indexing operations (`self._full_data_scaled[:, self._train_slice]`) would then raise `TypeError: 'NoneType' object is not subscriptable` -- a confusing error that does not indicate which precondition failed.
-
-**Fix:** Replace assert with explicit validation:
-
-```python
-def _split_data(self) -> None:
-    if self._full_data_scaled is None:
-        msg = '_split_data requires _full_data_scaled. Ensure scaling completed.'
-        raise RuntimeError(msg)
-    if self._train_slice is None:
-        msg = '_split_data requires _train_slice. Ensure _set_data_slices() was called.'
-        raise RuntimeError(msg)
-    # ... same for valid_slice and test_slice
-```
-
-### WR-07: `_save_scaler_to_cache` existence-check is redundant with `save_scaler` internal handling
-
-**File:** `src/tscollection/datasets/modules/_base/forecasting.py:389-391`
-
-**Issue:** The `_save_scaler_to_cache` method checks `scaler_path.exists()` before calling `save_scaler()`:
-
-```python
-def _save_scaler_to_cache(self, scaler: object, kind: str) -> None:
-    ...
-    if scaler_path.exists():
-        return
-    save_scaler(scaler=scaler, path=scaler_path)
-```
-
-The `save_scaler()` function in `cache.py:171-184` already handles the case where the target file exists -- it writes to a `.tmp` file and catches `OSError` from `tmp.replace()`. The existence pre-check is redundant and creates a TOCTOU window where the file could appear between the check and the write.
-
-**Fix:** Remove the pre-check and rely on `save_scaler()`'s internal race handling:
-
-```python
-def _save_scaler_to_cache(self, scaler: object, kind: str) -> None:
-    if self._cache_key is None:
-        return
-    cache_dir = self._resolve_cache_dir()
-    scaler_path = cache_dir / f'{self._cache_key}_{kind}_scaler.pt'
-    save_scaler(scaler=scaler, path=scaler_path)
+if self._full_data_scaled is None:
+    msg = '_apply_ts_features requires _full_data_scaled. Ensure scaling completed.'
+    raise RuntimeError(msg)
 ```
 
 ## Info
 
 ### IN-01: Duplicated cache-write boilerplate across forecasting modules
 
-**Files:** `src/tscollection/datasets/modules/ett.py:162-192`, `electricity.py:150-184`, `weather.py:143-176`
+**Files:** `src/tscollection/datasets/modules/ett.py:162-191`, `electricity.py:149-181`, `weather.py:142-173`
 
-**Issue:** All three forecasting modules follow the identical pattern of: convert data to numpy, resolve cache directory, create cache path, save npz, build metadata dict, save metadata, store time index. This is approximately 30-40 lines of duplicated code per module. The concrete differences (CSV parsing, column selection, split computation) are module-specific, but the cache-write sequence could be extracted to the base class.
+**Issue:** All three forecasting modules follow the identical pattern of: convert data to numpy, resolve cache directory, create cache path, mkdir, save npz with `atomic_save_npz`, build metadata dict with `atomic_save_metadata`. Approximately 30-40 lines of duplicated code per module. The concrete differences (CSV parsing, column selection, split computation) are module-specific, but the cache-write sequence could be extracted to the base class.
 
-**Suggestion:** Add a `_write_forecasting_cache()` helper to `BaseForecastingTimeSeriesDataModule` that handles the npz + metadata write, accepting data, index, and metadata fields as parameters.
+**Suggestion:** Add a `_write_forecasting_cache()` helper to `BaseForecastingTimeSeriesDataModule` that accepts data, index, and metadata override fields as parameters.
 
 ### IN-02: `_compute_dimensions` error message references wrong method name
 
-**File:** `src/tscollection/datasets/modules/_base/classification.py:153`
+**File:** `src/tscollection/datasets/modules/_base/classification.py:159`
 
-**Issue:** The RuntimeError message in `_compute_dimensions()` references the public method name rather than the internal one:
+**Issue:** The RuntimeError message says `prepare_dimensions()` when the actual failing method is `_compute_dimensions()`:
 
 ```python
 msg = 'prepare_dimensions() requires prepare_data() to have run first'
 ```
 
-This is technically correct since `_compute_dimensions()` is called by `prepare_dimensions()`, but it omits that the actual failing method is `_compute_dimensions()`. In tracebacks, developers would see both method names and the message provides minimal additional context.
-
-**Suggestion:** Include the internal method name for clarity:
-
+**Suggestion:** Use the internal method name:
 ```python
 msg = '_compute_dimensions() requires prepare_data() to have run first'
 ```
 
 ### IN-03: `test_setup_idempotent_with_cache` manually clears state instead of using `reset()`
 
-**File:** `tests/test_ddp_compliance.py:357-363`
+**File:** `tests/test_ddp_compliance.py:365-371`
 
-**Issue:** The idempotency test manually clears individual attributes to simulate a fresh process:
+**Issue:** The idempotency test manually clears individual attributes:
 
 ```python
 module._setup_completed_stages.clear()
@@ -494,20 +191,17 @@ module._data_scaler_cache = None
 module._ts_feature_scaler_cache = None
 ```
 
-This duplicates the logic in `reset()` (`base.py:365-375`) and will silently diverge if `reset()` adds new attributes. The test intentionally avoids calling `reset()` because it wants to preserve `_full_data_raw` and `_time_index` (loaded from cache), but there is no documentation explaining this design decision.
+This duplicates `reset()` logic (`base.py:356-366`) and will silently diverge if `reset()` adds new attributes. No comment explains why `reset()` is not used (it clears `_cache_key`, which would prevent the cache re-read this test verifies).
 
-**Suggestion:** Add a comment explaining why `reset()` is not used, or create a `reset_setup_only()` helper method that clears setup state while preserving cache-loaded state:
+**Suggestion:** Add a comment explaining the design decision:
 
 ```python
-# Do NOT call reset() -- it would clear _cache_key, preventing
-# the cache re-read that this test is designed to verify.
-# Instead, clear only the setup-specific state:
-module._setup_completed_stages.clear()
-# ...
+# Do NOT call reset() -- it clears _cache_key, preventing the cache
+# re-read that this test is designed to verify. Only clear setup state:
 ```
 
 ---
 
-_Reviewed: 2026-05-29T00:00:00Z_
+_Reviewed: 2026-06-01T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: deep_
