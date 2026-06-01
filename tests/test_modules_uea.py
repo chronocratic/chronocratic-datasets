@@ -329,3 +329,51 @@ def test_setup_idempotent(synthetic_uea_folder: Path) -> None:
         module.setup(stage='fit')
 
         np.testing.assert_array_equal(snapshot_train, module._train_data_samples)
+
+
+def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
+    """UEA: prepare_data writes cache, setup reads it back correctly.
+
+    Verifies the 3-D array cache round-trip: after prepare_data() writes
+    the npz and metadata.json, clearing in-memory state and calling
+    setup() restores data from cache that matches the original.
+    """
+    from tscollection.datasets.modules.uea import UEAClassificationDataModule
+
+    with patch(
+        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+    ):
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name='class',
+            scale_data=False,
+        )
+        module.prepare_data()
+
+        # Snapshot original data
+        orig_train = module._train_data_samples.copy()
+        orig_test = module._test_data_samples.copy()
+        orig_train_labels = module._train_data_labels.copy()
+        orig_test_labels = module._test_data_labels.copy()
+
+        # Clear in-memory state (simulates fresh process reading from cache)
+        module._train_data_samples = None
+        module._test_data_samples = None
+        module._valid_data_samples = None
+        module._train_data_labels = None
+        module._test_data_labels = None
+        module._valid_data_labels = None
+
+        # setup() should read from cache
+        module.setup(stage='fit')
+
+        # Verify 3-D array preservation through cache round-trip
+        np.testing.assert_array_equal(module._train_data_samples, orig_train)
+        np.testing.assert_array_equal(module._test_data_samples, orig_test)
+        np.testing.assert_array_equal(
+            module._train_data_labels.to_numpy(), orig_train_labels.to_numpy()
+        )
+        np.testing.assert_array_equal(
+            module._test_data_labels.to_numpy(), orig_test_labels.to_numpy()
+        )

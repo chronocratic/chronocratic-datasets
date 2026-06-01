@@ -17,6 +17,13 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
+from tscollection.datasets.utils.cache import (
+    atomic_save_metadata,
+    atomic_save_npz,
+    build_cache_key,
+    CACHE_SCHEMA_VERSION,
+)
+from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -48,8 +55,6 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         num_workers: DataLoader worker count.
     """
 
-    _full_data: pd.DataFrame | np.ndarray | None = None
-
     def __init__(
         self,
         *,
@@ -78,6 +83,16 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             mode=mode,
         )
         self.dataset_file_path = dataset_file_path
+        self._dataset_name = dataset_file_path.stem
+        self._cache_key = build_cache_key(
+            dataset_name=dataset_file_path.stem,
+            params={
+                'seq_len': seq_len,
+                'mode': mode.value,
+                'data_scaling_method': data_scaling_method.value,
+                'data_scaling_range': list(data_scaling_range),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Abstract method implementations
@@ -85,46 +100,83 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
 
     def _set_data_slices(self) -> None:
         """Set 60/20/20 fractional train/valid/test splits."""
-        assert self._full_data is not None, '_full_data was not set by prepare_data()'
-        num_samples = len(self._full_data)
+        if self._full_data_raw is None:
+            msg = '_set_data_slices requires _full_data_raw. Ensure prepare_data() was called.'
+            raise RuntimeError(msg)
+        num_samples = len(self._full_data_raw)
         self._train_slice = slice(None, int(0.6 * num_samples))
         self._valid_slice = slice(int(0.6 * num_samples), int(0.8 * num_samples))
         self._test_slice = slice(int(0.8 * num_samples), None)
 
     def _transform_data(self) -> None:
-        """Transform ``_full_data`` using expand_dims(axis=0).
+        """Transform ``_full_data_scaled`` using expand_dims(axis=0).
 
         Produces shape (1, samples, features). Different from
         ElectricityLoadModule which uses transpose + expand_dims(axis=-1).
         """
-        assert self._full_data is not None, '_full_data was not set by prepare_data()'
-        if isinstance(self._full_data, pd.DataFrame):
-            self._full_data = self._full_data.to_numpy()
-        if isinstance(self._full_data, np.ndarray):
-            self._full_data = np.expand_dims(self._full_data, axis=0)
+        if self._full_data_scaled is None:
+            msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
+            raise RuntimeError(msg)
+        self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=0)
 
     # ------------------------------------------------------------------
     # Lightning lifecycle
     # ------------------------------------------------------------------
 
     def _do_prepare_data(self) -> None:
-        """Validate file path, read CSV, and prepare data.
+        """Validate file path, read CSV, and write cache.
 
-        Raises ``FileNotFoundError`` if the CSV file does not
-        exist. Reads standard CSV format with date index column.
+        Reads the CSV, converts to numpy, and persists both the data
+        (``.npz``) and metadata (``.json``) to the cache directory.
+        ``_dataset_name`` is set from the filename stem.
+
+        Raises:
+            FileNotFoundError: If the CSV file does not exist.
         """
         if not self.dataset_file_path.exists():
             msg = f'Dataset file not found: {self.dataset_file_path}'
             raise FileNotFoundError(msg)
-
-        self._dataset_name = self.dataset_file_path.name
 
         df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col='date')
 
         if self._mode == ForecastingMode.UNIVARIATE:
             df = df.iloc[:, -1:]  # Last column for univariate
 
-        self._full_data = df
+        # Convert to numpy and persist to cache
+        data = df.to_numpy().astype(np.float32)
+        index_ns = df.index.astype(np.int64).to_numpy()
+
+        cache_dir = self._resolve_cache_dir()
+        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+        atomic_save_npz(cache_path, data=data, index=index_ns)
+
+        # Store time index for reference
+        self._time_index = pd.DatetimeIndex(df.index)
+
+        # Compute 60/20/20 splits for metadata
+        train_end = int(0.6 * len(data))
+        valid_end = int(0.8 * len(data))
+        splits = {
+            'train': [0, train_end],
+            'valid': [train_end, valid_end],
+            'test': [valid_end, len(data)],
+        }
+        n_features = data.shape[1]
+        if self.scale_data and self._time_index is not None:
+            n_features += TIME_FEATURE_COUNT
+        metadata = {
+            'version': CACHE_SCHEMA_VERSION,
+            'dataset_name': self._dataset_name,
+            'n_features': n_features,
+            'seq_len': self._seq_len,
+            'splits': splits,
+            'has_datetime_index': True,
+            'data_scaling_method': self.data_scaling_method.value,
+            'data_scaling_range': list(self.data_scaling_range),
+        }
+        atomic_save_metadata(cache_dir / f'{self._cache_key}_metadata.json', metadata)
 
     # ------------------------------------------------------------------
     # Dataloaders

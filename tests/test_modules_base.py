@@ -420,8 +420,8 @@ class TestPrepareDataWrapper:
 class TestSetupStageGating:
     """Tests for stage validation, branching, and scaler cache in setup().
 
-    Verifies D1 (signature with default None), D2 (scaler cache), and B4
-    (stage branching: fit scales all, test scales only test data,
+    Verifies setup signature with default None, scaler cache reuse, and
+    stage branching (fit scales all, test scales only test data,
     validate is no-op).
     """
 
@@ -470,10 +470,7 @@ class TestSetupStageGating:
     def test_setup_fit_then_test_reuses_scaler_cache(
         self, concrete_module_class
     ) -> None:
-        """setup('fit') creates scaler, setup('test') reuses it (create_data_scaler called once).
-
-        Verifies D2: _scaler_cache holds the fitted closure.
-        """
+        """setup('fit') creates scaler, setup('test') reuses it (create_data_scaler called once)."""
         passthrough = lambda t, v, te: (t, v, te)  # noqa: E731
         call_count = 0
 
@@ -520,3 +517,291 @@ class TestSetupStageGating:
 
         mod.setup(stage='validate')
         assert mod._train_data_samples is train
+
+
+class TestCacheInfrastructure:
+    """Tests for cache_dir param, prepare_data_per_node, typed attrs, and extended reset.
+
+    Verifies cache_dir constructor param, prepare_data_per_node = True,
+    typed attrs (_full_data_raw, _time_index, _full_data_scaled), and
+    reset clearing all cache-related attrs.
+    """
+
+    @pytest.fixture
+    def concrete_module_class(self):
+        """Create a minimal concrete subclass for testing."""
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+
+        class ConcreteTestModule(BaseTimeSeriesDataModule):
+            """Minimal concrete subclass for testing."""
+
+            def _do_prepare_data(self) -> None:
+                pass
+
+        return ConcreteTestModule
+
+    def test_cache_dir_default_none(self, concrete_module_class) -> None:
+        """Constructor accepts cache_dir=None, resolves to default ~/.cache/tsdatasets/<name>."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+            cache_dir=None,
+        )
+        mod._dataset_name = 'TestDataset'
+        cache_dir = mod._get_cache_dir()
+        assert cache_dir.parts[-2] == 'tsdatasets'
+        assert cache_dir.name == 'TestDataset'
+
+    def test_cache_dir_custom_path(self, concrete_module_class, tmp_path) -> None:
+        """Constructor accepts cache_dir=custom_path, stores resolved path."""
+        custom = tmp_path / 'my_cache'
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+            cache_dir=custom,
+        )
+        cache_dir = mod._get_cache_dir()
+        assert cache_dir == custom.resolve()
+
+    def test_prepare_data_per_node_is_true(self, concrete_module_class) -> None:
+        """Class has prepare_data_per_node = True."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        assert mod.prepare_data_per_node is True
+
+    def test_class_attribute_prepare_data_per_node(self, concrete_module_class) -> None:
+        """prepare_data_per_node is a class attribute."""
+        assert (
+            concrete_module_class.prepare_data_per_node  # type: ignore[attr-defined]
+            is True
+        )
+
+    def test_typed_attrs_initialized_none(self, concrete_module_class) -> None:
+        """Instance has _full_data_raw=None, _time_index=None, _full_data_scaled=None after init."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        assert mod._full_data_raw is None
+        assert mod._time_index is None
+        assert mod._full_data_scaled is None
+
+    def test_cache_key_attr_exists(self, concrete_module_class) -> None:
+        """Instance has _cache_key attribute initialized to None."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        assert mod._cache_key is None
+
+    def test_reset_clears_new_attrs(self, concrete_module_class) -> None:
+        """reset() clears all new attrs including cache-related state."""
+        import numpy as np
+
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        # Set attrs to non-None values
+        mod._full_data_raw = np.zeros((100, 5))
+        mod._time_index = pd.date_range('2020-01-01', periods=100, freq='h')
+        mod._full_data_scaled = np.ones((100, 5))
+        mod._data_scaler_cache = MagicMock()
+        mod._ts_feature_scaler_cache = MagicMock()
+        mod._train_data_samples = np.zeros((50, 5))
+        mod._valid_data_samples = np.zeros((25, 5))
+        mod._test_data_samples = np.zeros((25, 5))
+        mod._setup_completed_stages.add('fit')
+        mod._prepare_data_called = True
+
+        mod.reset()
+
+        assert mod._full_data_raw is None
+        assert mod._time_index is None
+        assert mod._full_data_scaled is None
+        assert mod._data_scaler_cache is None
+        assert mod._ts_feature_scaler_cache is None
+        assert mod._train_data_samples is None
+        assert mod._valid_data_samples is None
+        assert mod._test_data_samples is None
+        assert mod._setup_completed_stages == set()
+        assert mod._prepare_data_called is False
+
+    def test_reset_clears_cache_key(self, concrete_module_class) -> None:
+        """reset() clears _cache_key."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        mod._cache_key = 'test_key'
+        mod.reset()
+        assert mod._cache_key is None
+
+
+class TestPrepareDimensionsCache:
+    """Tests for prepare_dimensions() reading metadata.json.
+
+    Verifies that prepare_dimensions() reads from cache metadata when
+    _num_features is None, raises FileNotFoundError when metadata is
+    missing, and raises ValueError on version mismatch.
+    """
+
+    @pytest.fixture
+    def concrete_module_class(self):
+        """Create a minimal concrete subclass for testing."""
+        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+
+        class ConcreteTestModule(BaseTimeSeriesDataModule):
+            """Minimal concrete subclass for testing."""
+
+            def _do_prepare_data(self) -> None:
+                pass
+
+        return ConcreteTestModule
+
+    def test_short_circuit_when_num_features_set(self, concrete_module_class) -> None:
+        """prepare_dimensions() with _num_features already set returns cached values."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=128,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+        )
+        mod._num_features = 7
+        result = mod.prepare_dimensions()
+        assert result == (7, 128)
+
+    def test_reads_metadata_when_num_features_none(self, concrete_module_class, tmp_path) -> None:
+        """prepare_dimensions() with _num_features=None reads metadata.json via load_metadata."""
+        from tscollection.datasets.utils.cache import atomic_save_metadata
+
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=128,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+            cache_dir=tmp_path,
+        )
+        mod._dataset_name = 'TestDataset'
+        mod._cache_key = 'test'
+
+        # Write metadata.json in the cache dir
+        meta_path = tmp_path / f'{mod._cache_key}_metadata.json'
+        atomic_save_metadata(
+            meta_path,
+            {
+                'version': 1,
+                'dataset_name': 'TestDataset',
+                'n_features': 5,
+                'seq_len': 64,
+            },
+        )
+
+        result = mod.prepare_dimensions()
+        assert result == (5, 64)
+        assert mod._num_features == 5
+
+    def test_raises_file_not_found_when_metadata_missing(
+        self, concrete_module_class, tmp_path
+    ) -> None:
+        """prepare_dimensions() raises FileNotFoundError when metadata.json missing."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+            cache_dir=tmp_path,
+        )
+        mod._cache_key = 'test'
+        mod._dataset_name = 'TestDataset'
+
+        with pytest.raises(FileNotFoundError, match='Cache metadata not found'):
+            mod.prepare_dimensions()
+
+    def test_raises_value_error_on_version_mismatch(
+        self, concrete_module_class, tmp_path
+    ) -> None:
+        """prepare_dimensions() raises ValueError when metadata version != 1."""
+        from tscollection.datasets.utils.cache import atomic_save_metadata
+
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+            cache_dir=tmp_path,
+        )
+        mod._cache_key = 'test'
+        mod._dataset_name = 'TestDataset'
+
+        # Write metadata with wrong version
+        meta_path = tmp_path / f'{mod._cache_key}_metadata.json'
+        atomic_save_metadata(
+            meta_path,
+            {
+                'version': 2,  # Wrong version
+                'n_features': 5,
+                'seq_len': 64,
+            },
+        )
+
+        with pytest.raises(ValueError, match='Cache version'):
+            mod.prepare_dimensions()
+
+    def test_integration_with_synthetic_cache_dir(
+        self, concrete_module_class, synthetic_cache_dir
+    ) -> None:
+        """prepare_dimensions() returns (n_features, seq_len) from metadata (integration)."""
+        mod = concrete_module_class(
+            batch_size=16,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=True,
+            scale_data=False,
+            cache_dir=synthetic_cache_dir,
+        )
+        mod._cache_key = 'synthetic'
+        # Write a metadata file that matches synthetic_cache_dir content
+        from tscollection.datasets.utils.cache import load_metadata
+
+        meta = load_metadata(synthetic_cache_dir / 'metadata.json')
+        assert meta['n_features'] == 7

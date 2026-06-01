@@ -2,6 +2,7 @@
 
 Reads train/test ARFF files, applies optional manual re-splitting,
 creates a validation split, and handles variable-length series.
+Caches post-processed splits for DDP-safe setup().
 """
 
 from __future__ import annotations
@@ -9,8 +10,9 @@ from __future__ import annotations
 from collections import defaultdict
 import logging
 import re
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -25,9 +27,16 @@ from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
 from tscollection.datasets.utils.arff import process_df_according_to_dtypes, read_arff_as_df
+from tscollection.datasets.utils.cache import (
+    atomic_save_metadata,
+    atomic_save_npz,
+    build_cache_key,
+    CACHE_SCHEMA_VERSION,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Any
 
     from torch.utils.data import DataLoader
 
@@ -78,9 +87,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         scale_data: bool = True,
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
-        splitting_strategy: ClassificationSplitMode = (
-            ClassificationSplitMode.AS_DEFINED
-        ),
+        splitting_strategy: ClassificationSplitMode = (ClassificationSplitMode.AS_DEFINED),
         test_size: float = 0.5,
         num_workers: int = 0,
     ) -> None:
@@ -97,6 +104,16 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             test_size=test_size,
             num_workers=num_workers,
             data_form=DataForm.REGULAR,
+        )
+        self._dataset_name = dataset_folder_path.name
+        self._cache_key = build_cache_key(
+            dataset_name=dataset_folder_path.name,
+            params={
+                'splitting_strategy': splitting_strategy.value,
+                'test_size': test_size,
+                'valid_size': valid_size,
+                'data_scaling_method': data_scaling_method.value,
+            },
         )
 
     def _initiate_datatypes_handling_functions_map(self) -> None:
@@ -149,19 +166,17 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     def _do_prepare_data(self) -> None:
-        """Validate paths, read ARFF files, split, and prepare data.
+        """Validate paths, read ARFF files, split, and cache data.
 
         Raises ``FileNotFoundError`` if the dataset folder
         does not exist. Reads train/test ARFF files, applies optional
-        manual re-splitting, creates validation split, and processes
-        variable-length sequences.
+        manual re-splitting, creates validation split, processes
+        variable-length sequences, and writes cache (npz + metadata.json).
         """
         # Validate folder exists
         if not self.dataset_folder_path.exists():
             msg = f'Dataset folder not found: {self.dataset_folder_path}'
             raise FileNotFoundError(msg)
-
-        self._dataset_name = self.dataset_folder_path.name
 
         # Construct ARFF paths
         arff_train = self.dataset_folder_path / f'{self._dataset_name}_TRAIN.arff'
@@ -221,23 +236,93 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                     r' number of classes = \d+'
                 )
                 if re.match(pattern, str(e)):
-                    test_size = len(set(y_filt))
+                    num_classes = len(set(y_filt))
                     (
                         self._train_data_samples,
                         self._valid_data_samples,
                         self._train_data_labels,
                         self._valid_data_labels,
                     ) = train_test_split(
-                        x_filt, y_filt, test_size=test_size, stratify=y_filt, random_state=42
+                        x_filt, y_filt, test_size=num_classes, stratify=y_filt, random_state=42
                     )
                     logger.warning(
                         "Validation size adjusted to %d for dataset '%s' to cover all classes",
-                        test_size,
+                        num_classes,
                         self._dataset_name,
                     )
 
         # Variable-length processing
         self._process_data_with_varying_sequence_lengths()
+
+        # Write cache
+        cache_dir = self._get_cache_dir()
+        cache_path = cache_dir / f'{self._cache_key}.npz'
+
+        train_samples_arr = (
+            self._train_data_samples.to_numpy()
+            if isinstance(self._train_data_samples, pd.DataFrame)
+            else self._train_data_samples
+        )
+        test_samples_arr = (
+            self._test_data_samples.to_numpy()
+            if isinstance(self._test_data_samples, pd.DataFrame)
+            else self._test_data_samples
+        )
+        if self._valid_data_samples is not None and isinstance(
+            self._valid_data_samples, pd.DataFrame
+        ):
+            valid_samples_arr = self._valid_data_samples.to_numpy()
+        elif self._valid_data_samples is not None:
+            valid_samples_arr = self._valid_data_samples
+        else:
+            valid_samples_arr = np.empty((0,))
+
+        atomic_save_npz(
+            path=cache_path,
+            train_samples=train_samples_arr,
+            train_labels=self._train_data_labels.to_numpy(),
+            test_samples=test_samples_arr,
+            test_labels=self._test_data_labels.to_numpy(),
+            valid_samples=valid_samples_arr,
+            valid_labels=self._valid_data_labels.to_numpy()
+            if self._valid_data_labels is not None
+            else np.empty((0,), dtype=self._train_data_labels.to_numpy().dtype),
+        )
+
+        atomic_save_metadata(
+            path=cache_dir / f'{self._cache_key}_metadata.json',
+            data={
+                'version': CACHE_SCHEMA_VERSION,
+                'dataset_name': self._dataset_name,
+                'n_features': self._num_features,
+                'seq_len': self._seq_len,
+                'has_datetime_index': False,
+                'data_scaling_method': self.data_scaling_method.value,
+                'data_scaling_range': self.data_scaling_range,
+            },
+        )
+
+    def _load_cached_data(self) -> None:
+        """Load cached data splits from the npz cache file."""
+        if self._train_data_samples is not None:
+            return
+
+        cache_dir = self._get_cache_dir()
+        cache_path = cache_dir / f'{self._cache_key}.npz'
+        loaded = np.load(str(cache_path))
+
+        self._train_data_samples = pd.DataFrame(loaded['train_samples'])
+        self._train_data_labels = pd.Series(loaded['train_labels'], dtype='category')
+        self._test_data_samples = pd.DataFrame(loaded['test_samples'])
+        self._test_data_labels = pd.Series(loaded['test_labels'], dtype='category')
+
+        valid_samples = loaded['valid_samples']
+        if valid_samples.size > 0:
+            self._valid_data_samples = pd.DataFrame(valid_samples)
+            self._valid_data_labels = pd.Series(loaded['valid_labels'], dtype='category')
+        else:
+            self._valid_data_samples = None
+            self._valid_data_labels = None
 
     # ------------------------------------------------------------------
     # Dataloaders
