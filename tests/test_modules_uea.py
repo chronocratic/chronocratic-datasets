@@ -15,10 +15,10 @@ from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 
 from tscollection.datasets.enums.data import (
+    ClassificationLoaderMode,
     ClassificationSplitMode,
     DataForm,
     ScalingMethod,
-    TimeSeriesDatasetMode,
 )
 
 
@@ -217,7 +217,7 @@ class TestUEADataLoaders:
         module.prepare_data()
         module.setup('fit')
 
-        loader = module.train_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
+        loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
         assert isinstance(loader, DataLoader)
 
     @patch(
@@ -237,7 +237,7 @@ class TestUEADataLoaders:
             scale_data=False,
         )
         module.prepare_data()
-        result = module.val_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
+        result = module.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
         assert result is None
 
     @patch(
@@ -256,7 +256,7 @@ class TestUEADataLoaders:
         module.prepare_data()
         module.setup('fit')
 
-        loader = module.test_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
+        loader = module.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
         assert isinstance(loader, DataLoader)
 
 
@@ -345,9 +345,7 @@ def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     ):
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            scale_data=False,
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
         )
         module.prepare_data()
 
