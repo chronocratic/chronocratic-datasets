@@ -14,10 +14,9 @@ from tscollection.datasets.datatypes._base.flexible import (
     FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
 )
 from tscollection.datasets.datatypes._base.strategies import (
-    ClassificationStrategySingleFile,
     ForecastingStrategySingleFile,
 )
-from tscollection.datasets.enums import TimeSeriesDatasetMode
+from tscollection.datasets.enums import TimeSeriesDatasetMode  # noqa: TC001 — used at runtime
 from tscollection.datasets.utils.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:
@@ -61,19 +60,18 @@ class ElectricityDataset(FlexibleTimeSeriesDatasetSingleFileMultipleSeries):
             msg = f'forecast_horizon must be positive, got {forecast_horizon}'
             raise ValueError(msg)
 
-        strategy = (
-            ForecastingStrategySingleFile(forecast_horizon=forecast_horizon)
-            if mode == TimeSeriesDatasetMode.INPUT_OUTPUT
-            else ClassificationStrategySingleFile()
-        )
-
+        # Always use ForecastingStrategySingleFile for window counting.
+        # Mode controls output shape but sequence count depends on
+        # forecast_horizon in all cases.
         super().__init__(
             data=data,
             labels=None,
             seq_len=seq_len,
             step=step,
             mode=mode,
-            sequence_handling_strategy=strategy,
+            sequence_handling_strategy=ForecastingStrategySingleFile(
+                forecast_horizon=forecast_horizon
+            ),
             expand_dims_axis=None,
             transformations_sequence=transformations_sequence,
         )
