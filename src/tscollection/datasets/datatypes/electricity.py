@@ -11,6 +11,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import numpy as np
 
     from tscollection.datasets.enums import TimeSeriesDatasetMode
@@ -18,9 +20,7 @@ if TYPE_CHECKING:
 from tscollection.datasets.datatypes._base.flexible import (
     FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
 )
-from tscollection.datasets.datatypes._base.strategies import (
-    ForecastingStrategySingleFile,
-)
+from tscollection.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
 from tscollection.datasets.utils.transformations import convert_numpy_to_tensor
 
 __all__ = ['ElectricityDataset']
@@ -55,7 +55,7 @@ class ElectricityDataset(FlexibleTimeSeriesDatasetSingleFileMultipleSeries):
         step: int,
         mode: TimeSeriesDatasetMode,
         forecast_horizon: int,
-        transformations_sequence: tuple = (convert_numpy_to_tensor,),
+        transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
     ) -> None:
         if forecast_horizon <= 0:
             msg = f'forecast_horizon must be positive, got {forecast_horizon}'
