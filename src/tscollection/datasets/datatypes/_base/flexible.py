@@ -34,6 +34,8 @@ __all__ = [
     'FlexibleTimeSeriesDatasetSingleFileMultipleSeries',
 ]
 
+_EXPECTED_DIM = 3
+
 
 class FlexibleTimeSeriesDataset(TimeSeriesDataset, ABC):
     """Abstract base for sliding-window datasets (forecasting).
@@ -267,7 +269,7 @@ class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDatase
             convert_numpy_to_tensor,
         ),
     ) -> None:
-        if data.ndim != 3:
+        if data.ndim != _EXPECTED_DIM:
             msg = (
                 f'Expected 3D array (num_series, T, features), '
                 f'got {data.ndim}D with shape {data.shape}'
