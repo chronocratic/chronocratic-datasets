@@ -14,7 +14,7 @@ from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from tscollection.datasets.enums.data import (
     ForecastingLoaderMode,
@@ -153,10 +153,10 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     def _build_sliding_dataset(
         self,
         data: np.ndarray,
-        internal_mode: TimeSeriesDatasetMode | None,
+        internal_mode: TimeSeriesDatasetMode,  # noqa: ARG002 — ETTDataset hardcodes mode internally
         step: int,
         horizon: int,
-    ):
+    ) -> Dataset:
         """Build sliding-window dataset for ETT.
 
         ETT data shape: (1, T, F) post-transform. Squeeze axis 0 to
@@ -170,14 +170,13 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         """
         from tscollection.datasets.datatypes.ett import ETTDataset
 
+        assert self._seq_len is not None
         squeezed = data.squeeze(axis=0)  # (1, T, F) -> (T, F)
-        mode_param = internal_mode.value if internal_mode else 'sample_only'
         return ETTDataset(
             data=squeezed,
             seq_len=self._seq_len,
             step=step,
             forecast_horizon=horizon,
-            mode=mode_param,
         )
 
     # ------------------------------------------------------------------
@@ -218,6 +217,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
         # Compute variant-based splits for metadata
         self._set_data_slices()
+        assert self._train_slice is not None
+        assert self._valid_slice is not None
+        assert self._test_slice is not None
         splits = {
             'train': [self._train_slice.start, self._train_slice.stop],
             'valid': [self._valid_slice.start, self._valid_slice.stop],
@@ -258,11 +260,14 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
                 RAW_SERIES yields full series (existing behavior).
                 INPUT_TARGET yields (input, target) sliding-window pairs.
                 INPUT_ONLY yields input windows without targets.
+            shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
+            strict_batch_size: If True, pad the last batch.
+            extra_args: Additional keyword arguments for DataLoader.
 
         Returns:
             Configured DataLoader for training.
         """
-        return self._build_dataloader(
+        result = self._build_dataloader(
             data_partition=self._train_data_samples,
             dataloader_fn=self._process_train_dataloader,
             loader_mode=loader_mode,
@@ -270,6 +275,8 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
+        assert result is not None  # train_dataloader always returns a DataLoader
+        return result
 
     def val_dataloader(
         self,
@@ -305,10 +312,12 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         Returns:
             Configured DataLoader for testing.
         """
-        return self._build_dataloader(
+        result = self._build_dataloader(
             data_partition=self._test_data_samples,
             dataloader_fn=self._process_test_dataloader,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
+        assert result is not None  # test_dataloader always returns a DataLoader
+        return result

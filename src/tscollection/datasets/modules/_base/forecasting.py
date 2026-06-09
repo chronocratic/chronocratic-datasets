@@ -12,9 +12,10 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
-    from torch.utils.data import Dataset
+    from torch.utils.data import DataLoader, Dataset
 
 import numpy as np
 import pandas as pd
@@ -24,6 +25,7 @@ from tscollection.datasets.enums.data import (
     ForecastingLoaderMode,
     ForecastingMode,
     ScalingMethod,
+    TimeSeriesDatasetMode,
 )
 from tscollection.datasets.maps.loader_to_dataset import FORECASTING_LOADER_MAP
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
@@ -211,16 +213,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
     @abstractmethod
     def _build_sliding_dataset(
-        self,
-        data: np.ndarray,
-        internal_mode,  # TimeSeriesDatasetMode | None
-        step: int,
-        horizon: int,
+        self, data: np.ndarray, internal_mode: TimeSeriesDatasetMode, step: int, horizon: int
     ) -> Dataset:
         """Build sliding-window dataset for INPUT_TARGET / INPUT_ONLY modes.
 
         Called by ``_build_dataloader()`` when the per-call ``loader_mode``
-        is ``INPUT_TARGET`` or ``INPUT_ONLY``.
+        is ``INPUT_TARGET`` or ``INPUT_ONLY``. At this point, ``internal_mode``
+        is guaranteed to be non-None.
 
         For (1, T, F) data, squeeze axis 0 to get (T, F) before passing
         to the dataset class. For (S, T, F) data (multi-series),
@@ -233,9 +232,10 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         Args:
             data: Partition data array (post-transform, 3D).
             internal_mode: Mapped dataset mode from
-                ``FORECASTING_LOADER_MAP``. ``None`` for ``RAW_SERIES``.
+                ``FORECASTING_LOADER_MAP``. Never ``None`` — ``RAW_SERIES``
+                path returns before this method is called.
             step: Stride between consecutive windows.
-            horizon: Forecast horizon for label extraction.
+            horizon: Forecast horizon for label extraction. Must be > 0.
 
         Returns:
             Dataset instance yielding (input, target) or (input,) pairs.
@@ -468,13 +468,14 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
     def _build_dataloader(
         self,
-        data_partition: np.ndarray,
-        dataloader_fn,
+        *,
+        data_partition: np.ndarray | pd.DataFrame | None,
+        dataloader_fn: Callable[..., DataLoader | None],
         loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
-    ):
+    ) -> DataLoader | None:
         """Build a dataloader with mode-based dispatch.
 
         Routes to ``TensorDataset`` for ``RAW_SERIES`` mode or calls
@@ -492,32 +493,55 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
         Returns:
             DataLoader (or None for validation with valid_size=0).
+
+        Raises:
+            ValueError: If sliding-window mode is used but
+                ``forecast_horizon`` is not set.
+            ValueError: If ``seq_len + forecast_horizon`` exceeds
+                the partition length.
         """
         import torch
         from torch.utils.data import TensorDataset
 
-        internal_mode = FORECASTING_LOADER_MAP[loader_mode]
+        # Type narrowing: forecasting modules always set *_data_samples to np.ndarray
+        # after setup(). Assert at runtime to satisfy static analysis.
+        assert isinstance(data_partition, np.ndarray)
 
-        if internal_mode is None:
-            # RAW_SERIES: existing behavior — TensorDataset on raw samples
+        if loader_mode == ForecastingLoaderMode.RAW_SERIES:
+            # TensorDataset on raw samples
             tensor = torch.from_numpy(data_partition).to(torch.float32)
             kwargs: dict[str, object] = {
                 'dataset_object': TensorDataset(tensor),
                 'strict_batch_size': strict_batch_size,
+                'extra_args': extra_args,
             }
             if shuffle is not None:
                 kwargs['shuffle'] = shuffle
-            if extra_args is not None:
-                kwargs['extra_args'] = extra_args
             return dataloader_fn(**kwargs)
 
         # Sliding-window modes: INPUT_TARGET or INPUT_ONLY
-        step = self._step if self._step is not None else self._seq_len
-        horizon = self.forecast_horizon if self.forecast_horizon is not None else 0
 
-        # Validate partition length (D-12)
+        # Validate forecast_horizon is set
+        if self.forecast_horizon is None:
+            msg = (
+                f'loader_mode={loader_mode.value!r} requires forecast_horizon '
+                f'to be set on the datamodule constructor.'
+            )
+            raise ValueError(msg)
+
+        # Resolve step with fallback to seq_len
+        step = self._step
+        if step is None:
+            if self._seq_len is None:
+                msg = 'step and seq_len are both None; cannot build sliding-window dataset'
+                raise ValueError(msg)
+            step = self._seq_len
+
+        horizon = self.forecast_horizon
+
+        # Validate partition length
         partition_length = data_partition.shape[1]
-        if self._seq_len + horizon > partition_length:
+        if self._seq_len is not None and self._seq_len + horizon > partition_length:
             msg = (
                 f'seq_len ({self._seq_len}) + forecast_horizon ({horizon}) '
                 f'exceeds partition length ({partition_length}). '
@@ -525,20 +549,26 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             )
             raise ValueError(msg)
 
+        # Translate loader mode → dataset mode via map
+        internal_mode = FORECASTING_LOADER_MAP[loader_mode]
+        if internal_mode is None:
+            msg = (
+                f'FORECASTING_LOADER_MAP returned None for {loader_mode.value!r}. '
+                f'This loader_mode should not reach the sliding-window path.'
+            )
+            raise RuntimeError(msg)
+
         dataset = self._build_sliding_dataset(
-            data=data_partition,
-            internal_mode=internal_mode,
-            step=step,
-            horizon=horizon,
+            data=data_partition, internal_mode=internal_mode, step=step, horizon=horizon
         )
 
-        # D-17: forecasting sliding-window uses strict_batch_size=False
         kwargs = {
             'dataset_object': dataset,
-            'strict_batch_size': False,
+            'strict_batch_size': strict_batch_size,
+            'extra_args': extra_args,
         }
-        if extra_args is not None:
-            kwargs['extra_args'] = extra_args
+        if shuffle is not None:
+            kwargs['shuffle'] = shuffle
         return dataloader_fn(**kwargs)
 
     def _prepare_data_scaler(self) -> MinMaxScaler | StandardScaler:

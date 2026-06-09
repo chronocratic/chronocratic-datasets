@@ -12,7 +12,7 @@ from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from tscollection.datasets.enums.data import (
     ForecastingLoaderMode,
@@ -134,10 +134,10 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
     def _build_sliding_dataset(
         self,
         data: np.ndarray,
-        internal_mode: TimeSeriesDatasetMode | None,
+        internal_mode: TimeSeriesDatasetMode,
         step: int,
         horizon: int,
-    ):
+    ) -> Dataset:
         """Build sliding-window dataset for Weather.
 
         Weather data shape: (1, T, 22) post-transform. Squeeze axis 0
@@ -151,8 +151,9 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         """
         from tscollection.datasets.datatypes.weather import WeatherDataset
 
+        assert self._seq_len is not None
         squeezed = data.squeeze(axis=0)
-        mode_param = internal_mode.value if internal_mode else 'sample_only'
+        mode_param = internal_mode.value
         return WeatherDataset(
             data=squeezed,
             seq_len=self._seq_len,
@@ -239,11 +240,14 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
                 RAW_SERIES yields full series (existing behavior).
                 INPUT_TARGET yields (input, target) sliding-window pairs.
                 INPUT_ONLY yields input windows without targets.
+            shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
+            strict_batch_size: If True, pad the last batch.
+            extra_args: Additional keyword arguments for DataLoader.
 
         Returns:
             Configured DataLoader for training.
         """
-        return self._build_dataloader(
+        result = self._build_dataloader(
             data_partition=self._train_data_samples,
             dataloader_fn=self._process_train_dataloader,
             loader_mode=loader_mode,
@@ -251,6 +255,8 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
+        assert result is not None  # train_dataloader always returns a DataLoader
+        return result
 
     def val_dataloader(
         self,
@@ -276,13 +282,15 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader."""
-        return self._build_dataloader(
+        result = self._build_dataloader(
             data_partition=self._test_data_samples,
             dataloader_fn=self._process_test_dataloader,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
+        assert result is not None  # test_dataloader always returns a DataLoader
+        return result
 
 
 # Backward-compatible alias
