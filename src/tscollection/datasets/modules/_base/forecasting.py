@@ -353,16 +353,11 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                 elif self._train_data_samples is not None:
                     pass
                 else:
-                    logger.warning(
+                    msg = (
                         'scale_data=True but no fitted scaler cache available. '
-                        'Data will not be scaled. Call setup(stage="fit") first or '
-                        'provide a pre-fitted _data_scaler_cache.'
+                        'Call setup(stage="fit") first or provide a pre-fitted _data_scaler_cache.'
                     )
-                    self._scaling_done = True
-                    self._full_data_scaled = full_array.copy()
-                    self._transform_data()
-                    self._calculate_num_features()
-                    self._split_data()
+                    raise RuntimeError(msg)
         else:
             self._full_data_scaled = full_array.copy()
             self._scaling_done = True
