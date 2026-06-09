@@ -470,8 +470,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         from torch.utils.data import TensorDataset
 
         # Type narrowing: forecasting modules always set *_data_samples to np.ndarray
-        # after setup(). Assert at runtime to satisfy static analysis.
-        assert isinstance(data_partition, np.ndarray)
+        # after setup(). Check at runtime to satisfy static analysis.
+        if not isinstance(data_partition, np.ndarray):
+            msg = (
+                f'data_partition must be np.ndarray, got {type(data_partition).__name__}. '
+                'Call setup() first.'
+            )
+            raise TypeError(msg)
 
         if loader_mode == ForecastingLoaderMode.RAW_SERIES:
             # TensorDataset on raw samples
