@@ -53,7 +53,7 @@ class ElectricityDataset(FlexibleTimeSeriesDatasetSingleFileMultipleSeries):
         data: np.ndarray,
         seq_len: int,
         step: int,
-        mode: str,
+        mode: TimeSeriesDatasetMode,
         forecast_horizon: int,
         transformations_sequence: tuple = (convert_numpy_to_tensor,),
     ) -> None:
@@ -61,15 +61,9 @@ class ElectricityDataset(FlexibleTimeSeriesDatasetSingleFileMultipleSeries):
             msg = f'forecast_horizon must be positive, got {forecast_horizon}'
             raise ValueError(msg)
 
-        ts_mode = (
-            TimeSeriesDatasetMode(mode)
-            if isinstance(mode, str)
-            else mode
-        )
-
         strategy = (
             ForecastingStrategySingleFile(forecast_horizon=forecast_horizon)
-            if ts_mode == TimeSeriesDatasetMode.INPUT_OUTPUT
+            if mode == TimeSeriesDatasetMode.INPUT_OUTPUT
             else ClassificationStrategySingleFile()
         )
 
@@ -78,7 +72,7 @@ class ElectricityDataset(FlexibleTimeSeriesDatasetSingleFileMultipleSeries):
             labels=None,
             seq_len=seq_len,
             step=step,
-            mode=ts_mode,
+            mode=mode,
             sequence_handling_strategy=strategy,
             expand_dims_axis=None,
             transformations_sequence=transformations_sequence,

@@ -153,12 +153,11 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         from tscollection.datasets.datatypes.electricity import ElectricityDataset
 
         assert self._seq_len is not None
-        mode_param = internal_mode.value
         return ElectricityDataset(
             data=data,
             seq_len=self._seq_len,
             step=step,
-            mode=mode_param,
+            mode=internal_mode,
             forecast_horizon=horizon,
         )
 

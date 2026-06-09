@@ -153,12 +153,11 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
 
         assert self._seq_len is not None
         squeezed = data.squeeze(axis=0)
-        mode_param = internal_mode.value
         return WeatherDataset(
             data=squeezed,
             seq_len=self._seq_len,
             step=step,
-            mode=mode_param,
+            mode=internal_mode,
             forecast_horizon=horizon,
         )
 
