@@ -140,7 +140,7 @@ class TestUEAProcessStackedData:
 
         assert isinstance(samples, np.ndarray)
         assert isinstance(labels, np.ndarray)
-        # Shape after swapaxes(1,2): (samples, features, timesteps) -> (samples, timesteps, features)
+        # Shape: (samples, features, timesteps) -> (samples, timesteps, features)
         assert samples.shape[0] == 2
 
     def test_process_stacked_data_decodes_bytes(self, synthetic_uea_folder: Path) -> None:
