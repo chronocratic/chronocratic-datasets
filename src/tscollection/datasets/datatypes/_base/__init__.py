@@ -10,6 +10,7 @@ from tscollection.datasets.datatypes._base.flexible import (
     FlexibleTimeSeriesDataset,
     FlexibleTimeSeriesDatasetMultipleFiles,
     FlexibleTimeSeriesDatasetSingleFile,
+    FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
 )
 from tscollection.datasets.datatypes._base.strategies import (
     ClassificationStrategyMultipleFiles,
@@ -29,6 +30,7 @@ __all__ = [
     'FlexibleTimeSeriesDataset',
     'FlexibleTimeSeriesDatasetMultipleFiles',
     'FlexibleTimeSeriesDatasetSingleFile',
+    'FlexibleTimeSeriesDatasetSingleFileMultipleSeries',
     'ForecastingStrategySingleFile',
     'SequenceHandlingStrategy',
     'SequenceHandlingStrategyMultipleFiles',

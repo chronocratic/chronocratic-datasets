@@ -31,6 +31,7 @@ __all__ = [
     'FlexibleTimeSeriesDataset',
     'FlexibleTimeSeriesDatasetMultipleFiles',
     'FlexibleTimeSeriesDatasetSingleFile',
+    'FlexibleTimeSeriesDatasetSingleFileMultipleSeries',
 ]
 
 
@@ -231,3 +232,93 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
 
     def _get_current_data(self) -> np.ndarray:
         return self._data[self._current_file][self._n : self._n + self._seq_len]
+
+
+class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDataset):
+    """Sliding-window dataset for a single file containing multiple series.
+
+    Handles 3D input arrays of shape (num_series, T, features) where each
+    series is an independent time series. Uses ``bisect`` + ``accumulate``
+    to map a global index to (series_index, window_index).
+
+    Args:
+        data: 3-D numpy array of shape (num_series, T, features).
+        labels: Optional label array.
+        seq_len: Window length.
+        step: Step between windows.
+        mode: Dataset mode.
+        sequence_handling_strategy: Single-file label strategy.
+        expand_dims_axis: Dimension to expand.
+        transformations_sequence: Post-processing callables.
+    """
+
+    _data: np.ndarray
+
+    def __init__(
+        self,
+        data: np.ndarray,
+        labels: np.ndarray | None,
+        seq_len: int,
+        step: int,
+        mode: TimeSeriesDatasetMode,
+        sequence_handling_strategy: SequenceHandlingStrategySingleFile,
+        expand_dims_axis: int | None = None,
+        transformations_sequence: list[Callable] | tuple[Callable, ...] | None = (
+            convert_numpy_to_tensor,
+        ),
+    ) -> None:
+        # Pre-compute per-series window counts before super().__init__() because
+        # the parent calls _get_num_sequences() during initialization
+        self._num_series = data.shape[0]
+        self._num_sequences_per_series: list[int] = []
+        for s in range(self._num_series):
+            count = sequence_handling_strategy.get_num_sequences(
+                data=data[s], seq_len=seq_len, step=step
+            )
+            self._num_sequences_per_series.append(count)
+        self._accumulated_sequences = list(accumulate(self._num_sequences_per_series))
+
+        super().__init__(
+            data=data,
+            labels=labels,
+            seq_len=seq_len,
+            step=step,
+            mode=mode,
+            sequence_handling_strategy=sequence_handling_strategy,
+            expand_dims_axis=expand_dims_axis,
+            transformations_sequence=transformations_sequence,
+        )
+
+    def _get_num_sequences(self) -> int:
+        """Return total windows across all series."""
+        return self._accumulated_sequences[-1] if self._accumulated_sequences else 0
+
+    def _go_to_idx(self, idx: int) -> None:
+        """Map global index to (series, window) position."""
+        if idx < 0:
+            idx = len(self) + idx
+        if idx < 0 or idx >= len(self):
+            msg = 'Index out of range'
+            raise IndexError(msg)
+        series_num = bisect(self._accumulated_sequences, idx)
+        self._current_series = series_num
+        self._n = (
+            idx - self._accumulated_sequences[series_num - 1]
+            if series_num != 0
+            else idx
+        )
+
+    def _get_current_data(self) -> np.ndarray:
+        """Return data window for current series position."""
+        series_data = self._data[self._current_series]
+        return series_data[self._n : self._n + self._seq_len]
+
+    def _get_current_label(self) -> np.ndarray | None:
+        """Return label for current series window."""
+        series_data = self._data[self._current_series]
+        return self._sequence_handling_strategy.get_current_label(
+            data=series_data,
+            labels=self._labels,
+            n=self._n,
+            seq_len=self._seq_len,
+        )
