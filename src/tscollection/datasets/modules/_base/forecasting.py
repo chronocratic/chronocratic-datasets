@@ -357,6 +357,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                     self._calculate_num_features()
                     self._split_data()
                 elif self._train_data_samples is not None:
+                    # Data already populated (e.g., by subclass prepare_data). Skip scaling.
                     pass
                 else:
                     msg = (
