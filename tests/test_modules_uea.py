@@ -177,7 +177,11 @@ class TestUEAPrepareData:
         'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
-    def test_prepare_data_loads_data(self, mock_read, synthetic_uea_folder: Path) -> None:
+    def test_prepare_data_loads_data(
+        self,
+        _mock_read,
+        synthetic_uea_folder: Path,  # noqa: ARG002
+    ) -> None:
         """prepare_data loads train/test data and sets module state."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
@@ -206,7 +210,9 @@ class TestUEADataLoaders:
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_train_dataloader_returns_dataloader(
-        self, mock_read, synthetic_uea_folder: Path
+        self,
+        _mock_read,
+        synthetic_uea_folder: Path,  # noqa: ARG002
     ) -> None:
         """train_dataloader returns a DataLoader instance."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
@@ -225,7 +231,9 @@ class TestUEADataLoaders:
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_val_dataloader_returns_dataloader_or_none(
-        self, mock_read, synthetic_uea_folder: Path
+        self,
+        _mock_read,
+        synthetic_uea_folder: Path,  # noqa: ARG002
     ) -> None:
         """val_dataloader returns None when valid_size=0."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
@@ -245,7 +253,9 @@ class TestUEADataLoaders:
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_test_dataloader_returns_dataloader(
-        self, mock_read, synthetic_uea_folder: Path
+        self,
+        _mock_read,
+        synthetic_uea_folder: Path,  # noqa: ARG002
     ) -> None:
         """test_dataloader returns a DataLoader instance."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
