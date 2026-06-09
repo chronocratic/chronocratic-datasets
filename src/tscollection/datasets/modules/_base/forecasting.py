@@ -109,6 +109,12 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
         )
+        if scale_data and data_scaling_method == ScalingMethod.NONE:
+            msg = (
+                'scale_data=True is incompatible with ScalingMethod.NONE. '
+                'Use scale_data=False instead.'
+            )
+            raise ValueError(msg)
         self._mode = mode
         self.forecast_horizon = forecast_horizon
         self._step = step
