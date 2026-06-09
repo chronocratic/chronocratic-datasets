@@ -139,9 +139,7 @@ class TestBaseForecastingTimeSeriesDataModule:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(
@@ -175,9 +173,7 @@ class TestBaseForecastingTimeSeriesDataModule:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(
@@ -196,7 +192,7 @@ class TestBaseForecastingTimeSeriesDataModule:
         assert isinstance(scaler, StandardScaler)
 
     def test_prepare_data_scaler_invalid_raises(self) -> None:
-        """_prepare_data_scaler raises ValueError for unsupported method."""
+        """__init__ raises ValueError for scale_data=True with ScalingMethod.NONE."""
         from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
@@ -211,25 +207,24 @@ class TestBaseForecastingTimeSeriesDataModule:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
-        mod = ConcreteForecasting(
-            batch_size=32,
-            seq_len=128,
-            valid_size=0.1,
-            test_size=0.5,
-            shuffle=False,
-            scale_data=True,
-            data_scaling_method=ScalingMethod.NONE,
-            data_scaling_range=(0, 1),
-            num_workers=0,
-            mode=ForecastingMode.UNIVARIATE,
-        )
-        with pytest.raises(ValueError):
-            mod._prepare_data_scaler()
+        with pytest.raises(
+            ValueError, match='scale_data=True is incompatible with ScalingMethod.NONE'
+        ):
+            ConcreteForecasting(
+                batch_size=32,
+                seq_len=128,
+                valid_size=0.1,
+                test_size=0.5,
+                shuffle=False,
+                scale_data=True,
+                data_scaling_method=ScalingMethod.NONE,
+                data_scaling_range=(0, 1),
+                num_workers=0,
+                mode=ForecastingMode.UNIVARIATE,
+            )
 
 
 class TestPrepareDimensions:
@@ -307,9 +302,7 @@ class TestPrepareDimensions:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         module = ConcreteForecasting(
@@ -347,9 +340,7 @@ class TestPrepareDimensions:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         module = ConcreteForecasting(
@@ -385,9 +376,7 @@ class TestPrepareDimensions:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         module = ConcreteForecasting(
@@ -432,9 +421,7 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(
@@ -472,9 +459,7 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(
@@ -511,9 +496,7 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(
@@ -545,15 +528,9 @@ class TestForecastingTypedAttrs:
             BaseForecastingTimeSeriesDataModule,
         )
 
-        assert hasattr(
-            BaseForecastingTimeSeriesDataModule, '_resolve_cache_dir'
-        )
-        assert hasattr(
-            BaseForecastingTimeSeriesDataModule, '_save_scaler_to_cache'
-        )
-        assert hasattr(
-            BaseForecastingTimeSeriesDataModule, '_load_scaler_from_cache'
-        )
+        assert hasattr(BaseForecastingTimeSeriesDataModule, '_resolve_cache_dir')
+        assert hasattr(BaseForecastingTimeSeriesDataModule, '_save_scaler_to_cache')
+        assert hasattr(BaseForecastingTimeSeriesDataModule, '_load_scaler_from_cache')
 
     def test_resolve_cache_dir_returns_path(self) -> None:
         """_resolve_cache_dir returns a Path object."""
@@ -571,9 +548,7 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(
@@ -609,9 +584,7 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(
