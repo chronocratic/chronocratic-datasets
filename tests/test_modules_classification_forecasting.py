@@ -26,7 +26,7 @@ class TestBaseClassificationTimeSeriesDataModule:
         return BaseClassificationTimeSeriesDataModule
 
     def test_is_subclass_of_base_and_abc(self, module_class: type) -> None:
-        """BaseClassificationTimeSeriesDataModule is subclass of BaseTimeSeriesDataModule and ABC."""
+        """BaseClassificationTimeSeriesDataModule inherits from base and ABC."""
         assert issubclass(module_class, BaseTimeSeriesDataModule)
         assert issubclass(module_class, ABC)
 
@@ -211,7 +211,7 @@ class TestBaseForecastingTimeSeriesDataModule:
                 raise NotImplementedError
 
         with pytest.raises(
-            ValueError, match='scale_data=True is incompatible with ScalingMethod.NONE'
+            ValueError, match=r'scale_data=True is incompatible with ScalingMethod\.NONE'
         ):
             ConcreteForecasting(
                 batch_size=32,
@@ -252,7 +252,7 @@ class TestPrepareDimensions:
         assert len(result) == 2
 
     def test_classification_raises_without_prepare_data(self) -> None:
-        """Classification _compute_dimensions raises RuntimeError when _train_data_samples is None."""
+        """Classification _compute_dimensions raises RuntimeError without prepare_data."""
         from tscollection.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
