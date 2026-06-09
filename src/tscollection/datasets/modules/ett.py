@@ -17,6 +17,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 from tscollection.datasets.enums.data import (
+    DataPartition,
     ForecastingLoaderMode,
     ForecastingMode,
     ScalingMethod,
@@ -48,6 +49,21 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
     Accepts explicit ``variant`` parameter rather than
     auto-detecting from the filename.
+
+    .. rubric:: Data shape reference
+
+    ETT is a single multivariate time series. Raw CSV shape varies by
+    variant: ETTh1/ETTh2 have 7 features, ETTm1/ETTm2 have 7 features.
+
+    ==================  =================  ==================  ==================
+    Variant             Raw CSV Shape      Post-Transform      Notes
+    ==================  =================  ==================  ==================
+    ETTh1, ETTh2        (17420, 7)         (1, 17420, 7)       Hourly, 12 months
+    ETTm1, ETTm2        (69680, 7)         (1, 69680, 7)       15-min, 12 months
+    ==================  =================  ==================  ==================
+
+    For univariate mode, only the ``OT`` column is retained (shape
+    becomes ``(1, T, 2)`` after adding time features).
 
     Args:
         dataset_file_path: Path to the CSV file.
@@ -269,13 +285,13 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         """
         result = self._build_dataloader(
             data_partition=self._train_data_samples,
-            dataloader_fn=self._process_train_dataloader,
+            partition=DataPartition.TRAIN,
             loader_mode=loader_mode,
             shuffle=shuffle,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
-        assert result is not None  # train_dataloader always returns a DataLoader
+        assert result is not None  # _process_train_dataloader always returns DataLoader
         return result
 
     def val_dataloader(
@@ -294,7 +310,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         """
         return self._build_dataloader(
             data_partition=self._valid_data_samples,
-            dataloader_fn=self._process_valid_dataloader,
+            partition=DataPartition.VAL,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
@@ -314,10 +330,10 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         """
         result = self._build_dataloader(
             data_partition=self._test_data_samples,
-            dataloader_fn=self._process_test_dataloader,
+            partition=DataPartition.TEST,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
-        assert result is not None  # test_dataloader always returns a DataLoader
+        assert result is not None  # _process_test_dataloader always returns DataLoader
         return result

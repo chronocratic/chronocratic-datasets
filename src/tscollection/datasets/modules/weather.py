@@ -15,6 +15,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 from tscollection.datasets.enums.data import (
+    DataPartition,
     ForecastingLoaderMode,
     ForecastingMode,
     ScalingMethod,
@@ -41,9 +42,19 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
     Reads CSV with standard format (comma-separated, period decimals),
     applies 60/20/20 fractional splits.
 
-    The data transform uses expand_dims(axis=0), producing shape
-    (1, samples, features). Different from ElectricityLoadModule which
-    uses transpose + expand_dims(axis=-1).
+    .. rubric:: Data shape reference
+
+    Weather is a single multivariate time series with 22 features.
+
+    ==================  =================  ==================  ==================
+    Dataset             Raw CSV Shape      Post-Transform      Notes
+    ==================  =================  ==================  ==================
+    Weather             (52696, 22)        (1, 52696, 22)      Hourly, 7 years
+    ==================  =================  ==================  ==================
+
+    For univariate mode, only the last column (``WetBulbCelsius``) is
+    retained. The data transform uses ``expand_dims(axis=0)``, producing
+    shape ``(1, T, F)``.
 
     Args:
         dataset_file_path: Path to the CSV file.
@@ -119,8 +130,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
     def _transform_data(self) -> None:
         """Transform ``_full_data_scaled`` using expand_dims(axis=0).
 
-        Produces shape (1, samples, features). Different from
-        ElectricityLoadModule which uses transpose + expand_dims(axis=-1).
+        Produces shape (1, samples, features).
         """
         if self._full_data_scaled is None:
             msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
@@ -248,13 +258,13 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         """
         result = self._build_dataloader(
             data_partition=self._train_data_samples,
-            dataloader_fn=self._process_train_dataloader,
+            partition=DataPartition.TRAIN,
             loader_mode=loader_mode,
             shuffle=shuffle,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
-        assert result is not None  # train_dataloader always returns a DataLoader
+        assert result is not None  # _process_train_dataloader always returns DataLoader
         return result
 
     def val_dataloader(
@@ -267,7 +277,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         """Build the validation DataLoader."""
         return self._build_dataloader(
             data_partition=self._valid_data_samples,
-            dataloader_fn=self._process_valid_dataloader,
+            partition=DataPartition.VAL,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
@@ -283,12 +293,12 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         """Build the test DataLoader."""
         result = self._build_dataloader(
             data_partition=self._test_data_samples,
-            dataloader_fn=self._process_test_dataloader,
+            partition=DataPartition.TEST,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
-        assert result is not None  # test_dataloader always returns a DataLoader
+        assert result is not None  # _process_test_dataloader always returns DataLoader
         return result
 
 

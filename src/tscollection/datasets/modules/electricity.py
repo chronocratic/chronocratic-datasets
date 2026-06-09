@@ -16,6 +16,7 @@ import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 from tscollection.datasets.enums.data import (
+    DataPartition,
     ForecastingLoaderMode,
     ForecastingMode,
     ScalingMethod,
@@ -42,8 +43,23 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
     Reads semicolon-delimited CSV with comma decimals, resamples to
     hourly, and applies 60/20/20 fractional splits.
 
-    The data transform uses transpose + expand_dims(axis=-1),
-    producing shape (features, samples, 1).
+    .. rubric:: Data shape reference
+
+    Electricity contains 370 independent power clients (from 2012-2014).
+    Each client is treated as a separate time series, not as a feature.
+
+    ==================  =================  ==================  ==================
+    Dataset             Raw CSV Shape      Post-Transform      Notes
+    ==================  =================  ==================  ==================
+    Electricity         (27340, 370)       (370, 27340, 1)     Hourly, 3 years
+    ==================  =================  ==================  ==================
+
+    The data transform uses ``transpose + expand_dims(axis=-1)`` to produce
+    ``(370, 27340, 1)``. This matches the TS2Vec/CoST/AutoTCL reference:
+    ``np.expand_dims(data.T, -1)`` with comment "Each variable is an
+    instance rather than a feature".
+
+    For univariate mode, only client ``MT_001`` is retained.
 
     Args:
         dataset_file_path: Path to the CSV file.
@@ -119,12 +135,17 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
     def _transform_data(self) -> None:
         """Transform ``_full_data_scaled`` using transpose + expand_dims(axis=-1).
 
-        Produces shape (features, samples, 1). Different from
-        WeatherModule which uses expand_dims(axis=0).
+        Transposes (T, 370) → (370, T, 1), treating each power client as
+        an independent time series. This matches the TS2Vec/CoST/AutoTCL
+        reference: ``np.expand_dims(data.T, -1)`` with comment
+        "Each variable is an instance rather than a feature".
+        Produces shape (series, samples, 1).
         """
         if self._full_data_scaled is None:
             msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
             raise RuntimeError(msg)
+        # Transpose and expand: (T, 370) -> (370, T) -> (370, T, 1)
+        # Each of the 370 power clients is treated as an independent series.
         self._full_data_scaled = self._full_data_scaled.T
         self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=-1)
 
@@ -255,13 +276,13 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         """
         result = self._build_dataloader(
             data_partition=self._train_data_samples,
-            dataloader_fn=self._process_train_dataloader,
+            partition=DataPartition.TRAIN,
             loader_mode=loader_mode,
             shuffle=shuffle,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
-        assert result is not None  # train_dataloader always returns a DataLoader
+        assert result is not None  # _process_train_dataloader always returns DataLoader
         return result
 
     def val_dataloader(
@@ -274,7 +295,7 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         """Build the validation DataLoader."""
         return self._build_dataloader(
             data_partition=self._valid_data_samples,
-            dataloader_fn=self._process_valid_dataloader,
+            partition=DataPartition.VAL,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
@@ -290,10 +311,10 @@ class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
         """Build the test DataLoader."""
         result = self._build_dataloader(
             data_partition=self._test_data_samples,
-            dataloader_fn=self._process_test_dataloader,
+            partition=DataPartition.TEST,
             loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
-        assert result is not None  # test_dataloader always returns a DataLoader
+        assert result is not None  # _process_test_dataloader always returns DataLoader
         return result

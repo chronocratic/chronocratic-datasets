@@ -12,7 +12,6 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from pathlib import Path
 
     from torch.utils.data import DataLoader, Dataset
@@ -22,6 +21,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from tscollection.datasets.enums.data import (
+    DataPartition,
     ForecastingLoaderMode,
     ForecastingMode,
     ScalingMethod,
@@ -51,16 +51,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
       TensorDataset. Preserves existing behavior.
     - ``INPUT_TARGET`` / ``INPUT_ONLY``: Returns sliding-window datasets
       built by ``_build_sliding_dataset()``.
-
-    .. rubric:: Data shape reference
-
-    ========== ============== ===================== =====================
-    Dataset    Raw Shape      Post-Transform Shape  Notes
-    ========== ============== ===================== =====================
-    ETT        Variant-dep.   (1, T, F)             F=7 multi, F=2 univar
-    Weather    (52696, 22)    (1, 52696, 22)        Hourly steps
-    Electricity (27340, 371)  (370, 27340, 1)       370 power clients
-    ========== ============== ===================== =====================
 
     .. note::
 
@@ -470,7 +460,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self,
         *,
         data_partition: np.ndarray | pd.DataFrame | None,
-        dataloader_fn: Callable[..., DataLoader | None],
+        partition: DataPartition,
         loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
@@ -483,9 +473,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
         Args:
             data_partition: Scaled data array (post-transform, 3D).
-            dataloader_fn: Dataloader processor
-                (``_process_train_dataloader``, ``_process_test_dataloader``,
-                or ``_process_valid_dataloader``).
+            partition: Which data partition to process, controlling shuffle
+                behavior and return type.
             loader_mode: Per-call mode controlling output format.
             shuffle: Whether to shuffle (train only).
             strict_batch_size: If True, pad the last batch.
@@ -510,14 +499,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if loader_mode == ForecastingLoaderMode.RAW_SERIES:
             # TensorDataset on raw samples
             tensor = torch.from_numpy(data_partition).to(torch.float32)
-            kwargs: dict[str, object] = {
-                'dataset_object': TensorDataset(tensor),
-                'strict_batch_size': strict_batch_size,
-                'extra_args': extra_args,
-            }
-            if shuffle is not None:
-                kwargs['shuffle'] = shuffle
-            return dataloader_fn(**kwargs)
+            return self._dispatch_process_dataloader(
+                partition=partition,
+                dataset_object=TensorDataset(tensor),
+                shuffle=shuffle,
+                strict_batch_size=strict_batch_size,
+                extra_args=extra_args,
+            )
 
         # Sliding-window modes: INPUT_TARGET or INPUT_ONLY
 
@@ -562,14 +550,53 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data=data_partition, internal_mode=internal_mode, step=step, horizon=horizon
         )
 
-        kwargs = {
-            'dataset_object': dataset,
-            'strict_batch_size': strict_batch_size,
-            'extra_args': extra_args,
-        }
-        if shuffle is not None:
-            kwargs['shuffle'] = shuffle
-        return dataloader_fn(**kwargs)
+        return self._dispatch_process_dataloader(
+            partition=partition,
+            dataset_object=dataset,
+            shuffle=shuffle,
+            strict_batch_size=strict_batch_size,
+            extra_args=extra_args,
+        )
+
+    def _dispatch_process_dataloader(
+        self,
+        partition: DataPartition,
+        *,
+        dataset_object: Dataset[object],
+        shuffle: bool | None = None,
+        strict_batch_size: bool = False,
+        extra_args: dict[str, object] | None = None,
+    ) -> DataLoader | None:
+        """Dispatch to the appropriate _process_* method based on partition.
+
+        Args:
+            partition: Which data partition is being processed.
+            dataset_object: PyTorch Dataset instance.
+            shuffle: Whether to shuffle (used only for TRAIN).
+            strict_batch_size: If True, pad the last batch.
+            extra_args: Additional DataLoader keyword arguments.
+
+        Returns:
+            DataLoader (or None for VAL when valid_size=0).
+        """
+        if partition == DataPartition.TRAIN:
+            return self._process_train_dataloader(
+                dataset_object=dataset_object,
+                shuffle=shuffle,
+                strict_batch_size=strict_batch_size,
+                extra_args=extra_args,
+            )
+        if partition == DataPartition.VAL:
+            return self._process_valid_dataloader(
+                dataset_object=dataset_object,
+                strict_batch_size=strict_batch_size,
+                extra_args=extra_args,
+            )
+        return self._process_test_dataloader(
+            dataset_object=dataset_object,
+            strict_batch_size=strict_batch_size,
+            extra_args=extra_args,
+        )
 
     def _prepare_data_scaler(self) -> MinMaxScaler | StandardScaler:
         """Instantiate the appropriate sklearn scaler.

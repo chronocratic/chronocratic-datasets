@@ -9,17 +9,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    import numpy as np
+
+    from tscollection.datasets.enums import TimeSeriesDatasetMode
+
 from tscollection.datasets.datatypes._base.flexible import (
     FlexibleTimeSeriesDatasetSingleFile,
 )
 from tscollection.datasets.datatypes._base.strategies import (
     ForecastingStrategySingleFile,
 )
-from tscollection.datasets.enums import TimeSeriesDatasetMode  # noqa: TC001 — used at runtime
 from tscollection.datasets.utils.transformations import convert_numpy_to_tensor
-
-if TYPE_CHECKING:
-    import numpy as np
 
 __all__ = ['WeatherDataset']
 

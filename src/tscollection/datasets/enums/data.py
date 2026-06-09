@@ -58,3 +58,11 @@ class DataForm(StrEnum):
     REGULAR = 'regular'
     NESTED = 'nested'
     MULTI_FILES = 'multi_files'
+
+
+class DataPartition(StrEnum):
+    """Data partition for train/validation/test splits."""
+
+    TRAIN = 'train'
+    VAL = 'val'
+    TEST = 'test'
