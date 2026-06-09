@@ -139,6 +139,11 @@ class TestBaseForecastingTimeSeriesDataModule:
             def _transform_data(self) -> None:
                 pass
 
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
+
         mod = ConcreteForecasting(
             batch_size=32,
             seq_len=128,
@@ -170,6 +175,11 @@ class TestBaseForecastingTimeSeriesDataModule:
             def _transform_data(self) -> None:
                 pass
 
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
+
         mod = ConcreteForecasting(
             batch_size=32,
             seq_len=128,
@@ -200,6 +210,11 @@ class TestBaseForecastingTimeSeriesDataModule:
 
             def _transform_data(self) -> None:
                 pass
+
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
 
         mod = ConcreteForecasting(
             batch_size=32,
@@ -292,6 +307,11 @@ class TestPrepareDimensions:
             def _transform_data(self) -> None:
                 pass
 
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
+
         module = ConcreteForecasting(
             batch_size=32,
             seq_len=96,
@@ -326,6 +346,11 @@ class TestPrepareDimensions:
             def _transform_data(self) -> None:
                 pass
 
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
+
         module = ConcreteForecasting(
             batch_size=32,
             seq_len=96,
@@ -356,6 +381,11 @@ class TestPrepareDimensions:
 
             def _transform_data(self) -> None:
                 pass
+
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
 
         module = ConcreteForecasting(
             batch_size=32,
@@ -398,6 +428,11 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
+
         mod = ConcreteForecasting(
             batch_size=32,
             seq_len=128,
@@ -433,6 +468,11 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
+
         mod = ConcreteForecasting(
             batch_size=32,
             seq_len=128,
@@ -466,6 +506,11 @@ class TestForecastingTypedAttrs:
 
             def _transform_data(self) -> None:
                 pass
+
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
 
         mod = ConcreteForecasting(
             batch_size=32,
@@ -521,6 +566,11 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
+
         mod = ConcreteForecasting(
             batch_size=32,
             seq_len=128,
@@ -553,6 +603,11 @@ class TestForecastingTypedAttrs:
 
             def _transform_data(self) -> None:
                 pass
+
+            def _build_sliding_dataset(
+                self, data, internal_mode, step, horizon,
+            ):
+                raise NotImplementedError
 
         mod = ConcreteForecasting(
             batch_size=32,

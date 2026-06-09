@@ -12,10 +12,14 @@ from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 
-from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
+from tscollection.datasets.enums.data import (
+    ForecastingLoaderMode,
+    ForecastingMode,
+    ScalingMethod,
+    TimeSeriesDatasetMode,
+)
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 from tscollection.datasets.utils.cache import (
     atomic_save_metadata,
@@ -28,7 +32,7 @@ from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 if TYPE_CHECKING:
     from pathlib import Path
 
-__all__ = ['WeatherModule']
+__all__ = ['WeatherDataModule', 'WeatherModule']
 
 
 class WeatherModule(BaseForecastingTimeSeriesDataModule):
@@ -69,6 +73,9 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        forecast_horizon: int = 96,
+        step: int | None = None,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -81,6 +88,9 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
             mode=mode,
+            loader_mode=loader_mode,
+            forecast_horizon=forecast_horizon,
+            step=step,
         )
         self.dataset_file_path = dataset_file_path
         self._dataset_name = dataset_file_path.stem
@@ -118,6 +128,40 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
             msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
             raise RuntimeError(msg)
         self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=0)
+
+    # ------------------------------------------------------------------
+    # Sliding dataset
+    # ------------------------------------------------------------------
+
+    def _build_sliding_dataset(
+        self,
+        data: np.ndarray,
+        internal_mode: TimeSeriesDatasetMode | None,
+        step: int,
+        horizon: int,
+    ):
+        """Build sliding-window dataset for Weather.
+
+        Weather data shape: (1, T, 22) post-transform. Squeeze axis 0
+        to get (T, 22).
+
+        Args:
+            data: Partition data (1, T, 22).
+            internal_mode: Mapped dataset mode.
+            step: Stride between consecutive windows.
+            horizon: Forecast horizon for label extraction.
+        """
+        from tscollection.datasets.datatypes.weather import WeatherDataset
+
+        squeezed = data.squeeze(axis=0)
+        mode_param = internal_mode.value if internal_mode else 'sample_only'
+        return WeatherDataset(
+            data=squeezed,
+            seq_len=self._seq_len,
+            step=step,
+            mode=mode_param,
+            forecast_horizon=horizon,
+        )
 
     # ------------------------------------------------------------------
     # Lightning lifecycle
@@ -190,20 +234,10 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
-        """Build the training DataLoader.
-
-        Args:
-            mode: Dataset mode.
-            shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
-            strict_batch_size: If True, pad the last batch.
-            extra_args: Additional keyword arguments for DataLoader.
-
-        Returns:
-            Configured DataLoader for training.
-        """
-        tensor = torch.from_numpy(self._train_data_samples).to(torch.float32)
-        return self._process_train_dataloader(
-            dataset_object=TensorDataset(tensor),
+        """Build the training DataLoader."""
+        return self._build_dataloader(
+            data_partition=self._train_data_samples,
+            dataloader_fn=self._process_train_dataloader,
             shuffle=shuffle,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
@@ -216,21 +250,10 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:
-        """Build the validation DataLoader.
-
-        Returns ``None`` when :attr:`valid_size` is ``0.0``.
-
-        Args:
-            mode: Dataset mode.
-            strict_batch_size: If True, pad the last batch.
-            extra_args: Additional keyword arguments for DataLoader.
-
-        Returns:
-            Configured DataLoader for validation, or ``None``.
-        """
-        tensor = torch.from_numpy(self._valid_data_samples).to(torch.float32)
-        return self._process_valid_dataloader(
-            dataset_object=TensorDataset(tensor),
+        """Build the validation DataLoader."""
+        return self._build_dataloader(
+            data_partition=self._valid_data_samples,
+            dataloader_fn=self._process_valid_dataloader,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
@@ -242,19 +265,14 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
-        """Build the test DataLoader.
-
-        Args:
-            mode: Dataset mode.
-            strict_batch_size: If True, pad the last batch.
-            extra_args: Additional keyword arguments for DataLoader.
-
-        Returns:
-            Configured DataLoader for testing.
-        """
-        tensor = torch.from_numpy(self._test_data_samples).to(torch.float32)
-        return self._process_test_dataloader(
-            dataset_object=TensorDataset(tensor),
+        """Build the test DataLoader."""
+        return self._build_dataloader(
+            data_partition=self._test_data_samples,
+            dataloader_fn=self._process_test_dataloader,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
+
+
+# Backward-compatible alias
+WeatherDataModule = WeatherModule

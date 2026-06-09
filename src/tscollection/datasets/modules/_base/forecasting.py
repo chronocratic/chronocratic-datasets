@@ -14,11 +14,18 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from torch.utils.data import Dataset
+
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
+from tscollection.datasets.enums.data import (
+    ForecastingLoaderMode,
+    ForecastingMode,
+    ScalingMethod,
+)
+from tscollection.datasets.maps.loader_to_dataset import FORECASTING_LOADER_MAP
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.cache import load_scaler, resolve_cache_dir, save_scaler
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
@@ -35,6 +42,29 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     time slicing, sklearn-based scaling, and cyclical time
     feature extraction. Overrides ``setup()`` entirely to handle
     forecasting-specific scaling (fit on train slice only).
+
+    Supports two loader modes:
+
+    - ``RAW_SERIES`` (default): Returns raw time series samples via
+      TensorDataset. Preserves existing behavior.
+    - ``INPUT_TARGET`` / ``INPUT_ONLY``: Returns sliding-window datasets
+      built by ``_build_sliding_dataset()``.
+
+    .. rubric:: Data shape reference
+
+    ========== ============== ===================== =====================
+    Dataset    Raw Shape      Post-Transform Shape  Notes
+    ========== ============== ===================== =====================
+    ETT        Variant-dep.   (1, T, F)             F=7 multi, F=2 univar
+    Weather    (52696, 22)    (1, 52696, 22)        Hourly steps
+    Electricity (27340, 371)  (370, 27340, 1)       370 power clients
+    ========== ============== ===================== =====================
+
+    .. note::
+
+        ``forecast_horizon`` and ``step`` are dataset-level parameters
+        applied at dataloader time. They do NOT affect the cache key;
+        only ``seq_len``, ``mode``, and scaling params are cached.
 
     Subclasses implement ``_set_data_slices()`` to define train/val/test
     boundaries.
@@ -53,6 +83,14 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         num_workers: Number of DataLoader worker processes.
         mode: Forecasting mode (univariate or multivariate), typed as
             :class:`~tscollection.datasets.enums.data.ForecastingMode`.
+        loader_mode: Controls how dataloaders yield data. Defaults to
+            :data:`ForecastingLoaderMode.RAW_SERIES` which preserves
+            existing TensorDataset behavior.
+        forecast_horizon: Number of future steps to predict. Used only
+            when ``loader_mode`` is ``INPUT_TARGET`` or ``INPUT_ONLY``.
+            Does not affect cache key.
+        step: Stride between consecutive sliding windows. Defaults to
+            ``seq_len`` when not provided. Does not affect cache key.
     """
 
     def __init__(
@@ -68,6 +106,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
         mode: ForecastingMode = ForecastingMode.UNIVARIATE,
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        forecast_horizon: int | None = None,
+        step: int | None = None,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -81,6 +122,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             num_workers=num_workers,
         )
         self._mode = mode
+        self.loader_mode = loader_mode
+        self.forecast_horizon = forecast_horizon
+        self._step = step
         self._train_slice: slice | None = None
         self._valid_slice: slice | None = None
         self._test_slice: slice | None = None
@@ -168,6 +212,38 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
         Subclasses must implement this method to apply dataset-specific
         transformations (e.g., reshape, transpose, expand dimensions).
+        """
+
+    @abstractmethod
+    def _build_sliding_dataset(
+        self,
+        data: np.ndarray,
+        internal_mode,  # TimeSeriesDatasetMode | None
+        step: int,
+        horizon: int,
+    ) -> Dataset:
+        """Build sliding-window dataset for INPUT_TARGET / INPUT_ONLY modes.
+
+        Called by ``_build_dataloader()`` when ``loader_mode`` is
+        ``INPUT_TARGET`` or ``INPUT_ONLY``.
+
+        For (1, T, F) data, squeeze axis 0 to get (T, F) before passing
+        to the dataset class. For (S, T, F) data (multi-series),
+        pass directly to the multi-series dataset class.
+
+        Note:
+            ``forecast_horizon`` and ``step`` are dataset-level parameters
+            applied at dataloader time. They do NOT affect the cache key.
+
+        Args:
+            data: Partition data array (post-transform, 3D).
+            internal_mode: Mapped dataset mode from
+                ``FORECASTING_LOADER_MAP``. ``None`` for ``RAW_SERIES``.
+            step: Stride between consecutive windows.
+            horizon: Forecast horizon for label extraction.
+
+        Returns:
+            Dataset instance yielding (input, target) or (input,) pairs.
         """
 
     # ------------------------------------------------------------------
@@ -394,6 +470,79 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _build_dataloader(
+        self,
+        data_partition: np.ndarray,
+        dataloader_fn,
+        shuffle: bool | None = None,
+        strict_batch_size: bool = False,
+        extra_args: dict[str, object] | None = None,
+    ):
+        """Build a dataloader with mode-based dispatch.
+
+        Routes to ``TensorDataset`` for ``RAW_SERIES`` mode or calls
+        ``_build_sliding_dataset()`` for sliding-window modes.
+
+        Args:
+            data_partition: Scaled data array (post-transform, 3D).
+            dataloader_fn: Dataloader processor
+                (``_process_train_dataloader``, ``_process_test_dataloader``,
+                or ``_process_valid_dataloader``).
+            shuffle: Whether to shuffle (train only).
+            strict_batch_size: If True, pad the last batch.
+            extra_args: Additional DataLoader keyword arguments.
+
+        Returns:
+            DataLoader (or None for validation with valid_size=0).
+        """
+        import torch
+        from torch.utils.data import TensorDataset
+
+        internal_mode = FORECASTING_LOADER_MAP[self.loader_mode]
+
+        if internal_mode is None:
+            # RAW_SERIES: existing behavior — TensorDataset on raw samples
+            tensor = torch.from_numpy(data_partition).to(torch.float32)
+            kwargs: dict[str, object] = {
+                'dataset_object': TensorDataset(tensor),
+                'strict_batch_size': strict_batch_size,
+            }
+            if shuffle is not None:
+                kwargs['shuffle'] = shuffle
+            if extra_args is not None:
+                kwargs['extra_args'] = extra_args
+            return dataloader_fn(**kwargs)
+
+        # Sliding-window modes: INPUT_TARGET or INPUT_ONLY
+        step = self._step if self._step is not None else self._seq_len
+        horizon = self.forecast_horizon if self.forecast_horizon is not None else 0
+
+        # Validate partition length (D-12)
+        partition_length = data_partition.shape[1]
+        if self._seq_len + horizon > partition_length:
+            msg = (
+                f'seq_len ({self._seq_len}) + forecast_horizon ({horizon}) '
+                f'exceeds partition length ({partition_length}). '
+                f'Reduce seq_len or forecast_horizon.'
+            )
+            raise ValueError(msg)
+
+        dataset = self._build_sliding_dataset(
+            data=data_partition,
+            internal_mode=internal_mode,
+            step=step,
+            horizon=horizon,
+        )
+
+        # D-17: forecasting sliding-window uses strict_batch_size=False
+        kwargs = {
+            'dataset_object': dataset,
+            'strict_batch_size': False,
+        }
+        if extra_args is not None:
+            kwargs['extra_args'] = extra_args
+        return dataloader_fn(**kwargs)
 
     def _prepare_data_scaler(self) -> MinMaxScaler | StandardScaler:
         """Instantiate the appropriate sklearn scaler.
