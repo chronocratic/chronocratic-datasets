@@ -14,10 +14,15 @@ from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, Dataset
 
-from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod, TimeSeriesDatasetMode
+from tscollection.datasets.enums.data import (
+    DataPartition,
+    ForecastingLoaderMode,
+    ForecastingMode,
+    ScalingMethod,
+    TimeSeriesDatasetMode,
+)
 from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 from tscollection.datasets.utils.cache import (
     atomic_save_metadata,
@@ -44,6 +49,21 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
     Accepts explicit ``variant`` parameter rather than
     auto-detecting from the filename.
+
+    .. rubric:: Data shape reference
+
+    ETT is a single multivariate time series. Raw CSV shape varies by
+    variant: ETTh1/ETTh2 have 7 features, ETTm1/ETTm2 have 7 features.
+
+    ==================  =================  ==================  ==================
+    Variant             Raw CSV Shape      Post-Transform      Notes
+    ==================  =================  ==================  ==================
+    ETTh1, ETTh2        (17420, 7)         (1, 17420, 7)       Hourly, 12 months
+    ETTm1, ETTm2        (69680, 7)         (1, 69680, 7)       15-min, 12 months
+    ==================  =================  ==================  ==================
+
+    For univariate mode, only the ``OT`` column is retained (shape
+    becomes ``(1, T, 2)`` after adding time features).
 
     Args:
         dataset_file_path: Path to the CSV file.
@@ -79,6 +99,8 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         data_scaling_method: ScalingMethod = ScalingMethod.MINMAX,
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
+        forecast_horizon: int = 96,
+        step: int | None = None,
     ) -> None:
         # Validate variant
         if variant not in VALID_ETT_VARIANTS:
@@ -95,6 +117,8 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
             mode=mode,
+            forecast_horizon=forecast_horizon,
+            step=step,
         )
         self.dataset_file_path = dataset_file_path
         self.variant = variant
@@ -139,6 +163,39 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=0)
 
     # ------------------------------------------------------------------
+    # Sliding dataset
+    # ------------------------------------------------------------------
+
+    def _build_sliding_dataset(
+        self,
+        data: np.ndarray,
+        internal_mode: TimeSeriesDatasetMode,  # noqa: ARG002 — ETTDataset hardcodes mode internally
+        step: int,
+        horizon: int,
+    ) -> Dataset:
+        """Build sliding-window dataset for ETT.
+
+        ETT data shape: (1, T, F) post-transform. Squeeze axis 0 to
+        get (T, F) for the single-file dataset.
+
+        Args:
+            data: Partition data (1, T, F).
+            internal_mode: Mapped dataset mode.
+            step: Stride between consecutive windows.
+            horizon: Forecast horizon for label extraction.
+        """
+        from tscollection.datasets.datatypes.ett import ETTDataset
+
+        assert self._seq_len is not None
+        squeezed = data.squeeze(axis=0)  # (1, T, F) -> (T, F)
+        return ETTDataset(
+            data=squeezed,
+            seq_len=self._seq_len,
+            step=step,
+            forecast_horizon=horizon,
+        )
+
+    # ------------------------------------------------------------------
     # Lightning lifecycle
     # ------------------------------------------------------------------
 
@@ -176,6 +233,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
         # Compute variant-based splits for metadata
         self._set_data_slices()
+        assert self._train_slice is not None
+        assert self._valid_slice is not None
+        assert self._test_slice is not None
         splits = {
             'train': [self._train_slice.start, self._train_slice.stop],
             'valid': [self._valid_slice.start, self._valid_slice.stop],
@@ -204,7 +264,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     def train_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,  # noqa: ARG002
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
@@ -212,7 +272,10 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         """Build the training DataLoader.
 
         Args:
-            mode: Dataset mode (with/without labels, forecasting).
+            loader_mode: Per-call mode controlling output format.
+                RAW_SERIES yields full series (existing behavior).
+                INPUT_TARGET yields (input, target) sliding-window pairs.
+                INPUT_ONLY yields input windows without targets.
             shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
             strict_batch_size: If True, pad the last batch.
             extra_args: Additional keyword arguments for DataLoader.
@@ -220,18 +283,21 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         Returns:
             Configured DataLoader for training.
         """
-        tensor = torch.from_numpy(self._train_data_samples).to(torch.float32)
-        return self._process_train_dataloader(
-            dataset_object=TensorDataset(tensor),
+        result = self._build_dataloader(
+            data_partition=self._train_data_samples,
+            partition=DataPartition.TRAIN,
+            loader_mode=loader_mode,
             shuffle=shuffle,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
+        assert result is not None  # _process_train_dataloader always returns DataLoader
+        return result
 
     def val_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,  # noqa: ARG002
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:
@@ -239,17 +305,13 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
 
         Returns ``None`` when :attr:`valid_size` is ``0.0``.
 
-        Args:
-            mode: Dataset mode.
-            strict_batch_size: If True, pad the last batch.
-            extra_args: Additional keyword arguments for DataLoader.
-
         Returns:
             Configured DataLoader for validation, or ``None``.
         """
-        tensor = torch.from_numpy(self._valid_data_samples).to(torch.float32)
-        return self._process_valid_dataloader(
-            dataset_object=TensorDataset(tensor),
+        return self._build_dataloader(
+            data_partition=self._valid_data_samples,
+            partition=DataPartition.VAL,
+            loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
@@ -257,23 +319,21 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     def test_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.FORECASTING,  # noqa: ARG002
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader.
 
-        Args:
-            mode: Dataset mode.
-            strict_batch_size: If True, pad the last batch.
-            extra_args: Additional keyword arguments for DataLoader.
-
         Returns:
             Configured DataLoader for testing.
         """
-        tensor = torch.from_numpy(self._test_data_samples).to(torch.float32)
-        return self._process_test_dataloader(
-            dataset_object=TensorDataset(tensor),
+        result = self._build_dataloader(
+            data_partition=self._test_data_samples,
+            partition=DataPartition.TEST,
+            loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
+        assert result is not None  # _process_test_dataloader always returns DataLoader
+        return result

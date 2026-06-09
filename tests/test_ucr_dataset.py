@@ -20,7 +20,7 @@ def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classifica
     ds = UCRClassificationUnivariateDataset(
         data=synthetic_classification_df,
         labels=synthetic_classification_labels,
-        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        mode=TimeSeriesDatasetMode.SAMPLE_LABEL,
     )
     sample, label = ds[0]
 
@@ -37,7 +37,7 @@ def test_ucr_without_labels(synthetic_classification_df):
     from tscollection.datasets.datatypes.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(
-        data=synthetic_classification_df, labels=None, mode=TimeSeriesDatasetMode.WITHOUT_LABELS
+        data=synthetic_classification_df, labels=None, mode=TimeSeriesDatasetMode.SAMPLE_ONLY
     )
     result = ds[0]
     assert not isinstance(result, tuple)
@@ -50,6 +50,6 @@ def test_ucr_length(synthetic_classification_df, synthetic_classification_labels
     ds = UCRClassificationUnivariateDataset(
         data=synthetic_classification_df,
         labels=synthetic_classification_labels,
-        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        mode=TimeSeriesDatasetMode.SAMPLE_LABEL,
     )
     assert len(ds) == len(synthetic_classification_df)

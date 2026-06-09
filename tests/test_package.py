@@ -41,7 +41,7 @@ def test_enum_exports_in_root():
         TimeSeriesDatasetMode,
     )
 
-    assert TimeSeriesDatasetMode.WITH_LABELS == 'with_labels'
+    assert TimeSeriesDatasetMode.SAMPLE_LABEL == 'sample_label'
     assert ScalingMethod.MINMAX == 'minmax'
     assert ClassificationSplitMode.AS_DEFINED == 'as_defined'
     assert ForecastingMode.UNIVARIATE == 'univariate'

@@ -14,11 +14,20 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from torch.utils.data import DataLoader, Dataset
+
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
+from tscollection.datasets.enums.data import (
+    DataPartition,
+    ForecastingLoaderMode,
+    ForecastingMode,
+    ScalingMethod,
+    TimeSeriesDatasetMode,
+)
+from tscollection.datasets.maps.loader_to_dataset import FORECASTING_LOADER_MAP
 from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.cache import load_scaler, resolve_cache_dir, save_scaler
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
@@ -35,6 +44,19 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     time slicing, sklearn-based scaling, and cyclical time
     feature extraction. Overrides ``setup()`` entirely to handle
     forecasting-specific scaling (fit on train slice only).
+
+    Supports two loader modes:
+
+    - ``RAW_SERIES`` (default): Returns raw time series samples via
+      TensorDataset. Preserves existing behavior.
+    - ``INPUT_TARGET`` / ``INPUT_ONLY``: Returns sliding-window datasets
+      built by ``_build_sliding_dataset()``.
+
+    .. note::
+
+        ``forecast_horizon`` and ``step`` are dataset-level parameters
+        applied at dataloader time. They do NOT affect the cache key;
+        only ``seq_len``, ``mode``, and scaling params are cached.
 
     Subclasses implement ``_set_data_slices()`` to define train/val/test
     boundaries.
@@ -53,6 +75,11 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         num_workers: Number of DataLoader worker processes.
         mode: Forecasting mode (univariate or multivariate), typed as
             :class:`~tscollection.datasets.enums.data.ForecastingMode`.
+        forecast_horizon: Number of future steps to predict. Used only
+            when ``loader_mode`` is ``INPUT_TARGET`` or ``INPUT_ONLY``
+            in dataloader calls. Does not affect cache key.
+        step: Stride between consecutive sliding windows. Defaults to
+            ``seq_len`` when not provided. Does not affect cache key.
     """
 
     def __init__(
@@ -68,6 +95,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
         mode: ForecastingMode = ForecastingMode.UNIVARIATE,
+        forecast_horizon: int | None = None,
+        step: int | None = None,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -81,6 +110,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             num_workers=num_workers,
         )
         self._mode = mode
+        self.forecast_horizon = forecast_horizon
+        self._step = step
         self._train_slice: slice | None = None
         self._valid_slice: slice | None = None
         self._test_slice: slice | None = None
@@ -90,8 +121,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._num_time_series_features: int | None = None
         self._data_scaler_cache: MinMaxScaler | StandardScaler | None = None
         self._ts_feature_scaler_cache: MinMaxScaler | StandardScaler | None = None
-        # Backward-compat: routes _full_data property to raw before scaling,
-        # to scaled after. Concrete modules still use _full_data in _transform_data.
+        # Tracks whether scaling is complete; used by full_data property
         self._scaling_done: bool = False
 
     # ------------------------------------------------------------------
@@ -125,31 +155,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         return self._full_data_raw
 
     @property
-    def _full_data(self) -> np.ndarray | None:
-        """Backward-compat accessor for concrete modules."""
-        return self.full_data
-
-    @_full_data.setter
-    def _full_data(self, value: np.ndarray | None) -> None:
-        """Route writes to raw (before scaling) or scaled (after).
-
-        When a DataFrame is set (backward-compat path), extracts
-        the DatetimeIndex into ``_time_index`` and stores values
-        as numpy in ``_full_data_raw``.
-        """
-        if value is None:
-            return
-        if self._scaling_done:
-            self._full_data_scaled = value
-            return
-        if isinstance(value, pd.DataFrame):
-            if isinstance(value.index, pd.DatetimeIndex):
-                self._time_index = value.index
-            self._full_data_raw = value.to_numpy()
-        else:
-            self._full_data_raw = value
-
-    @property
     def num_time_series_features(self) -> int | None:
         """Number of cyclical time features extracted."""
         return self._num_time_series_features
@@ -164,10 +169,41 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
     @abstractmethod
     def _transform_data(self) -> None:
-        """Transform ``_full_data`` after scaling.
+        """Transform ``_full_data_scaled`` after scaling.
 
         Subclasses must implement this method to apply dataset-specific
         transformations (e.g., reshape, transpose, expand dimensions).
+        Operates on ``_full_data_scaled``, which is populated by ``setup()``.
+        """
+
+    @abstractmethod
+    def _build_sliding_dataset(
+        self, data: np.ndarray, internal_mode: TimeSeriesDatasetMode, step: int, horizon: int
+    ) -> Dataset:
+        """Build sliding-window dataset for INPUT_TARGET / INPUT_ONLY modes.
+
+        Called by ``_build_dataloader()`` when the per-call ``loader_mode``
+        is ``INPUT_TARGET`` or ``INPUT_ONLY``. At this point, ``internal_mode``
+        is guaranteed to be non-None.
+
+        For (1, T, F) data, squeeze axis 0 to get (T, F) before passing
+        to the dataset class. For (S, T, F) data (multi-series),
+        pass directly to the multi-series dataset class.
+
+        Note:
+            ``forecast_horizon`` and ``step`` are dataset-level parameters
+            applied at dataloader time. They do NOT affect the cache key.
+
+        Args:
+            data: Partition data array (post-transform, 3D).
+            internal_mode: Mapped dataset mode from
+                ``FORECASTING_LOADER_MAP``. Never ``None`` — ``RAW_SERIES``
+                path returns before this method is called.
+            step: Stride between consecutive windows.
+            horizon: Forecast horizon for label extraction. Must be > 0.
+
+        Returns:
+            Dataset instance yielding (input, target) or (input,) pairs.
         """
 
     # ------------------------------------------------------------------
@@ -230,8 +266,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         ):
             return
 
-        # Load raw data from cache; fall back to _full_data_raw for
-        # backward-compat with concrete modules not yet writing cache.
+        # Load raw data from cache; falls back to _full_data_raw if cache
+        # is missing (populated by _do_prepare_data in concrete modules).
         cache_dir = self._resolve_cache_dir()
         if self._cache_key is not None:
             cache_path = cache_dir / f'{self._cache_key}.npz'
@@ -245,7 +281,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             except FileNotFoundError:
                 pass
 
-        # Backward-compat: ensure slices are set after raw data is available.
+        # Ensure slices are set after raw data is loaded from cache.
+        # Concrete modules may set slices in _do_prepare_data or _set_data_slices.
         if self._train_slice is None:
             self._set_data_slices()
 
@@ -394,6 +431,148 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _build_dataloader(
+        self,
+        *,
+        data_partition: np.ndarray | pd.DataFrame | None,
+        partition: DataPartition,
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        shuffle: bool | None = None,
+        strict_batch_size: bool = False,
+        extra_args: dict[str, object] | None = None,
+    ) -> DataLoader | None:
+        """Build a dataloader with mode-based dispatch.
+
+        Routes to ``TensorDataset`` for ``RAW_SERIES`` mode or calls
+        ``_build_sliding_dataset()`` for sliding-window modes.
+
+        Args:
+            data_partition: Scaled data array (post-transform, 3D).
+            partition: Which data partition to process, controlling shuffle
+                behavior and return type.
+            loader_mode: Per-call mode controlling output format.
+            shuffle: Whether to shuffle (train only).
+            strict_batch_size: If True, pad the last batch.
+            extra_args: Additional DataLoader keyword arguments.
+
+        Returns:
+            DataLoader (or None for validation with valid_size=0).
+
+        Raises:
+            ValueError: If sliding-window mode is used but
+                ``forecast_horizon`` is not set.
+            ValueError: If ``seq_len + forecast_horizon`` exceeds
+                the partition length.
+        """
+        import torch
+        from torch.utils.data import TensorDataset
+
+        # Type narrowing: forecasting modules always set *_data_samples to np.ndarray
+        # after setup(). Assert at runtime to satisfy static analysis.
+        assert isinstance(data_partition, np.ndarray)
+
+        if loader_mode == ForecastingLoaderMode.RAW_SERIES:
+            # TensorDataset on raw samples
+            tensor = torch.from_numpy(data_partition).to(torch.float32)
+            return self._dispatch_process_dataloader(
+                partition=partition,
+                dataset_object=TensorDataset(tensor),
+                shuffle=shuffle,
+                strict_batch_size=strict_batch_size,
+                extra_args=extra_args,
+            )
+
+        # Sliding-window modes: INPUT_TARGET or INPUT_ONLY
+
+        # Validate forecast_horizon is set
+        if self.forecast_horizon is None:
+            msg = (
+                f'loader_mode={loader_mode.value!r} requires forecast_horizon '
+                f'to be set on the datamodule constructor.'
+            )
+            raise ValueError(msg)
+
+        # Resolve step with fallback to seq_len
+        step = self._step
+        if step is None:
+            if self._seq_len is None:
+                msg = 'step and seq_len are both None; cannot build sliding-window dataset'
+                raise ValueError(msg)
+            step = self._seq_len
+
+        horizon = self.forecast_horizon
+
+        # Validate partition length
+        partition_length = data_partition.shape[1]
+        if self._seq_len is not None and self._seq_len + horizon > partition_length:
+            msg = (
+                f'seq_len ({self._seq_len}) + forecast_horizon ({horizon}) '
+                f'exceeds partition length ({partition_length}). '
+                f'Reduce seq_len or forecast_horizon.'
+            )
+            raise ValueError(msg)
+
+        # Translate loader mode → dataset mode via map
+        internal_mode = FORECASTING_LOADER_MAP[loader_mode]
+        if internal_mode is None:
+            msg = (
+                f'FORECASTING_LOADER_MAP returned None for {loader_mode.value!r}. '
+                f'This loader_mode should not reach the sliding-window path.'
+            )
+            raise RuntimeError(msg)
+
+        dataset = self._build_sliding_dataset(
+            data=data_partition, internal_mode=internal_mode, step=step, horizon=horizon
+        )
+
+        return self._dispatch_process_dataloader(
+            partition=partition,
+            dataset_object=dataset,
+            shuffle=shuffle,
+            strict_batch_size=strict_batch_size,
+            extra_args=extra_args,
+        )
+
+    def _dispatch_process_dataloader(
+        self,
+        partition: DataPartition,
+        *,
+        dataset_object: Dataset[object],
+        shuffle: bool | None = None,
+        strict_batch_size: bool = False,
+        extra_args: dict[str, object] | None = None,
+    ) -> DataLoader | None:
+        """Dispatch to the appropriate _process_* method based on partition.
+
+        Args:
+            partition: Which data partition is being processed.
+            dataset_object: PyTorch Dataset instance.
+            shuffle: Whether to shuffle (used only for TRAIN).
+            strict_batch_size: If True, pad the last batch.
+            extra_args: Additional DataLoader keyword arguments.
+
+        Returns:
+            DataLoader (or None for VAL when valid_size=0).
+        """
+        if partition == DataPartition.TRAIN:
+            return self._process_train_dataloader(
+                dataset_object=dataset_object,
+                shuffle=shuffle,
+                strict_batch_size=strict_batch_size,
+                extra_args=extra_args,
+            )
+        if partition == DataPartition.VAL:
+            return self._process_valid_dataloader(
+                dataset_object=dataset_object,
+                strict_batch_size=strict_batch_size,
+                extra_args=extra_args,
+            )
+        return self._process_test_dataloader(
+            dataset_object=dataset_object,
+            strict_batch_size=strict_batch_size,
+            extra_args=extra_args,
+        )
 
     def _prepare_data_scaler(self) -> MinMaxScaler | StandardScaler:
         """Instantiate the appropriate sklearn scaler.
