@@ -15,10 +15,10 @@ from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 
 from chronocratic.datasets.enums.data import (
+    ClassificationLoaderMode,
     ClassificationSplitMode,
     DataForm,
     ScalingMethod,
-    TimeSeriesDatasetMode,
 )
 
 
@@ -140,7 +140,7 @@ class TestUEAProcessStackedData:
 
         assert isinstance(samples, np.ndarray)
         assert isinstance(labels, np.ndarray)
-        # Shape after swapaxes(1,2): (samples, features, timesteps) -> (samples, timesteps, features)
+        # Shape: (samples, features, timesteps) -> (samples, timesteps, features)
         assert samples.shape[0] == 2
 
     def test_process_stacked_data_decodes_bytes(self, synthetic_uea_folder: Path) -> None:
@@ -181,21 +181,27 @@ class TestUEAPrepareData:
         """prepare_data loads train/test data and sets module state."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
-        )
-        module.prepare_data()
+        with patch(
+            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                scale_data=False,
+            )
+            module.prepare_data()
 
-        assert module._train_data_samples is not None
-        assert module._test_data_samples is not None
-        assert module._train_data_labels is not None
-        assert module._test_data_labels is not None
-        assert module._num_classes is not None
-        assert module._seq_len is not None
-        assert module._num_features is not None
-        # Labels should be pandas Series with category dtype
-        assert isinstance(module._train_data_labels, pd.Series)
-        assert module._train_data_labels.dtype.name == 'category'
+            assert module._train_data_samples is not None
+            assert module._test_data_samples is not None
+            assert module._train_data_labels is not None
+            assert module._test_data_labels is not None
+            assert module._num_classes is not None
+            assert module._seq_len is not None
+            assert module._num_features is not None
+            # Labels should be pandas Series with category dtype
+            assert isinstance(module._train_data_labels, pd.Series)
+            assert module._train_data_labels.dtype.name == 'category'
 
 
 class TestUEADataLoaders:
@@ -211,14 +217,20 @@ class TestUEADataLoaders:
         """train_dataloader returns a DataLoader instance."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
-        )
-        module.prepare_data()
-        module.setup('fit')
+        with patch(
+            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                scale_data=False,
+            )
+            module.prepare_data()
+            module.setup('fit')
 
-        loader = module.train_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
-        assert isinstance(loader, DataLoader)
+            loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            assert isinstance(loader, DataLoader)
 
     @patch(
         'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
@@ -230,15 +242,19 @@ class TestUEADataLoaders:
         """val_dataloader returns None when valid_size=0."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            valid_size=0.0,
-            scale_data=False,
-        )
-        module.prepare_data()
-        result = module.val_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
-        assert result is None
+        with patch(
+            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                valid_size=0.0,
+                scale_data=False,
+            )
+            module.prepare_data()
+            result = module.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            assert result is None
 
     @patch(
         'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
@@ -250,14 +266,20 @@ class TestUEADataLoaders:
         """test_dataloader returns a DataLoader instance."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
-        )
-        module.prepare_data()
-        module.setup('fit')
+        with patch(
+            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                scale_data=False,
+            )
+            module.prepare_data()
+            module.setup('fit')
 
-        loader = module.test_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
-        assert isinstance(loader, DataLoader)
+            loader = module.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            assert isinstance(loader, DataLoader)
 
 
 class TestUEAUsesScipyLoadarff:
@@ -345,9 +367,7 @@ def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     ):
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            scale_data=False,
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
         )
         module.prepare_data()
 

@@ -13,6 +13,27 @@ from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 
 
+@pytest.fixture
+def concrete_forecasting_class():
+    """Concrete implementation of BaseForecastingTimeSeriesDataModule for testing."""
+    from chronocratic.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
+
+    class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+        def _do_prepare_data(self) -> None:
+            pass
+
+        def _set_data_slices(self) -> None:
+            pass
+
+        def _transform_data(self) -> None:
+            pass
+
+        def _build_sliding_dataset(self, data, internal_mode, step, horizon):
+            raise NotImplementedError
+
+    return ConcreteForecasting
+
+
 class TestBaseClassificationTimeSeriesDataModule:
     """Tests for BaseClassificationTimeSeriesDataModule."""
 
@@ -26,7 +47,7 @@ class TestBaseClassificationTimeSeriesDataModule:
         return BaseClassificationTimeSeriesDataModule
 
     def test_is_subclass_of_base_and_abc(self, module_class: type) -> None:
-        """BaseClassificationTimeSeriesDataModule is subclass of BaseTimeSeriesDataModule and ABC."""
+        """BaseClassificationTimeSeriesDataModule inherits from base and ABC."""
         assert issubclass(module_class, BaseTimeSeriesDataModule)
         assert issubclass(module_class, ABC)
 
@@ -123,28 +144,9 @@ class TestBaseForecastingTimeSeriesDataModule:
         assert hasattr(module_class, '_transform_data')
         assert getattr(module_class._transform_data, '__isabstractmethod__', False)
 
-    def test_prepare_data_scaler_minmax(self) -> None:
+    def test_prepare_data_scaler_minmax(self, concrete_forecasting_class: type) -> None:
         """_prepare_data_scaler returns MinMaxScaler for ScalingMethod.MINMAX."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -159,28 +161,9 @@ class TestBaseForecastingTimeSeriesDataModule:
         scaler = mod._prepare_data_scaler()
         assert isinstance(scaler, MinMaxScaler)
 
-    def test_prepare_data_scaler_standard(self) -> None:
+    def test_prepare_data_scaler_standard(self, concrete_forecasting_class: type) -> None:
         """_prepare_data_scaler returns StandardScaler for ScalingMethod.STANDARD."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -195,41 +178,23 @@ class TestBaseForecastingTimeSeriesDataModule:
         scaler = mod._prepare_data_scaler()
         assert isinstance(scaler, StandardScaler)
 
-    def test_prepare_data_scaler_invalid_raises(self) -> None:
-        """_prepare_data_scaler raises ValueError for unsupported method."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
-            batch_size=32,
-            seq_len=128,
-            valid_size=0.1,
-            test_size=0.5,
-            shuffle=False,
-            scale_data=True,
-            data_scaling_method=ScalingMethod.NONE,
-            data_scaling_range=(0, 1),
-            num_workers=0,
-            mode=ForecastingMode.UNIVARIATE,
-        )
-        with pytest.raises(ValueError):
-            mod._prepare_data_scaler()
+    def test_prepare_data_scaler_invalid_raises(self, concrete_forecasting_class: type) -> None:
+        """__init__ raises ValueError for scale_data=True with ScalingMethod.NONE."""
+        with pytest.raises(
+            ValueError, match=r'scale_data=True is incompatible with ScalingMethod\.NONE'
+        ):
+            concrete_forecasting_class(
+                batch_size=32,
+                seq_len=128,
+                valid_size=0.1,
+                test_size=0.5,
+                shuffle=False,
+                scale_data=True,
+                data_scaling_method=ScalingMethod.NONE,
+                data_scaling_range=(0, 1),
+                num_workers=0,
+                mode=ForecastingMode.UNIVARIATE,
+            )
 
 
 class TestPrepareDimensions:
@@ -257,7 +222,7 @@ class TestPrepareDimensions:
         assert len(result) == 2
 
     def test_classification_raises_without_prepare_data(self) -> None:
-        """Classification _compute_dimensions raises RuntimeError when _train_data_samples is None."""
+        """Classification _compute_dimensions raises RuntimeError without prepare_data."""
         from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
@@ -291,28 +256,9 @@ class TestPrepareDimensions:
         with pytest.raises(RuntimeError, match=r'prepare_dimensions.*prepare_data'):
             module.prepare_dimensions()
 
-    def test_forecasting_pre_setup_with_dataframe(self) -> None:
-        """Forecasting _compute_dimensions adds TIME_FEATURE_COUNT for DataFrame _full_data."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        module = ConcreteForecasting(
+    def test_forecasting_pre_setup_with_dataframe(self, concrete_forecasting_class: type) -> None:
+        """Forecasting _compute_dimensions adds TIME_FEATURE_COUNT for DataFrame."""
+        module = concrete_forecasting_class(
             batch_size=32,
             seq_len=96,
             valid_size=0.1,
@@ -331,28 +277,9 @@ class TestPrepareDimensions:
         assert n_features == 8 + TIME_FEATURE_COUNT
         assert seq_len == 96
 
-    def test_forecasting_pre_setup_with_numpy(self) -> None:
-        """Forecasting _compute_dimensions does NOT add TIME_FEATURE_COUNT for numpy _full_data."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        module = ConcreteForecasting(
+    def test_forecasting_pre_setup_with_numpy(self, concrete_forecasting_class: type) -> None:
+        """Forecasting _compute_dimensions does NOT add TIME_FEATURE_COUNT for numpy."""
+        module = concrete_forecasting_class(
             batch_size=32,
             seq_len=96,
             valid_size=0.1,
@@ -369,28 +296,9 @@ class TestPrepareDimensions:
         assert n_features == 6  # No TIME_FEATURE_COUNT added
         assert seq_len == 96
 
-    def test_post_setup_returns_cached(self) -> None:
+    def test_post_setup_returns_cached(self, concrete_forecasting_class: type) -> None:
         """prepare_dimensions() returns cached _num_features when set."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        module = ConcreteForecasting(
+        module = concrete_forecasting_class(
             batch_size=32,
             seq_len=96,
             valid_size=0.1,
@@ -416,28 +324,9 @@ class TestPrepareDimensions:
 class TestForecastingTypedAttrs:
     """Tests for typed data attributes in forecasting modules."""
 
-    def test_has_typed_attributes(self) -> None:
+    def test_has_typed_attributes(self, concrete_forecasting_class: type) -> None:
         """Forecasting base has _full_data_raw, _time_index, _full_data_scaled."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -456,28 +345,11 @@ class TestForecastingTypedAttrs:
         assert mod._time_index is None
         assert mod._full_data_scaled is None
 
-    def test_full_data_property_routes_to_raw_before_scaling(self) -> None:
+    def test_full_data_property_routes_to_raw_before_scaling(
+        self, concrete_forecasting_class: type
+    ) -> None:
         """full_data property returns _full_data_raw before scaling."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -495,28 +367,9 @@ class TestForecastingTypedAttrs:
         np.testing.assert_array_equal(mod.full_data, raw)
         np.testing.assert_array_equal(mod._full_data_raw, raw)
 
-    def test_dataframe_injection_sets_time_index(self) -> None:
+    def test_dataframe_injection_sets_time_index(self, concrete_forecasting_class: type) -> None:
         """Setting typed attributes with DataFrame data works correctly."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -545,38 +398,13 @@ class TestForecastingTypedAttrs:
             BaseForecastingTimeSeriesDataModule,
         )
 
-        assert hasattr(
-            BaseForecastingTimeSeriesDataModule, '_resolve_cache_dir'
-        )
-        assert hasattr(
-            BaseForecastingTimeSeriesDataModule, '_save_scaler_to_cache'
-        )
-        assert hasattr(
-            BaseForecastingTimeSeriesDataModule, '_load_scaler_from_cache'
-        )
+        assert hasattr(BaseForecastingTimeSeriesDataModule, '_resolve_cache_dir')
+        assert hasattr(BaseForecastingTimeSeriesDataModule, '_save_scaler_to_cache')
+        assert hasattr(BaseForecastingTimeSeriesDataModule, '_load_scaler_from_cache')
 
-    def test_resolve_cache_dir_returns_path(self) -> None:
+    def test_resolve_cache_dir_returns_path(self, concrete_forecasting_class: type) -> None:
         """_resolve_cache_dir returns a Path object."""
-        from chronocratic.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -599,6 +427,8 @@ class TestForecastingTypedAttrs:
             BaseForecastingTimeSeriesDataModule,
         )
 
+        # This test uses a custom _set_data_slices implementation that actually
+        # sets self._train_slice, so it cannot share the standard fixture.
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
             def _do_prepare_data(self) -> None:
                 pass
@@ -609,9 +439,7 @@ class TestForecastingTypedAttrs:
             def _transform_data(self) -> None:
                 pass
 
-            def _build_sliding_dataset(
-                self, data, internal_mode, step, horizon,
-            ):
+            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
                 raise NotImplementedError
 
         mod = ConcreteForecasting(

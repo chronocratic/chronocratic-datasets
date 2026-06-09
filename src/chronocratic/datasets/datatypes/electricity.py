@@ -11,6 +11,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import numpy as np
 
     from chronocratic.datasets.enums import TimeSeriesDatasetMode
@@ -40,7 +42,8 @@ class ElectricityDataset(FlexibleTimeSeriesDatasetSingleFileMultipleSeries):
         data: 3-D numpy array of shape (num_clients, T, 1).
         seq_len: Input window length.
         step: Step between consecutive windows.
-        mode: Dataset mode string (e.g., 'sample_only', 'input_output').
+        mode: Dataset mode (e.g., TimeSeriesDatasetMode.SAMPLE_ONLY,
+            TimeSeriesDatasetMode.INPUT_OUTPUT).
         forecast_horizon: Number of future steps to predict.
         transformations_sequence: Post-processing callables.
 
@@ -55,7 +58,7 @@ class ElectricityDataset(FlexibleTimeSeriesDatasetSingleFileMultipleSeries):
         step: int,
         mode: TimeSeriesDatasetMode,
         forecast_horizon: int,
-        transformations_sequence: tuple = (convert_numpy_to_tensor,),
+        transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
     ) -> None:
         if forecast_horizon <= 0:
             msg = f'forecast_horizon must be positive, got {forecast_horizon}'

@@ -27,11 +27,7 @@ __all__ = [
 ]
 
 
-def build_cache_key(
-    *,
-    dataset_name: str,
-    params: dict[str, Any],
-) -> str:
+def build_cache_key(*, dataset_name: str, params: dict[str, Any]) -> str:
     """Build a hybrid cache key: SHA-256 hash prefix plus readable suffix.
 
     The key format is ``<8-char-sha256>_<dataset>_<key-params>.cache``.
@@ -56,11 +52,7 @@ def build_cache_key(
     return '_'.join(suffix_parts) + '.cache'
 
 
-def resolve_cache_dir(
-    *,
-    cache_dir: Path | None,
-    dataset_name: str,
-) -> Path:
+def resolve_cache_dir(*, cache_dir: Path | None, dataset_name: str) -> Path:
     """Resolve the absolute cache directory path.
 
     When ``cache_dir`` is ``None``, the default location

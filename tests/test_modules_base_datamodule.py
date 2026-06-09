@@ -172,7 +172,6 @@ class TestBaseTimeSeriesDataModule:
     def test_get_custom_collate_fn(self, module) -> None:
         """_get_custom_collate_fn returns partial with correct batch size."""
 
-
         collate = module._get_custom_collate_fn()
         assert isinstance(collate, partial)
         assert collate.keywords['desired_batch_size'] == module.batch_size
@@ -465,9 +464,7 @@ class TestSetupStageGating:
         # Should not raise TypeError
         mod.setup()
 
-    def test_setup_fit_then_test_reuses_scaler_cache(
-        self, concrete_module_class
-    ) -> None:
+    def test_setup_fit_then_test_reuses_scaler_cache(self, concrete_module_class) -> None:
         """setup('fit') creates scaler, setup('test') reuses it (create_data_scaler called once)."""
         passthrough = lambda t, v, te: (t, v, te)  # noqa: E731
         call_count = 0
@@ -720,13 +717,7 @@ class TestPrepareDimensionsCache:
         # Write metadata.json in the cache dir
         meta_path = tmp_path / f'{mod._cache_key}_metadata.json'
         atomic_save_metadata(
-            meta_path,
-            {
-                'version': 1,
-                'dataset_name': 'TestDataset',
-                'n_features': 5,
-                'seq_len': 64,
-            },
+            meta_path, {'version': 1, 'dataset_name': 'TestDataset', 'n_features': 5, 'seq_len': 64}
         )
 
         result = mod.prepare_dimensions()
@@ -752,9 +743,7 @@ class TestPrepareDimensionsCache:
         with pytest.raises(FileNotFoundError, match='Cache metadata not found'):
             mod.prepare_dimensions()
 
-    def test_raises_value_error_on_version_mismatch(
-        self, concrete_module_class, tmp_path
-    ) -> None:
+    def test_raises_value_error_on_version_mismatch(self, concrete_module_class, tmp_path) -> None:
         """prepare_dimensions() raises ValueError when metadata version != 1."""
         from chronocratic.datasets.utils.cache import atomic_save_metadata
 

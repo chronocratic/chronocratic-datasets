@@ -8,9 +8,9 @@ import pytest
 from torch.utils.data import DataLoader
 
 from chronocratic.datasets.enums.data import (
+    ClassificationLoaderMode,
     ClassificationSplitMode,
     DataForm,
-    TimeSeriesDatasetMode,
 )
 
 
@@ -128,7 +128,7 @@ class TestUCRClassificationDataModule:
         mod.prepare_data()
         mod.setup('fit')
 
-        dl = mod.train_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_LABEL)
+        dl = mod.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert isinstance(dl, DataLoader)
 
     def test_test_dataloader_returns_dataloader(
@@ -141,7 +141,7 @@ class TestUCRClassificationDataModule:
         mod.prepare_data()
         mod.setup('fit')
 
-        dl = mod.test_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_LABEL)
+        dl = mod.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert isinstance(dl, DataLoader)
 
     def test_val_dataloader_returns_dataloader_or_none(
@@ -154,7 +154,7 @@ class TestUCRClassificationDataModule:
         mod.prepare_data()
         mod.setup('fit')
 
-        dl = mod.val_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_LABEL)
+        dl = mod.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert dl is None or isinstance(dl, DataLoader)
 
         # Test with valid_size=0
@@ -163,7 +163,7 @@ class TestUCRClassificationDataModule:
         )
         mod_no_val.prepare_data()
         mod_no_val.setup('fit')
-        dl_none = mod_no_val.val_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_LABEL)
+        dl_none = mod_no_val.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert dl_none is None
 
 
@@ -348,15 +348,7 @@ def test_cache_round_trip(tmp_path: Path) -> None:
     mod.setup(stage='fit')
 
     # Verify data matches (before scaling since scale_data=False)
-    np.testing.assert_array_equal(
-        mod._train_data_samples.to_numpy(), orig_train.to_numpy()
-    )
-    np.testing.assert_array_equal(
-        mod._test_data_samples.to_numpy(), orig_test.to_numpy()
-    )
-    np.testing.assert_array_equal(
-        mod._train_data_labels.to_numpy(), orig_train_labels.to_numpy()
-    )
-    np.testing.assert_array_equal(
-        mod._test_data_labels.to_numpy(), orig_test_labels.to_numpy()
-    )
+    np.testing.assert_array_equal(mod._train_data_samples.to_numpy(), orig_train.to_numpy())
+    np.testing.assert_array_equal(mod._test_data_samples.to_numpy(), orig_test.to_numpy())
+    np.testing.assert_array_equal(mod._train_data_labels.to_numpy(), orig_train_labels.to_numpy())
+    np.testing.assert_array_equal(mod._test_data_labels.to_numpy(), orig_test_labels.to_numpy())

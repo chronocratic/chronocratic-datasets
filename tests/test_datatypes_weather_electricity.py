@@ -63,16 +63,12 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
             seq_len=seq_len,
             step=step,
             mode=TimeSeriesDatasetMode.INPUT_OUTPUT,
-            sequence_handling_strategy=ForecastingStrategySingleFile(
-                forecast_horizon=horizon
-            ),
+            sequence_handling_strategy=ForecastingStrategySingleFile(forecast_horizon=horizon),
             expand_dims_axis=None,
         )
         assert len(dataset) > 0
 
-    def test_returns_correct_sample_shape(
-        self, mock_multi_series_data: np.ndarray
-    ) -> None:
+    def test_returns_correct_sample_shape(self, mock_multi_series_data: np.ndarray) -> None:
         """dataset[i] returns (seq_len, features) shaped tensor."""
         from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
@@ -92,9 +88,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
             seq_len=seq_len,
             step=step,
             mode=TimeSeriesDatasetMode.INPUT_OUTPUT,
-            sequence_handling_strategy=ForecastingStrategySingleFile(
-                forecast_horizon=horizon
-            ),
+            sequence_handling_strategy=ForecastingStrategySingleFile(forecast_horizon=horizon),
             expand_dims_axis=None,
         )
         sample = dataset[0]
@@ -126,9 +120,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
             seq_len=seq_len,
             step=step,
             mode=TimeSeriesDatasetMode.INPUT_OUTPUT,
-            sequence_handling_strategy=ForecastingStrategySingleFile(
-                forecast_horizon=horizon
-            ),
+            sequence_handling_strategy=ForecastingStrategySingleFile(forecast_horizon=horizon),
             expand_dims_axis=None,
         )
         # T=500, seq_len=32, horizon=16, step=32
@@ -152,9 +144,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
             seq_len=32,
             step=32,
             mode=TimeSeriesDatasetMode.INPUT_OUTPUT,
-            sequence_handling_strategy=ForecastingStrategySingleFile(
-                forecast_horizon=16
-            ),
+            sequence_handling_strategy=ForecastingStrategySingleFile(forecast_horizon=16),
             expand_dims_axis=None,
         )
         sample = dataset[-1]
@@ -180,11 +170,7 @@ class TestWeatherDataset:
 
         data = np.random.randn(2000, 22).astype(np.float32)
         dataset = WeatherDataset(
-            data=data,
-            seq_len=32,
-            step=32,
-            mode='sample_only',
-            forecast_horizon=96,
+            data=data, seq_len=32, step=32, mode='sample_only', forecast_horizon=96
         )
         assert len(dataset) > 0
 
@@ -194,11 +180,7 @@ class TestWeatherDataset:
 
         data = np.random.randn(2000, 22).astype(np.float32)
         dataset = WeatherDataset(
-            data=data,
-            seq_len=64,
-            step=64,
-            mode='sample_only',
-            forecast_horizon=96,
+            data=data, seq_len=64, step=64, mode='sample_only', forecast_horizon=96
         )
         sample = dataset[0]
         # SAMPLE_ONLY mode returns single data array
@@ -226,11 +208,7 @@ class TestElectricityDataset:
 
         data = np.random.randn(50, 1000, 1).astype(np.float32)
         dataset = ElectricityDataset(
-            data=data,
-            seq_len=32,
-            step=32,
-            mode='sample_only',
-            forecast_horizon=24,
+            data=data, seq_len=32, step=32, mode='sample_only', forecast_horizon=24
         )
         assert len(dataset) > 0
 
@@ -242,18 +220,10 @@ class TestElectricityDataset:
         data_10 = np.random.randn(10, 500, 1).astype(np.float32)
 
         ds5 = ElectricityDataset(
-            data=data_5,
-            seq_len=32,
-            step=32,
-            mode='sample_only',
-            forecast_horizon=24,
+            data=data_5, seq_len=32, step=32, mode='sample_only', forecast_horizon=24
         )
         ds10 = ElectricityDataset(
-            data=data_10,
-            seq_len=32,
-            step=32,
-            mode='sample_only',
-            forecast_horizon=24,
+            data=data_10, seq_len=32, step=32, mode='sample_only', forecast_horizon=24
         )
         # 10 series should have ~2x the samples of 5 series
         assert len(ds10) > len(ds5)

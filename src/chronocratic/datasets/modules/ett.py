@@ -167,11 +167,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     def _build_sliding_dataset(
-        self,
-        data: np.ndarray,
-        internal_mode: TimeSeriesDatasetMode,  # noqa: ARG002 — ETTDataset hardcodes mode internally
-        step: int,
-        horizon: int,
+        self, data: np.ndarray, internal_mode: TimeSeriesDatasetMode, step: int, horizon: int
     ) -> Dataset:
         """Build sliding-window dataset for ETT.
 
@@ -186,13 +182,16 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         """
         from chronocratic.datasets.datatypes.ett import ETTDataset
 
-        assert self._seq_len is not None
+        if self._seq_len is None:
+            msg = 'seq_len is not set. Ensure the datamodule was initialized with a seq_len value.'
+            raise RuntimeError(msg)
         squeezed = data.squeeze(axis=0)  # (1, T, F) -> (T, F)
         return ETTDataset(
             data=squeezed,
             seq_len=self._seq_len,
             step=step,
             forecast_horizon=horizon,
+            mode=internal_mode,
         )
 
     # ------------------------------------------------------------------
