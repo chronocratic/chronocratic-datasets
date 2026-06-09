@@ -6,12 +6,12 @@ Verifies that fixtures defined in conftest.py produce valid outputs.
 from pathlib import Path
 
 import numpy as np
-
-from tscollection.datasets.utils.cache import load_metadata, load_scaler
 from sklearn.preprocessing import MinMaxScaler
 
+from tscollection.datasets.utils.cache import load_metadata, load_scaler
 
-def test_synthetic_cache_dir_fixture(synthetic_cache_dir: Path) -> None:  # noqa: PT004 – fixture from conftest
+
+def test_synthetic_cache_dir_fixture(synthetic_cache_dir: Path) -> None:
     """Verify synthetic_cache_dir fixture produces valid cache files.
 
     Checks that the returned path contains the expected npz, json, and
