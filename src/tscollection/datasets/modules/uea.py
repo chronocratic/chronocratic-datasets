@@ -22,11 +22,12 @@ from sklearn.preprocessing import LabelEncoder
 
 from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 from tscollection.datasets.enums.data import (
+    ClassificationLoaderMode,
     ClassificationSplitMode,
     DataForm,
     ScalingMethod,
-    TimeSeriesDatasetMode,
 )
+from tscollection.datasets.maps.loader_to_dataset import CLASSIFICATION_LOADER_MAP
 from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
@@ -353,7 +354,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def train_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
+        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
         shuffle: bool | None = None,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
@@ -374,7 +375,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         dataset = UEAClassificationMultivariateDataset(
             data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._train_data_labels,
-            mode=mode,
+            mode=CLASSIFICATION_LOADER_MAP[mode],
         )
         return self._process_train_dataloader(
             dataset_object=dataset,
@@ -386,7 +387,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def val_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
+        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:  # ty:ignore[invalid-method-override]
@@ -409,7 +410,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         dataset = UEAClassificationMultivariateDataset(
             data=self._valid_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._valid_data_labels,
-            mode=mode,
+            mode=CLASSIFICATION_LOADER_MAP[mode],
         )
         return self._process_valid_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
@@ -418,7 +419,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def test_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
+        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:  # ty:ignore[invalid-method-override]
@@ -437,7 +438,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         dataset = UEAClassificationMultivariateDataset(
             data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._test_data_labels,
-            mode=mode,
+            mode=CLASSIFICATION_LOADER_MAP[mode],
         )
         return self._process_test_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args

@@ -18,11 +18,12 @@ from sklearn.model_selection import train_test_split
 
 from tscollection.datasets.datatypes.ucr import UCRClassificationUnivariateDataset
 from tscollection.datasets.enums.data import (
+    ClassificationLoaderMode,
     ClassificationSplitMode,
     DataForm,
     ScalingMethod,
-    TimeSeriesDatasetMode,
 )
+from tscollection.datasets.maps.loader_to_dataset import CLASSIFICATION_LOADER_MAP
 from tscollection.datasets.modules._base.classification import (
     BaseClassificationTimeSeriesDataModule,
 )
@@ -331,7 +332,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def train_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
+        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
         shuffle: bool | None = None,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
@@ -352,7 +353,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         dataset = UCRClassificationUnivariateDataset(
             data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._train_data_labels,
-            mode=mode,
+            mode=CLASSIFICATION_LOADER_MAP[mode],
         )
         return self._process_train_dataloader(
             dataset_object=dataset,
@@ -364,7 +365,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def val_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
+        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:  # ty:ignore[invalid-method-override]
@@ -387,7 +388,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         dataset = UCRClassificationUnivariateDataset(
             data=self._valid_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._valid_data_labels,
-            mode=mode,
+            mode=CLASSIFICATION_LOADER_MAP[mode],
         )
         return self._process_valid_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
@@ -396,7 +397,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def test_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
+        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:  # ty:ignore[invalid-method-override]
@@ -415,7 +416,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         dataset = UCRClassificationUnivariateDataset(
             data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._test_data_labels,
-            mode=mode,
+            mode=CLASSIFICATION_LOADER_MAP[mode],
         )
         return self._process_test_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
