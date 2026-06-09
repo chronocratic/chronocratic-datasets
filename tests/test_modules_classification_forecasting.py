@@ -13,6 +13,27 @@ from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
 from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
 
 
+@pytest.fixture
+def concrete_forecasting_class():
+    """Concrete implementation of BaseForecastingTimeSeriesDataModule for testing."""
+    from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
+
+    class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
+        def _do_prepare_data(self) -> None:
+            pass
+
+        def _set_data_slices(self) -> None:
+            pass
+
+        def _transform_data(self) -> None:
+            pass
+
+        def _build_sliding_dataset(self, data, internal_mode, step, horizon):
+            raise NotImplementedError
+
+    return ConcreteForecasting
+
+
 class TestBaseClassificationTimeSeriesDataModule:
     """Tests for BaseClassificationTimeSeriesDataModule."""
 
@@ -123,26 +144,9 @@ class TestBaseForecastingTimeSeriesDataModule:
         assert hasattr(module_class, '_transform_data')
         assert getattr(module_class._transform_data, '__isabstractmethod__', False)
 
-    def test_prepare_data_scaler_minmax(self) -> None:
+    def test_prepare_data_scaler_minmax(self, concrete_forecasting_class: type) -> None:
         """_prepare_data_scaler returns MinMaxScaler for ScalingMethod.MINMAX."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -157,26 +161,9 @@ class TestBaseForecastingTimeSeriesDataModule:
         scaler = mod._prepare_data_scaler()
         assert isinstance(scaler, MinMaxScaler)
 
-    def test_prepare_data_scaler_standard(self) -> None:
+    def test_prepare_data_scaler_standard(self, concrete_forecasting_class: type) -> None:
         """_prepare_data_scaler returns StandardScaler for ScalingMethod.STANDARD."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -191,29 +178,12 @@ class TestBaseForecastingTimeSeriesDataModule:
         scaler = mod._prepare_data_scaler()
         assert isinstance(scaler, StandardScaler)
 
-    def test_prepare_data_scaler_invalid_raises(self) -> None:
+    def test_prepare_data_scaler_invalid_raises(self, concrete_forecasting_class: type) -> None:
         """__init__ raises ValueError for scale_data=True with ScalingMethod.NONE."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
         with pytest.raises(
             ValueError, match=r'scale_data=True is incompatible with ScalingMethod\.NONE'
         ):
-            ConcreteForecasting(
+            concrete_forecasting_class(
                 batch_size=32,
                 seq_len=128,
                 valid_size=0.1,
@@ -286,26 +256,9 @@ class TestPrepareDimensions:
         with pytest.raises(RuntimeError, match=r'prepare_dimensions.*prepare_data'):
             module.prepare_dimensions()
 
-    def test_forecasting_pre_setup_with_dataframe(self) -> None:
-        """Forecasting _compute_dimensions adds TIME_FEATURE_COUNT for DataFrame _full_data."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        module = ConcreteForecasting(
+    def test_forecasting_pre_setup_with_dataframe(self, concrete_forecasting_class: type) -> None:
+        """Forecasting _compute_dimensions adds TIME_FEATURE_COUNT for DataFrame."""
+        module = concrete_forecasting_class(
             batch_size=32,
             seq_len=96,
             valid_size=0.1,
@@ -324,26 +277,9 @@ class TestPrepareDimensions:
         assert n_features == 8 + TIME_FEATURE_COUNT
         assert seq_len == 96
 
-    def test_forecasting_pre_setup_with_numpy(self) -> None:
-        """Forecasting _compute_dimensions does NOT add TIME_FEATURE_COUNT for numpy _full_data."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        module = ConcreteForecasting(
+    def test_forecasting_pre_setup_with_numpy(self, concrete_forecasting_class: type) -> None:
+        """Forecasting _compute_dimensions does NOT add TIME_FEATURE_COUNT for numpy."""
+        module = concrete_forecasting_class(
             batch_size=32,
             seq_len=96,
             valid_size=0.1,
@@ -360,26 +296,9 @@ class TestPrepareDimensions:
         assert n_features == 6  # No TIME_FEATURE_COUNT added
         assert seq_len == 96
 
-    def test_post_setup_returns_cached(self) -> None:
+    def test_post_setup_returns_cached(self, concrete_forecasting_class: type) -> None:
         """prepare_dimensions() returns cached _num_features when set."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        module = ConcreteForecasting(
+        module = concrete_forecasting_class(
             batch_size=32,
             seq_len=96,
             valid_size=0.1,
@@ -405,26 +324,9 @@ class TestPrepareDimensions:
 class TestForecastingTypedAttrs:
     """Tests for typed data attributes in forecasting modules."""
 
-    def test_has_typed_attributes(self) -> None:
+    def test_has_typed_attributes(self, concrete_forecasting_class: type) -> None:
         """Forecasting base has _full_data_raw, _time_index, _full_data_scaled."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -443,26 +345,11 @@ class TestForecastingTypedAttrs:
         assert mod._time_index is None
         assert mod._full_data_scaled is None
 
-    def test_full_data_property_routes_to_raw_before_scaling(self) -> None:
+    def test_full_data_property_routes_to_raw_before_scaling(
+        self, concrete_forecasting_class: type
+    ) -> None:
         """full_data property returns _full_data_raw before scaling."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -480,26 +367,9 @@ class TestForecastingTypedAttrs:
         np.testing.assert_array_equal(mod.full_data, raw)
         np.testing.assert_array_equal(mod._full_data_raw, raw)
 
-    def test_dataframe_injection_sets_time_index(self) -> None:
+    def test_dataframe_injection_sets_time_index(self, concrete_forecasting_class: type) -> None:
         """Setting typed attributes with DataFrame data works correctly."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -532,26 +402,9 @@ class TestForecastingTypedAttrs:
         assert hasattr(BaseForecastingTimeSeriesDataModule, '_save_scaler_to_cache')
         assert hasattr(BaseForecastingTimeSeriesDataModule, '_load_scaler_from_cache')
 
-    def test_resolve_cache_dir_returns_path(self) -> None:
+    def test_resolve_cache_dir_returns_path(self, concrete_forecasting_class: type) -> None:
         """_resolve_cache_dir returns a Path object."""
-        from tscollection.datasets.modules._base.forecasting import (
-            BaseForecastingTimeSeriesDataModule,
-        )
-
-        class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
-            def _do_prepare_data(self) -> None:
-                pass
-
-            def _set_data_slices(self) -> None:
-                pass
-
-            def _transform_data(self) -> None:
-                pass
-
-            def _build_sliding_dataset(self, data, internal_mode, step, horizon):
-                raise NotImplementedError
-
-        mod = ConcreteForecasting(
+        mod = concrete_forecasting_class(
             batch_size=32,
             seq_len=128,
             valid_size=0.1,
@@ -574,6 +427,8 @@ class TestForecastingTypedAttrs:
             BaseForecastingTimeSeriesDataModule,
         )
 
+        # This test uses a custom _set_data_slices implementation that actually
+        # sets self._train_slice, so it cannot share the standard fixture.
         class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
             def _do_prepare_data(self) -> None:
                 pass
