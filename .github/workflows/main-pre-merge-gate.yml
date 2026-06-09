@@ -1,4 +1,4 @@
-name: Pre-merge Gate
+name: Main Pre-merge Gate
 
 on:
   pull_request:
@@ -16,6 +16,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Reject non-dev PRs
+        if: ${{ github.head_ref != 'dev' }}
+        run: |
+          echo "::error::PRs from '${{ github.head_ref }}' to main are not allowed. Only dev→main merges are permitted."
+          exit 1
+
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
@@ -44,6 +50,12 @@ jobs:
     name: Check forbidden paths
     runs-on: ubuntu-latest
     steps:
+      - name: Reject non-dev PRs
+        if: ${{ github.head_ref != 'dev' }}
+        run: |
+          echo "::error::PRs from '${{ github.head_ref }}' to main are not allowed. Only dev→main merges are permitted."
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v6
         with:

@@ -15,6 +15,30 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      - name: Verify PR and actor permissions
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            if (pr.base.ref !== 'main') {
+              core.setFailed('Fast-forward is only allowed for PRs targeting main.');
+            }
+            if (pr.head.ref !== 'dev') {
+              core.setFailed('Fast-forward is only allowed for PRs from dev to main.');
+            }
+            const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.actor
+            });
+            if (!['admin', 'maintain'].includes(perm.permission)) {
+              core.setFailed(`@${context.actor} (role: ${perm.permission}) — only admin/maintainer can fast-forward.`);
+            }
+
       - name: Fast forwarding
         uses: sequoia-pgp/fast-forward@v1
         with:
