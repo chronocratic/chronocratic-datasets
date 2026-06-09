@@ -83,12 +83,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         num_workers: Number of DataLoader worker processes.
         mode: Forecasting mode (univariate or multivariate), typed as
             :class:`~tscollection.datasets.enums.data.ForecastingMode`.
-        loader_mode: Controls how dataloaders yield data. Defaults to
-            :data:`ForecastingLoaderMode.RAW_SERIES` which preserves
-            existing TensorDataset behavior.
         forecast_horizon: Number of future steps to predict. Used only
-            when ``loader_mode`` is ``INPUT_TARGET`` or ``INPUT_ONLY``.
-            Does not affect cache key.
+            when ``loader_mode`` is ``INPUT_TARGET`` or ``INPUT_ONLY``
+            in dataloader calls. Does not affect cache key.
         step: Stride between consecutive sliding windows. Defaults to
             ``seq_len`` when not provided. Does not affect cache key.
     """
@@ -106,7 +103,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         data_scaling_range: tuple[float, float] = (0, 1),
         num_workers: int = 0,
         mode: ForecastingMode = ForecastingMode.UNIVARIATE,
-        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         forecast_horizon: int | None = None,
         step: int | None = None,
     ) -> None:
@@ -122,7 +118,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             num_workers=num_workers,
         )
         self._mode = mode
-        self.loader_mode = loader_mode
         self.forecast_horizon = forecast_horizon
         self._step = step
         self._train_slice: slice | None = None
@@ -224,8 +219,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     ) -> Dataset:
         """Build sliding-window dataset for INPUT_TARGET / INPUT_ONLY modes.
 
-        Called by ``_build_dataloader()`` when ``loader_mode`` is
-        ``INPUT_TARGET`` or ``INPUT_ONLY``.
+        Called by ``_build_dataloader()`` when the per-call ``loader_mode``
+        is ``INPUT_TARGET`` or ``INPUT_ONLY``.
 
         For (1, T, F) data, squeeze axis 0 to get (T, F) before passing
         to the dataset class. For (S, T, F) data (multi-series),
@@ -475,6 +470,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self,
         data_partition: np.ndarray,
         dataloader_fn,
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
@@ -489,6 +485,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             dataloader_fn: Dataloader processor
                 (``_process_train_dataloader``, ``_process_test_dataloader``,
                 or ``_process_valid_dataloader``).
+            loader_mode: Per-call mode controlling output format.
             shuffle: Whether to shuffle (train only).
             strict_batch_size: If True, pad the last batch.
             extra_args: Additional DataLoader keyword arguments.
@@ -499,7 +496,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         import torch
         from torch.utils.data import TensorDataset
 
-        internal_mode = FORECASTING_LOADER_MAP[self.loader_mode]
+        internal_mode = FORECASTING_LOADER_MAP[loader_mode]
 
         if internal_mode is None:
             # RAW_SERIES: existing behavior — TensorDataset on raw samples
