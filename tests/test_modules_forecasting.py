@@ -926,11 +926,7 @@ class TestElectricityCacheIntegration:
         dates = pd.date_range('2012-01-01', periods=501, freq='h')
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
-            {
-                'MT_001': rng.standard_normal(501),
-                'MT_002': rng.standard_normal(501),
-            },
-            index=dates,
+            {'MT_001': rng.standard_normal(501), 'MT_002': rng.standard_normal(501)}, index=dates
         )
         df.index.name = 'datetime'
         df.to_csv(csv_file, sep=';', decimal=',')
@@ -942,10 +938,7 @@ class TestElectricityCacheIntegration:
 
         cache_dir = tmp_path / 'cache'
         module = ElectricityLoadModule(
-            dataset_file_path=elec_csv,
-            seq_len=96,
-            batch_size=16,
-            mode=ForecastingMode.UNIVARIATE,
+            dataset_file_path=elec_csv, seq_len=96, batch_size=16, mode=ForecastingMode.UNIVARIATE
         )
         module._cache_dir = cache_dir
         module.prepare_data()
@@ -967,10 +960,7 @@ class TestElectricityCacheIntegration:
 
         cache_dir = tmp_path / 'cache'
         module = ElectricityLoadModule(
-            dataset_file_path=elec_csv,
-            seq_len=96,
-            batch_size=16,
-            mode=ForecastingMode.UNIVARIATE,
+            dataset_file_path=elec_csv, seq_len=96, batch_size=16, mode=ForecastingMode.UNIVARIATE
         )
         module._cache_dir = cache_dir
         module.prepare_data()
@@ -1313,9 +1303,7 @@ class TestElectricityBugFixes:
         df.to_csv(csv_file, sep=';', decimal=',')
 
         cache_dir = tmp_path / 'cache'
-        module = ElectricityLoadModule(
-            dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE
-        )
+        module = ElectricityLoadModule(dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE)
         module._cache_dir = cache_dir
         # Should NOT raise IndexError
         module.prepare_data()
