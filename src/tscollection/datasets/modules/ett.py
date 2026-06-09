@@ -167,11 +167,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     def _build_sliding_dataset(
-        self,
-        data: np.ndarray,
-        internal_mode: TimeSeriesDatasetMode,  # noqa: ARG002 — ETTDataset hardcodes mode internally
-        step: int,
-        horizon: int,
+        self, data: np.ndarray, internal_mode: TimeSeriesDatasetMode, step: int, horizon: int
     ) -> Dataset:
         """Build sliding-window dataset for ETT.
 
@@ -193,6 +189,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             seq_len=self._seq_len,
             step=step,
             forecast_horizon=horizon,
+            mode=internal_mode,
         )
 
     # ------------------------------------------------------------------
