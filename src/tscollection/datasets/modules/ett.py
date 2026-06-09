@@ -182,7 +182,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         """
         from tscollection.datasets.datatypes.ett import ETTDataset
 
-        assert self._seq_len is not None
+        if self._seq_len is None:
+            msg = 'seq_len is not set. Ensure the datamodule was initialized with a seq_len value.'
+            raise RuntimeError(msg)
         squeezed = data.squeeze(axis=0)  # (1, T, F) -> (T, F)
         return ETTDataset(
             data=squeezed,
