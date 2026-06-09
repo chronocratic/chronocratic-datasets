@@ -109,6 +109,12 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
         )
+        if scale_data and data_scaling_method == ScalingMethod.NONE:
+            msg = (
+                'scale_data=True is incompatible with ScalingMethod.NONE. '
+                'Use scale_data=False instead.'
+            )
+            raise ValueError(msg)
         self._mode = mode
         self.forecast_horizon = forecast_horizon
         self._step = step
@@ -351,18 +357,14 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                     self._calculate_num_features()
                     self._split_data()
                 elif self._train_data_samples is not None:
+                    # Data already populated (e.g., by subclass prepare_data). Skip scaling.
                     pass
                 else:
-                    logger.warning(
+                    msg = (
                         'scale_data=True but no fitted scaler cache available. '
-                        'Data will not be scaled. Call setup(stage="fit") first or '
-                        'provide a pre-fitted _data_scaler_cache.'
+                        'Call setup(stage="fit") first or provide a pre-fitted _data_scaler_cache.'
                     )
-                    self._scaling_done = True
-                    self._full_data_scaled = full_array.copy()
-                    self._transform_data()
-                    self._calculate_num_features()
-                    self._split_data()
+                    raise RuntimeError(msg)
         else:
             self._full_data_scaled = full_array.copy()
             self._scaling_done = True
@@ -469,8 +471,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         from torch.utils.data import TensorDataset
 
         # Type narrowing: forecasting modules always set *_data_samples to np.ndarray
-        # after setup(). Assert at runtime to satisfy static analysis.
-        assert isinstance(data_partition, np.ndarray)
+        # after setup(). Check at runtime to satisfy static analysis.
+        if not isinstance(data_partition, np.ndarray):
+            msg = (
+                f'data_partition must be np.ndarray, got {type(data_partition).__name__}. '
+                'Call setup() first.'
+            )
+            raise TypeError(msg)
 
         if loader_mode == ForecastingLoaderMode.RAW_SERIES:
             # TensorDataset on raw samples
@@ -626,6 +633,16 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         train_data = self._full_data_scaled[:, self._train_slice]
         valid_data = self._full_data_scaled[:, self._valid_slice]
         test_data = self._full_data_scaled[:, self._test_slice]
+
+        if train_data.shape[1] == 0:
+            logger.warning(
+                'Train split is empty for %s. Data may be too small for the configured slices.',
+                self._dataset_name,
+            )
+        if valid_data.shape[1] == 0:
+            logger.warning('Validation split is empty for %s.', self._dataset_name)
+        if test_data.shape[1] == 0:
+            logger.warning('Test split is empty for %s.', self._dataset_name)
 
         self._train_data_samples = train_data
         self._valid_data_samples = valid_data

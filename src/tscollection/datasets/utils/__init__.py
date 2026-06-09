@@ -1,9 +1,6 @@
 """Utility functions for data processing."""
 
-from tscollection.datasets.utils.arff import (
-    process_df_according_to_dtypes,
-    read_arff_as_df,
-)
+from tscollection.datasets.utils.arff import process_df_according_to_dtypes, read_arff_as_df
 from tscollection.datasets.utils.cache import (
     atomic_save_metadata,
     atomic_save_npz,

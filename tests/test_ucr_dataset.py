@@ -2,7 +2,7 @@
 
 Verifies that UCRClassificationUnivariateDataset correctly inherits from
 FixedTimeSeriesDatasetUnivariate, applies default transforms, and yields
-(data, label) tuples in WITH_LABELS mode.
+(data, label) tuples in SAMPLE_LABEL mode.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from tscollection.datasets.enums import TimeSeriesDatasetMode
 
 
 def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classification_labels):
-    """UCRClassificationUnivariateDataset yields (Tensor, int) in WITH_LABELS mode."""
+    """UCRClassificationUnivariateDataset yields (Tensor, int) in SAMPLE_LABEL mode."""
     from tscollection.datasets.datatypes.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(
@@ -33,7 +33,7 @@ def test_ucr_yields_data_label(synthetic_classification_df, synthetic_classifica
 
 
 def test_ucr_without_labels(synthetic_classification_df):
-    """UCR yields single array in WITHOUT_LABELS mode."""
+    """UCR yields single array in SAMPLE_ONLY mode."""
     from tscollection.datasets.datatypes.ucr import UCRClassificationUnivariateDataset
 
     ds = UCRClassificationUnivariateDataset(

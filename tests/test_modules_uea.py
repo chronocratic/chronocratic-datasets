@@ -15,10 +15,10 @@ from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 
 from tscollection.datasets.enums.data import (
+    ClassificationLoaderMode,
     ClassificationSplitMode,
     DataForm,
     ScalingMethod,
-    TimeSeriesDatasetMode,
 )
 
 
@@ -140,7 +140,7 @@ class TestUEAProcessStackedData:
 
         assert isinstance(samples, np.ndarray)
         assert isinstance(labels, np.ndarray)
-        # Shape after swapaxes(1,2): (samples, features, timesteps) -> (samples, timesteps, features)
+        # Shape: (samples, features, timesteps) -> (samples, timesteps, features)
         assert samples.shape[0] == 2
 
     def test_process_stacked_data_decodes_bytes(self, synthetic_uea_folder: Path) -> None:
@@ -173,91 +173,91 @@ class TestUEAPrepareData:
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
-    @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_prepare_data_loads_data(self, mock_read, synthetic_uea_folder: Path) -> None:
+    def test_prepare_data_loads_data(self, synthetic_uea_folder: Path) -> None:
         """prepare_data loads train/test data and sets module state."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
-        )
-        module.prepare_data()
+        with patch(
+            'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                scale_data=False,
+            )
+            module.prepare_data()
 
-        assert module._train_data_samples is not None
-        assert module._test_data_samples is not None
-        assert module._train_data_labels is not None
-        assert module._test_data_labels is not None
-        assert module._num_classes is not None
-        assert module._seq_len is not None
-        assert module._num_features is not None
-        # Labels should be pandas Series with category dtype
-        assert isinstance(module._train_data_labels, pd.Series)
-        assert module._train_data_labels.dtype.name == 'category'
+            assert module._train_data_samples is not None
+            assert module._test_data_samples is not None
+            assert module._train_data_labels is not None
+            assert module._test_data_labels is not None
+            assert module._num_classes is not None
+            assert module._seq_len is not None
+            assert module._num_features is not None
+            # Labels should be pandas Series with category dtype
+            assert isinstance(module._train_data_labels, pd.Series)
+            assert module._train_data_labels.dtype.name == 'category'
 
 
 class TestUEADataLoaders:
     """Tests for dataloader methods."""
 
-    @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_train_dataloader_returns_dataloader(
-        self, mock_read, synthetic_uea_folder: Path
-    ) -> None:
+    def test_train_dataloader_returns_dataloader(self, synthetic_uea_folder: Path) -> None:
         """train_dataloader returns a DataLoader instance."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
-        )
-        module.prepare_data()
-        module.setup('fit')
+        with patch(
+            'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                scale_data=False,
+            )
+            module.prepare_data()
+            module.setup('fit')
 
-        loader = module.train_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
-        assert isinstance(loader, DataLoader)
+            loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            assert isinstance(loader, DataLoader)
 
-    @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_val_dataloader_returns_dataloader_or_none(
-        self, mock_read, synthetic_uea_folder: Path
-    ) -> None:
+    def test_val_dataloader_returns_dataloader_or_none(self, synthetic_uea_folder: Path) -> None:
         """val_dataloader returns None when valid_size=0."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            valid_size=0.0,
-            scale_data=False,
-        )
-        module.prepare_data()
-        result = module.val_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
-        assert result is None
+        with patch(
+            'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                valid_size=0.0,
+                scale_data=False,
+            )
+            module.prepare_data()
+            result = module.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            assert result is None
 
-    @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_test_dataloader_returns_dataloader(
-        self, mock_read, synthetic_uea_folder: Path
-    ) -> None:
+    def test_test_dataloader_returns_dataloader(self, synthetic_uea_folder: Path) -> None:
         """test_dataloader returns a DataLoader instance."""
         from tscollection.datasets.modules.uea import UEAClassificationDataModule
 
-        module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
-        )
-        module.prepare_data()
-        module.setup('fit')
+        with patch(
+            'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+        ):
+            module = UEAClassificationDataModule(
+                dataset_folder_path=synthetic_uea_folder,
+                target_column_name='class',
+                scale_data=False,
+            )
+            module.prepare_data()
+            module.setup('fit')
 
-        loader = module.test_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
-        assert isinstance(loader, DataLoader)
+            loader = module.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            assert isinstance(loader, DataLoader)
 
 
 class TestUEAUsesScipyLoadarff:
@@ -345,9 +345,7 @@ def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     ):
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
-            scale_data=False,
+            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
         )
         module.prepare_data()
 

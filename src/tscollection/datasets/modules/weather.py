@@ -142,11 +142,7 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
     # ------------------------------------------------------------------
 
     def _build_sliding_dataset(
-        self,
-        data: np.ndarray,
-        internal_mode: TimeSeriesDatasetMode,
-        step: int,
-        horizon: int,
+        self, data: np.ndarray, internal_mode: TimeSeriesDatasetMode, step: int, horizon: int
     ) -> Dataset:
         """Build sliding-window dataset for Weather.
 
