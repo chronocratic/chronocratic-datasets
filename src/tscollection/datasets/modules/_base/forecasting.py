@@ -121,8 +121,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._num_time_series_features: int | None = None
         self._data_scaler_cache: MinMaxScaler | StandardScaler | None = None
         self._ts_feature_scaler_cache: MinMaxScaler | StandardScaler | None = None
-        # Backward-compat: routes _full_data property to raw before scaling,
-        # to scaled after. Concrete modules still use _full_data in _transform_data.
+        # Tracks whether scaling is complete; used by full_data property
         self._scaling_done: bool = False
 
     # ------------------------------------------------------------------
@@ -156,31 +155,6 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         return self._full_data_raw
 
     @property
-    def _full_data(self) -> np.ndarray | None:
-        """Backward-compat accessor for concrete modules."""
-        return self.full_data
-
-    @_full_data.setter
-    def _full_data(self, value: np.ndarray | None) -> None:
-        """Route writes to raw (before scaling) or scaled (after).
-
-        When a DataFrame is set (backward-compat path), extracts
-        the DatetimeIndex into ``_time_index`` and stores values
-        as numpy in ``_full_data_raw``.
-        """
-        if value is None:
-            return
-        if self._scaling_done:
-            self._full_data_scaled = value
-            return
-        if isinstance(value, pd.DataFrame):
-            if isinstance(value.index, pd.DatetimeIndex):
-                self._time_index = value.index
-            self._full_data_raw = value.to_numpy()
-        else:
-            self._full_data_raw = value
-
-    @property
     def num_time_series_features(self) -> int | None:
         """Number of cyclical time features extracted."""
         return self._num_time_series_features
@@ -195,10 +169,11 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
     @abstractmethod
     def _transform_data(self) -> None:
-        """Transform ``_full_data`` after scaling.
+        """Transform ``_full_data_scaled`` after scaling.
 
         Subclasses must implement this method to apply dataset-specific
         transformations (e.g., reshape, transpose, expand dimensions).
+        Operates on ``_full_data_scaled``, which is populated by ``setup()``.
         """
 
     @abstractmethod
@@ -291,8 +266,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         ):
             return
 
-        # Load raw data from cache; fall back to _full_data_raw for
-        # backward-compat with concrete modules not yet writing cache.
+        # Load raw data from cache; falls back to _full_data_raw if cache
+        # is missing (populated by _do_prepare_data in concrete modules).
         cache_dir = self._resolve_cache_dir()
         if self._cache_key is not None:
             cache_path = cache_dir / f'{self._cache_key}.npz'
@@ -306,7 +281,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             except FileNotFoundError:
                 pass
 
-        # Backward-compat: ensure slices are set after raw data is available.
+        # Ensure slices are set after raw data is loaded from cache.
+        # Concrete modules may set slices in _do_prepare_data or _set_data_slices.
         if self._train_slice is None:
             self._set_data_slices()
 

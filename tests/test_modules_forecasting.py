@@ -315,9 +315,7 @@ class TestForecastingSlices:
         from tscollection.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(dataset_file_path=synthetic_csv_file)
-        module._full_data = pd.DataFrame(
-            {'A': range(100)}, index=pd.date_range('2012-01-01', periods=100, freq='h')
-        )
+        module._full_data_raw = np.array(list(range(100))).reshape(-1, 1)
         module._set_data_slices()
 
         assert module._train_slice == slice(None, 60)
@@ -329,9 +327,7 @@ class TestForecastingSlices:
         from tscollection.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
-        module._full_data = pd.DataFrame(
-            {'A': range(100)}, index=pd.date_range('2012-01-01', periods=100, freq='h')
-        )
+        module._full_data_raw = np.array(list(range(100))).reshape(-1, 1)
         module._set_data_slices()
 
         assert module._train_slice == slice(None, 60)
@@ -1391,12 +1387,12 @@ class TestElectricityModuleIntegration:
         module.setup(stage='fit')
 
         # Trailing dimension >= 1 (expand_dims adds it, time features may enlarge)
-        assert module._full_data.shape[-1] >= 1
+        assert module.full_data.shape[-1] >= 1
         # First dimension = number of active columns after zero-column filter
         # For univariate mode, only MT_001 is selected, so shape[0] == 1
-        assert module._full_data.shape[0] == 1
+        assert module.full_data.shape[0] == 1
         # Second dimension = number of samples (from '2012:' onwards)
-        assert module._full_data.shape[1] > 0
+        assert module.full_data.shape[1] > 0
 
 
 # ---------------------------------------------------------------------------
@@ -1450,7 +1446,7 @@ class TestSetupIdempotency:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         rng = np.random.default_rng(42)
-        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
@@ -1474,7 +1470,7 @@ class TestSetupIdempotency:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         rng = np.random.default_rng(42)
-        module._full_data = rng.standard_normal((100, 5)).astype(np.float32)
+        module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)

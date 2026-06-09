@@ -321,11 +321,12 @@ class TestPrepareDimensions:
             scale_data=True,
             mode=ForecastingMode.UNIVARIATE,
         )
-        # Inject a DataFrame with DatetimeIndex and 8 raw columns
+        # Inject raw data and typed time index
         dates = pd.date_range('2020-01-01', periods=100, freq='h')
-        module._full_data = pd.DataFrame(
-            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32), index=dates
+        module._full_data_raw = (
+            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32)
         )
+        module._time_index = pd.DatetimeIndex(dates)
         n_features, seq_len = module.prepare_dimensions()
         assert n_features == 8 + TIME_FEATURE_COUNT
         assert seq_len == 96
@@ -360,8 +361,10 @@ class TestPrepareDimensions:
             scale_data=False,
             mode=ForecastingMode.UNIVARIATE,
         )
-        # Inject a numpy array (no DatetimeIndex, so no time features)
-        module._full_data = np.random.default_rng(42).standard_normal((100, 6)).astype(np.float32)
+        # Inject raw numpy array (no DatetimeIndex, so no time features)
+        module._full_data_raw = (
+            np.random.default_rng(42).standard_normal((100, 6)).astype(np.float32)
+        )
         n_features, seq_len = module.prepare_dimensions()
         assert n_features == 6  # No TIME_FEATURE_COUNT added
         assert seq_len == 96
@@ -398,19 +401,20 @@ class TestPrepareDimensions:
         )
         # Simulate post-setup: _num_features is already populated
         module._num_features = 42
-        # Inject _full_data that would compute a different value
+        # Inject typed attributes that would compute a different value
         dates = pd.date_range('2020-01-01', periods=100, freq='h')
-        module._full_data = pd.DataFrame(
-            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32), index=dates
+        module._full_data_raw = (
+            np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32)
         )
-        # Should return cached value (42), NOT compute from _full_data
+        module._time_index = pd.DatetimeIndex(dates)
+        # Should return cached value (42), NOT compute from typed attrs
         n_features, seq_len = module.prepare_dimensions()
         assert n_features == 42
         assert seq_len == 96
 
 
 class TestForecastingTypedAttrs:
-    """Tests for _full_data split into typed attributes."""
+    """Tests for typed data attributes in forecasting modules."""
 
     def test_has_typed_attributes(self) -> None:
         """Forecasting base has _full_data_raw, _time_index, _full_data_scaled."""
@@ -453,7 +457,7 @@ class TestForecastingTypedAttrs:
         assert mod._full_data_scaled is None
 
     def test_full_data_property_routes_to_raw_before_scaling(self) -> None:
-        """_full_data property returns _full_data_raw before scaling."""
+        """full_data property returns _full_data_raw before scaling."""
         from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
@@ -486,13 +490,13 @@ class TestForecastingTypedAttrs:
             mode=ForecastingMode.UNIVARIATE,
         )
         raw = np.random.default_rng(42).standard_normal((100, 5)).astype(np.float32)
-        mod._full_data = raw
-        assert mod._full_data is not None
-        np.testing.assert_array_equal(mod._full_data, raw)
+        mod._full_data_raw = raw
+        assert mod.full_data is not None
+        np.testing.assert_array_equal(mod.full_data, raw)
         np.testing.assert_array_equal(mod._full_data_raw, raw)
 
     def test_dataframe_injection_sets_time_index(self) -> None:
-        """Setting _full_data with a DataFrame extracts the DatetimeIndex."""
+        """Setting typed attributes with DataFrame data works correctly."""
         from tscollection.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
@@ -528,7 +532,8 @@ class TestForecastingTypedAttrs:
         df = pd.DataFrame(
             np.random.default_rng(42).standard_normal((100, 5)).astype(np.float32), index=dates
         )
-        mod._full_data = df
+        mod._full_data_raw = df.to_numpy()
+        mod._time_index = pd.DatetimeIndex(df.index)
         assert mod._time_index is not None
         assert isinstance(mod._time_index, pd.DatetimeIndex)
         assert len(mod._time_index) == 100
