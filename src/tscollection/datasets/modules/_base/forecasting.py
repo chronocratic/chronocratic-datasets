@@ -633,6 +633,16 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         valid_data = self._full_data_scaled[:, self._valid_slice]
         test_data = self._full_data_scaled[:, self._test_slice]
 
+        if train_data.shape[1] == 0:
+            logger.warning(
+                'Train split is empty for %s. Data may be too small for the configured slices.',
+                self._dataset_name,
+            )
+        if valid_data.shape[1] == 0:
+            logger.warning('Validation split is empty for %s.', self._dataset_name)
+        if test_data.shape[1] == 0:
+            logger.warning('Test split is empty for %s.', self._dataset_name)
+
         self._train_data_samples = train_data
         self._valid_data_samples = valid_data
         self._test_data_samples = test_data
