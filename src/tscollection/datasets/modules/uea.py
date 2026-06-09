@@ -353,7 +353,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def train_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.WITHOUT_LABELS,
+        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
         shuffle: bool | None = None,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
@@ -386,7 +386,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def val_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.WITHOUT_LABELS,
+        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:  # ty:ignore[invalid-method-override]
@@ -418,7 +418,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def test_dataloader(
         self,
         *,
-        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.WITHOUT_LABELS,
+        mode: TimeSeriesDatasetMode = TimeSeriesDatasetMode.SAMPLE_ONLY,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:  # ty:ignore[invalid-method-override]

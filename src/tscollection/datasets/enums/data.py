@@ -4,9 +4,24 @@ from enum import StrEnum
 class TimeSeriesDatasetMode(StrEnum):
     """Mode for how the dataset yields samples."""
 
-    WITH_LABELS = 'with_labels'
-    WITHOUT_LABELS = 'without_labels'
-    FORECASTING = 'forecasting'
+    SAMPLE_ONLY = 'sample_only'
+    SAMPLE_LABEL = 'sample_label'
+    INPUT_OUTPUT = 'input_output'
+
+
+class ClassificationLoaderMode(StrEnum):
+    """Loader-level mode for classification datasets."""
+
+    SAMPLE_ONLY = 'sample_only'
+    SAMPLE_LABEL = 'sample_label'
+
+
+class ForecastingLoaderMode(StrEnum):
+    """Loader-level mode for forecasting datasets."""
+
+    RAW_SERIES = 'raw_series'
+    INPUT_TARGET = 'input_target'
+    INPUT_ONLY = 'input_only'
 
 
 class ClassificationSplitMode(StrEnum):

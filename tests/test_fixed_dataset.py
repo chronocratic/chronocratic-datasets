@@ -26,7 +26,7 @@ def test_fixed_yields_data_label():
     ds = FixedTimeSeriesDatasetUnivariate(
         data=data,
         labels=labels,
-        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        mode=TimeSeriesDatasetMode.SAMPLE_LABEL,
         expand_dims_axis=1,
         transformations_sequence=(torch.from_numpy,),
     )
@@ -44,7 +44,7 @@ def test_fixed_seq_len_property():
     ds = FixedTimeSeriesDatasetUnivariate(
         data=data,
         labels=labels,
-        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        mode=TimeSeriesDatasetMode.SAMPLE_LABEL,
         expand_dims_axis=1,
         transformations_sequence=(torch.from_numpy,),
     )
@@ -63,7 +63,7 @@ def test_fixed_length():
     ds = FixedTimeSeriesDatasetUnivariate(
         data=data,
         labels=labels,
-        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        mode=TimeSeriesDatasetMode.SAMPLE_LABEL,
         expand_dims_axis=1,
         transformations_sequence=(torch.from_numpy,),
     )
@@ -80,7 +80,7 @@ def test_multivariate_get_current_data():
     ds = FixedTimeSeriesDatasetMultivariate(
         data=data,
         labels=labels,
-        mode=TimeSeriesDatasetMode.WITH_LABELS,
+        mode=TimeSeriesDatasetMode.SAMPLE_LABEL,
         expand_dims_axis=None,
         transformations_sequence=(torch.from_numpy,),
     )

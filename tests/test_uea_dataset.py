@@ -20,7 +20,7 @@ def test_uea_yields_data_label(synthetic_multivariate_data):
 
     labels = pd.Series([0, 1, 0, 1, 0])
     ds = UEAClassificationMultivariateDataset(
-        data=synthetic_multivariate_data, labels=labels, mode=TimeSeriesDatasetMode.WITH_LABELS
+        data=synthetic_multivariate_data, labels=labels, mode=TimeSeriesDatasetMode.SAMPLE_LABEL
     )
     sample, label = ds[0]
 
@@ -35,7 +35,7 @@ def test_uea_without_labels(synthetic_multivariate_data):
     from tscollection.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 
     ds = UEAClassificationMultivariateDataset(
-        data=synthetic_multivariate_data, labels=None, mode=TimeSeriesDatasetMode.WITHOUT_LABELS
+        data=synthetic_multivariate_data, labels=None, mode=TimeSeriesDatasetMode.SAMPLE_ONLY
     )
     result = ds[0]
     assert not isinstance(result, tuple)
@@ -49,7 +49,7 @@ def test_uea_length(synthetic_multivariate_data):
 
     labels = pd.Series([0, 1, 0, 1, 0])
     ds = UEAClassificationMultivariateDataset(
-        data=synthetic_multivariate_data, labels=labels, mode=TimeSeriesDatasetMode.WITH_LABELS
+        data=synthetic_multivariate_data, labels=labels, mode=TimeSeriesDatasetMode.SAMPLE_LABEL
     )
     assert len(ds) == 5
 
@@ -60,7 +60,7 @@ def test_uea_no_expand_dims_by_default(synthetic_multivariate_data):
 
     labels = pd.Series([0, 1, 0, 1, 0])
     ds = UEAClassificationMultivariateDataset(
-        data=synthetic_multivariate_data, labels=labels, mode=TimeSeriesDatasetMode.WITH_LABELS
+        data=synthetic_multivariate_data, labels=labels, mode=TimeSeriesDatasetMode.SAMPLE_LABEL
     )
     sample, _ = ds[0]
     # Shape should be (timesteps, features) = (30, 4), not expanded

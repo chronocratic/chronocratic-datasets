@@ -17,9 +17,9 @@ class TimeSeriesDataset(Dataset[Any], ABC):
 
     Supports three modes via mode-specific sample getters:
 
-    - ``WITHOUT_LABELS`` (training)
-    - ``WITH_LABELS`` (evaluation)
-    - ``FORECASTING`` (input/target pairs)
+    - ``SAMPLE_ONLY`` (training)
+    - ``SAMPLE_LABEL`` (evaluation)
+    - ``INPUT_OUTPUT`` (input/target pairs)
 
     Args:
         data: Raw time series data.
@@ -30,9 +30,9 @@ class TimeSeriesDataset(Dataset[Any], ABC):
     """
 
     _get_sample_fun_map: ClassVar[dict[TimeSeriesDatasetMode, str]] = {
-        TimeSeriesDatasetMode.WITHOUT_LABELS: '_get_sample_1',
-        TimeSeriesDatasetMode.WITH_LABELS: '_get_sample_2',
-        TimeSeriesDatasetMode.FORECASTING: '_get_sample_3',
+        TimeSeriesDatasetMode.SAMPLE_ONLY: '_get_sample_1',
+        TimeSeriesDatasetMode.SAMPLE_LABEL: '_get_sample_2',
+        TimeSeriesDatasetMode.INPUT_OUTPUT: '_get_sample_3',
     }
 
     _data: np.ndarray | list[np.ndarray] | pd.DataFrame
@@ -84,21 +84,21 @@ class TimeSeriesDataset(Dataset[Any], ABC):
         self._transform = compose(*sequence)
 
     def _get_sample_1(self) -> object:
-        """Return transformed data (WITHOUT_LABELS mode)."""
+        """Return transformed data (SAMPLE_ONLY mode)."""
         return self._transform(self._get_current_data())
 
     def _get_sample_2(self) -> tuple[object, object]:
-        """Return (transformed_data, label) (WITH_LABELS mode)."""
+        """Return (transformed_data, label) (SAMPLE_LABEL mode)."""
         sample = self._transform(self._get_current_data())
         label = self._get_current_label()
         return (sample, label)
 
     def _get_sample_3(self) -> tuple[object, object]:
-        """Return (transformed_input, transformed_target) (FORECASTING mode)."""
+        """Return (transformed_input, transformed_target) (INPUT_OUTPUT mode)."""
         sample = self._transform(self._get_current_data())
         label = self._get_current_label()
         if label is None:
-            msg = 'FORECASTING mode requires labels; _get_current_label returned None'
+            msg = 'INPUT_OUTPUT mode requires labels; _get_current_label returned None'
             raise RuntimeError(msg)
         return (sample, self._transform(label))
 

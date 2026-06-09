@@ -57,7 +57,7 @@ class ETTDataset(FlexibleTimeSeriesDatasetSingleFile):
             labels=None,
             seq_len=seq_len,
             step=step,
-            mode=TimeSeriesDatasetMode.FORECASTING,
+            mode=TimeSeriesDatasetMode.INPUT_OUTPUT,
             sequence_handling_strategy=ForecastingStrategySingleFile(
                 forecast_horizon=forecast_horizon
             ),

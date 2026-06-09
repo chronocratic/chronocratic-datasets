@@ -217,7 +217,7 @@ class TestUEADataLoaders:
         module.prepare_data()
         module.setup('fit')
 
-        loader = module.train_dataloader(mode=TimeSeriesDatasetMode.WITHOUT_LABELS)
+        loader = module.train_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
         assert isinstance(loader, DataLoader)
 
     @patch(
@@ -237,7 +237,7 @@ class TestUEADataLoaders:
             scale_data=False,
         )
         module.prepare_data()
-        result = module.val_dataloader(mode=TimeSeriesDatasetMode.WITHOUT_LABELS)
+        result = module.val_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
         assert result is None
 
     @patch(
@@ -256,7 +256,7 @@ class TestUEADataLoaders:
         module.prepare_data()
         module.setup('fit')
 
-        loader = module.test_dataloader(mode=TimeSeriesDatasetMode.WITHOUT_LABELS)
+        loader = module.test_dataloader(mode=TimeSeriesDatasetMode.SAMPLE_ONLY)
         assert isinstance(loader, DataLoader)
 
 

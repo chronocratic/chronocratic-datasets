@@ -8,8 +8,6 @@ Verifies:
 - Enum exports from __init__.py
 """
 
-import pytest
-
 
 class TestTimeSeriesDatasetModeRenamedValues:
     """Verify TimeSeriesDatasetMode enum values are renamed to task-agnostic semantics."""
@@ -93,7 +91,8 @@ class TestModeMapping:
             CLASSIFICATION_LOADER_MAP,
         )
 
-        assert CLASSIFICATION_LOADER_MAP[ClassificationLoaderMode.SAMPLE_ONLY] == TimeSeriesDatasetMode.SAMPLE_ONLY
+        result = CLASSIFICATION_LOADER_MAP[ClassificationLoaderMode.SAMPLE_ONLY]
+        assert result == TimeSeriesDatasetMode.SAMPLE_ONLY
 
     def test_classification_loader_map_sample_label(self):
         from tscollection.datasets.enums import (
@@ -104,7 +103,8 @@ class TestModeMapping:
             CLASSIFICATION_LOADER_MAP,
         )
 
-        assert CLASSIFICATION_LOADER_MAP[ClassificationLoaderMode.SAMPLE_LABEL] == TimeSeriesDatasetMode.SAMPLE_LABEL
+        result = CLASSIFICATION_LOADER_MAP[ClassificationLoaderMode.SAMPLE_LABEL]
+        assert result == TimeSeriesDatasetMode.SAMPLE_LABEL
 
     def test_forecasting_loader_map_raw_series_is_none(self):
         from tscollection.datasets.enums import ForecastingLoaderMode
@@ -123,7 +123,8 @@ class TestModeMapping:
             FORECASTING_LOADER_MAP,
         )
 
-        assert FORECASTING_LOADER_MAP[ForecastingLoaderMode.INPUT_TARGET] == TimeSeriesDatasetMode.INPUT_OUTPUT
+        result = FORECASTING_LOADER_MAP[ForecastingLoaderMode.INPUT_TARGET]
+        assert result == TimeSeriesDatasetMode.INPUT_OUTPUT
 
     def test_forecasting_loader_map_input_only(self):
         from tscollection.datasets.enums import (
@@ -134,7 +135,8 @@ class TestModeMapping:
             FORECASTING_LOADER_MAP,
         )
 
-        assert FORECASTING_LOADER_MAP[ForecastingLoaderMode.INPUT_ONLY] == TimeSeriesDatasetMode.SAMPLE_ONLY
+        result = FORECASTING_LOADER_MAP[ForecastingLoaderMode.INPUT_ONLY]
+        assert result == TimeSeriesDatasetMode.SAMPLE_ONLY
 
 
 class TestForecastingModeUnchanged:
@@ -160,8 +162,9 @@ class TestBaseDatasetSampleMap:
         )
         from tscollection.datasets.enums import TimeSeriesDatasetMode
 
-        assert TimeSeriesDatasetMode.SAMPLE_ONLY in TimeSeriesDataset._get_sample_fun_map
-        assert TimeSeriesDataset._get_sample_fun_map[TimeSeriesDatasetMode.SAMPLE_ONLY] == '_get_sample_1'
+        sample_map = TimeSeriesDataset._get_sample_fun_map
+        assert TimeSeriesDatasetMode.SAMPLE_ONLY in sample_map
+        assert sample_map[TimeSeriesDatasetMode.SAMPLE_ONLY] == '_get_sample_1'
 
     def test_sample_label_mapping(self):
         from tscollection.datasets.datatypes._base.base import (
@@ -169,8 +172,9 @@ class TestBaseDatasetSampleMap:
         )
         from tscollection.datasets.enums import TimeSeriesDatasetMode
 
-        assert TimeSeriesDatasetMode.SAMPLE_LABEL in TimeSeriesDataset._get_sample_fun_map
-        assert TimeSeriesDataset._get_sample_fun_map[TimeSeriesDatasetMode.SAMPLE_LABEL] == '_get_sample_2'
+        sample_map = TimeSeriesDataset._get_sample_fun_map
+        assert TimeSeriesDatasetMode.SAMPLE_LABEL in sample_map
+        assert sample_map[TimeSeriesDatasetMode.SAMPLE_LABEL] == '_get_sample_2'
 
     def test_input_output_mapping(self):
         from tscollection.datasets.datatypes._base.base import (
@@ -178,5 +182,6 @@ class TestBaseDatasetSampleMap:
         )
         from tscollection.datasets.enums import TimeSeriesDatasetMode
 
-        assert TimeSeriesDatasetMode.INPUT_OUTPUT in TimeSeriesDataset._get_sample_fun_map
-        assert TimeSeriesDataset._get_sample_fun_map[TimeSeriesDatasetMode.INPUT_OUTPUT] == '_get_sample_3'
+        sample_map = TimeSeriesDataset._get_sample_fun_map
+        assert TimeSeriesDatasetMode.INPUT_OUTPUT in sample_map
+        assert sample_map[TimeSeriesDatasetMode.INPUT_OUTPUT] == '_get_sample_3'
