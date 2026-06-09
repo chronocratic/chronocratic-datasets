@@ -267,6 +267,13 @@ class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDatase
             convert_numpy_to_tensor,
         ),
     ) -> None:
+        if data.ndim != 3:
+            msg = (
+                f'Expected 3D array (num_series, T, features), '
+                f'got {data.ndim}D with shape {data.shape}'
+            )
+            raise ValueError(msg)
+
         # Pre-compute per-series window counts before super().__init__() because
         # the parent calls _get_num_sequences() during initialization
         self._num_series = data.shape[0]
@@ -302,11 +309,7 @@ class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDatase
             raise IndexError(msg)
         series_num = bisect(self._accumulated_sequences, idx)
         self._current_series = series_num
-        self._n = (
-            idx - self._accumulated_sequences[series_num - 1]
-            if series_num != 0
-            else idx
-        )
+        self._n = idx - self._accumulated_sequences[series_num - 1] if series_num != 0 else idx
 
     def _get_current_data(self) -> np.ndarray:
         """Return data window for current series position."""
@@ -317,8 +320,5 @@ class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDatase
         """Return label for current series window."""
         series_data = self._data[self._current_series]
         return self._sequence_handling_strategy.get_current_label(
-            data=series_data,
-            labels=self._labels,
-            n=self._n,
-            seq_len=self._seq_len,
+            data=series_data, labels=self._labels, n=self._n, seq_len=self._seq_len
         )
