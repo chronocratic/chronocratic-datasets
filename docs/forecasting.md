@@ -5,8 +5,8 @@ forecasting benchmarks, built on top of PyTorch Lightning's `LightningDataModule
 Each module handles data loading, splitting, caching, and provides ready-to-use
 DataLoaders for training, validation, and testing.
 
-For full parameter reference, see the {doc}`api/modules` API documentation for
-{py:mod}`chronocratic.datasets.modules`.
+For the full API of all forecasting data modules, see the
+{doc}`api/modules` reference.
 
 ## Weather Module
 
@@ -34,6 +34,9 @@ train_loader = module.train_dataloader()
 
 In **univariate mode**, only the last column (`WetBulbCelsius`) is retained as the target
 variable. In **multivariate mode**, all 22 features are used.
+
+See the {py:class}`~chronocratic.datasets.modules.WeatherModule` API reference for all
+constructor parameters.
 
 ## ETT Data Module
 
@@ -66,6 +69,9 @@ module.setup()
 
 In **univariate mode**, only the `OT` (outer temperature) column is used.
 
+See the {py:class}`~chronocratic.datasets.modules.ETTDataModule` API reference for all
+constructor parameters.
+
 ## Electricity Load Module
 
 The Electricity dataset contains hourly power consumption data for 370 independent
@@ -93,38 +99,8 @@ module.setup()
 
 In **univariate mode**, only customer `MT_001` is retained.
 
-## ForecastingMode
-
-Controls which variables are included in each sample:
-
-- **UNIVARIATE** -- Use a single target variable per sample
-- **MULTIVARIATE** -- Use all available variables per sample
-
-```python
-from chronocratic.datasets import ForecastingMode
-
-ForecastingMode.UNIVARIATE
-ForecastingMode.MULTIVARIATE
-```
-
-## ForecastingLoaderMode
-
-Controls how samples are returned from the DataLoader:
-
-- **RAW_SERIES** -- Returns the full raw time series
-- **INPUT_TARGET** -- Returns input and target tensors for supervised learning
-- **INPUT_ONLY** -- Returns only the input tensor without targets
-
-Set this on the `train_dataloader()`, `val_dataloader()`, and `test_dataloader()`
-calls via the `loader_mode` keyword argument. The default is `RAW_SERIES`.
-
-```python
-# Raw full series (default)
-train_loader = module.train_dataloader()
-
-# Supervised learning format: (input_window, target_window)
-train_loader = module.train_dataloader(loader_mode=ForecastingLoaderMode.INPUT_TARGET)
-```
+See the {py:class}`~chronocratic.datasets.modules.ElectricityLoadModule` API reference
+for all constructor parameters.
 
 ## Dataset Classes
 
@@ -136,7 +112,43 @@ Under the hood, the data modules use these PyTorch Dataset classes:
 
 See the {doc}`api/datatypes` reference for full class documentation.
 
+## Loader Mode
+
+Forecasting modules support multiple loader modes via
+{py:class}`~chronocratic.datasets.enums.ForecastingLoaderMode`:
+
+- **RAW_SERIES** -- Returns the full raw time series (default)
+- **INPUT_TARGET** -- Returns input and target tensors for supervised learning
+- **INPUT_ONLY** -- Returns only the input tensor without targets
+
+Set this on the `train_dataloader()`, `val_dataloader()`, and `test_dataloader()`
+calls via the `loader_mode` keyword argument.
+
+```python
+# Supervised learning format: (input_window, target_window)
+train_loader = module.train_dataloader(loader_mode=ForecastingLoaderMode.INPUT_TARGET)
+```
+
+## Forecasting Mode
+
+Control variable selection with
+{py:class}`~chronocratic.datasets.enums.ForecastingMode`:
+
+- **UNIVARIATE** -- Use a single target variable per sample
+- **MULTIVARIATE** -- Use all available variables per sample
+
+Set this on the module constructor via the `mode` keyword argument.
+
+## Scaling
+
+Data scaling is configured via {py:class}`~chronocratic.datasets.enums.ScalingMethod`:
+
+- **NONE** -- No scaling applied
+- **MINMAX** -- Scales to a specified range (default 0-1)
+- **STANDARD** -- Standardizes to zero mean and unit variance
+
 ## Next Steps
 
 - See the {doc}`classification` guide for time series classification datasets.
 - See the {doc}`api/modules` reference for the full API of forecasting data modules.
+- See the {doc}`api/enums` reference for all enum options.
