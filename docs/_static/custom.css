@@ -1,21 +1,26 @@
-/* Adaptive right sidebar — fit content, but cap at 340px */
+/* Make right sidebar wider and prevent horizontal overflow */
 .bd-sidebar-secondary {
-    width: auto;
-    max-width: 340px;
+    min-width: 300px;
+    max-width: 400px;
 }
 
-/* ToC entries wrap on long names instead of truncating */
+/* Ensure ToC items wrap fully — no truncation or scroll */
+.pst-page-toc-nav .nav-item .toc-entry {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
 .pst-page-toc-nav .nav-item .toc-entry span {
     display: inline-block;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-    word-break: break-word;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
 }
 
-/* Also fix the ToC link itself which wraps the span */
 .pst-page-toc-nav .nav-link {
-    overflow: visible;
-    text-overflow: clip;
     white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: block;
 }
