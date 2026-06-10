@@ -4,8 +4,8 @@ The classification module provides data loaders for the UCR/UEA Time Series
 Classification Archive, a standard benchmark collection for time series
 classification research.
 
-For full parameter reference, see the {doc}`api/modules` API documentation for
-{py:mod}`chronocratic.datasets.modules`.
+For the full API of all classification data modules, see the
+{doc}`api/modules` reference.
 
 ## UCR Classification Data Module
 
@@ -38,6 +38,9 @@ train_loader = module.train_dataloader()
 - Sequence length is derived from the number of feature columns.
 - Handles variable-length series automatically via padding.
 
+See the {py:class}`~chronocratic.datasets.modules.UCRClassificationDataModule` API
+reference for all constructor parameters.
+
 ## UEA Classification Data Module
 
 The UEA archive contains **multivariate and/or variable-length** time series
@@ -68,25 +71,8 @@ train_loader = module.train_dataloader()
 - Data form is `NESTED`, meaning each sample may have variable length and multiple dimensions.
 - Sequence length and feature count are derived from the data at load time.
 
-## ClassificationLoaderMode
-
-Controls how classification samples are constructed by DataLoaders:
-
-- **SAMPLE_ONLY** -- Returns only the input sample tensor (no labels)
-- **SAMPLE_LABEL** -- Returns the input sample tensor and its label
-
-Set this on the `train_dataloader()`, `val_dataloader()`, and `test_dataloader()`
-calls via the `mode` keyword argument. The default is `SAMPLE_LABEL`.
-
-```python
-from chronocratic.datasets import ClassificationLoaderMode
-
-# With labels (default)
-train_loader = module.train_dataloader()
-
-# Without labels
-train_loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
-```
+See the {py:class}`~chronocratic.datasets.modules.UEAClassificationDataModule` API
+reference for all constructor parameters.
 
 ## Dataset Classes
 
@@ -97,18 +83,42 @@ Under the hood, the data modules use these PyTorch Dataset classes:
 
 See the {doc}`api/datatypes` reference for full class documentation.
 
-## Data Splitting
+## Loader Mode
 
-The package provides flexible data splitting via
-{py:class}`~chronocratic.datasets.enums.ClassificationSplitMode` and
-{py:class}`~chronocratic.datasets.enums.DataPartition`.
+Classification modules support multiple loader modes via
+{py:class}`~chronocratic.datasets.enums.ClassificationLoaderMode`:
 
-Use `splitting_strategy=ClassificationSplitMode.AS_DEFINED` to keep the
-original train/test split from the archive, or
-`splitting_strategy=ClassificationSplitMode.MANUAL` to re-split the combined
-data with a custom `test_size` fraction.
+- **SAMPLE_ONLY** -- Returns only the input sample tensor (no labels)
+- **SAMPLE_LABEL** -- Returns the input sample tensor and its label (default)
+
+Set this on the `train_dataloader()`, `val_dataloader()`, and `test_dataloader()`
+calls via the `mode` keyword argument.
+
+```python
+# Without labels
+train_loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+```
+
+## Splitting Strategy
+
+Control how the archive's train/test split is handled via
+{py:class}`~chronocratic.datasets.enums.ClassificationSplitMode`:
+
+- **AS_DEFINED** -- Keep the original train/test split from the archive
+- **MANUAL** -- Re-split the combined data with a custom `test_size` fraction
+
+Set this on the module constructor via the `splitting_strategy` keyword argument.
+
+## Scaling
+
+Data scaling is configured via {py:class}`~chronocratic.datasets.enums.ScalingMethod`:
+
+- **NONE** -- No scaling applied
+- **MINMAX** -- Scales to a specified range (default 0-1)
+- **STANDARD** -- Standardizes to zero mean and unit variance
 
 ## Next Steps
 
 - See the {doc}`forecasting` guide for forecasting datasets.
 - See the {doc}`api/modules` reference for the full API of classification data modules.
+- See the {doc}`api/enums` reference for all enum options.
