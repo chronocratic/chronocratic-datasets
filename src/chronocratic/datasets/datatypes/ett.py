@@ -11,9 +11,7 @@ from typing import TYPE_CHECKING
 
 from chronocratic.datasets.datatypes._base.flexible import FlexibleTimeSeriesDatasetSingleFile
 from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
-from chronocratic.datasets.enums import (
-    TimeSeriesDatasetMode,
-)
+from chronocratic.datasets.enums import TimeSeriesDatasetMode
 from chronocratic.datasets.utils.transformations import convert_numpy_to_tensor
 
 if TYPE_CHECKING:

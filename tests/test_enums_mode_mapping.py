@@ -83,57 +83,35 @@ class TestModeMapping:
     """Verify loader-to-dataset mode mapping dictionaries."""
 
     def test_classification_loader_map_sample_only(self):
-        from chronocratic.datasets.enums import (
-            ClassificationLoaderMode,
-            TimeSeriesDatasetMode,
-        )
-        from chronocratic.datasets.maps.loader_to_dataset import (
-            CLASSIFICATION_LOADER_MAP,
-        )
+        from chronocratic.datasets.enums import ClassificationLoaderMode, TimeSeriesDatasetMode
+        from chronocratic.datasets.maps.loader_to_dataset import CLASSIFICATION_LOADER_MAP
 
         result = CLASSIFICATION_LOADER_MAP[ClassificationLoaderMode.SAMPLE_ONLY]
         assert result == TimeSeriesDatasetMode.SAMPLE_ONLY
 
     def test_classification_loader_map_sample_label(self):
-        from chronocratic.datasets.enums import (
-            ClassificationLoaderMode,
-            TimeSeriesDatasetMode,
-        )
-        from chronocratic.datasets.maps.loader_to_dataset import (
-            CLASSIFICATION_LOADER_MAP,
-        )
+        from chronocratic.datasets.enums import ClassificationLoaderMode, TimeSeriesDatasetMode
+        from chronocratic.datasets.maps.loader_to_dataset import CLASSIFICATION_LOADER_MAP
 
         result = CLASSIFICATION_LOADER_MAP[ClassificationLoaderMode.SAMPLE_LABEL]
         assert result == TimeSeriesDatasetMode.SAMPLE_LABEL
 
     def test_forecasting_loader_map_raw_series_is_none(self):
         from chronocratic.datasets.enums import ForecastingLoaderMode
-        from chronocratic.datasets.maps.loader_to_dataset import (
-            FORECASTING_LOADER_MAP,
-        )
+        from chronocratic.datasets.maps.loader_to_dataset import FORECASTING_LOADER_MAP
 
         assert FORECASTING_LOADER_MAP[ForecastingLoaderMode.RAW_SERIES] is None
 
     def test_forecasting_loader_map_input_target(self):
-        from chronocratic.datasets.enums import (
-            ForecastingLoaderMode,
-            TimeSeriesDatasetMode,
-        )
-        from chronocratic.datasets.maps.loader_to_dataset import (
-            FORECASTING_LOADER_MAP,
-        )
+        from chronocratic.datasets.enums import ForecastingLoaderMode, TimeSeriesDatasetMode
+        from chronocratic.datasets.maps.loader_to_dataset import FORECASTING_LOADER_MAP
 
         result = FORECASTING_LOADER_MAP[ForecastingLoaderMode.INPUT_TARGET]
         assert result == TimeSeriesDatasetMode.INPUT_OUTPUT
 
     def test_forecasting_loader_map_input_only(self):
-        from chronocratic.datasets.enums import (
-            ForecastingLoaderMode,
-            TimeSeriesDatasetMode,
-        )
-        from chronocratic.datasets.maps.loader_to_dataset import (
-            FORECASTING_LOADER_MAP,
-        )
+        from chronocratic.datasets.enums import ForecastingLoaderMode, TimeSeriesDatasetMode
+        from chronocratic.datasets.maps.loader_to_dataset import FORECASTING_LOADER_MAP
 
         result = FORECASTING_LOADER_MAP[ForecastingLoaderMode.INPUT_ONLY]
         assert result == TimeSeriesDatasetMode.SAMPLE_ONLY
@@ -157,9 +135,7 @@ class TestBaseDatasetSampleMap:
     """Verify base dataset sample map uses new enum values."""
 
     def test_sample_only_mapping(self):
-        from chronocratic.datasets.datatypes._base.base import (
-            TimeSeriesDataset,
-        )
+        from chronocratic.datasets.datatypes._base.base import TimeSeriesDataset
         from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         sample_map = TimeSeriesDataset._get_sample_fun_map
@@ -167,9 +143,7 @@ class TestBaseDatasetSampleMap:
         assert sample_map[TimeSeriesDatasetMode.SAMPLE_ONLY] == '_get_sample_1'
 
     def test_sample_label_mapping(self):
-        from chronocratic.datasets.datatypes._base.base import (
-            TimeSeriesDataset,
-        )
+        from chronocratic.datasets.datatypes._base.base import TimeSeriesDataset
         from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         sample_map = TimeSeriesDataset._get_sample_fun_map
@@ -177,9 +151,7 @@ class TestBaseDatasetSampleMap:
         assert sample_map[TimeSeriesDatasetMode.SAMPLE_LABEL] == '_get_sample_2'
 
     def test_input_output_mapping(self):
-        from chronocratic.datasets.datatypes._base.base import (
-            TimeSeriesDataset,
-        )
+        from chronocratic.datasets.datatypes._base.base import TimeSeriesDataset
         from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         sample_map = TimeSeriesDataset._get_sample_fun_map
