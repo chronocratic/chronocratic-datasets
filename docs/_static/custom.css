@@ -1,0 +1,10 @@
+/* Wider right sidebar for long API names */
+.bd-sidebar-secondary {
+    min-width: 280px;
+}
+
+/* Allow ToC items to wrap gracefully */
+.pst-page-toc-nav .nav-item .toc-entry span {
+    white-space: normal;
+    word-break: break-word;
+}

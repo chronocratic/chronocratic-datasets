@@ -23,7 +23,12 @@ html_theme = "pydata_sphinx_theme"
 html_theme_options = {
     "navigation_depth": 3,
     "show_toc_level": 2,
+    "secondary_sidebar_items": ["page-toc", "sourcelink"],
 }
+
+html_css_files = [
+    "_static/custom.css",
+]
 
 source_suffix = {
     ".rst": "restructuredtext",
