@@ -5,10 +5,10 @@ Ready-to-use time series datasets for PyTorch Lightning.
 [![PyPI version](https://img.shields.io/pypi/v/chronocratic-datasets.svg)](https://pypi.org/project/chronocratic-datasets/)
 [![Python 3.12+](https://img.shields.io/pypi/pyversions/chronocratic-datasets.svg)](https://pypi.org/project/chronocratic-datasets/)
 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Build and Test](https://github.com/chronocratic/datasets/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/chronocratic/datasets/actions/workflows/build-and-test.yml)
+[![Build and Test](https://github.com/chronocratic/chronocratic-datasets/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/chronocratic/chronocratic-datasets/actions/workflows/build-and-test.yml)
 [![Documentation Status](https://readthedocs.org/projects/chronocratic-datasets/badge/?version=stable)](https://chronocratic-datasets.readthedocs.io/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/chronocratic-datasets)](https://pypi.org/project/chronocratic-datasets/)
-[![GitHub Stars](https://img.shields.io/github/stars/chronocratic/datasets)](https://github.com/chronocratic/datasets)
+[![GitHub Stars](https://img.shields.io/github/stars/chronocratic/chronocratic-datasets)](https://github.com/chronocratic/chronocratic-datasets)
 
 ## Installation
 
