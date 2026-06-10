@@ -1,8 +1,11 @@
 """chronocratic.datasets -- Time series datasets for PyTorch Lightning."""
 
-from importlib.metadata import version
+try:
+    from chronocratic.datasets._version import __version__
+except ImportError:  # not built yet -- fall back to installed metadata
+    from importlib.metadata import version
 
-__version__ = version(__name__)
+    __version__ = version(__name__)
 
 # Enums
 # Datatypes

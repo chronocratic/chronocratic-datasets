@@ -222,3 +222,6 @@ _sources/
 
 # planning
 .planning/
+
+# setuptools-scm generated version file
+src/chronocratic/datasets/_version.py
