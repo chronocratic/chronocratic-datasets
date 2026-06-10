@@ -40,7 +40,7 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/chronocratic/datasets"
-Documentation = "https://chronocratic-datasets.readthedocs.io/en/stable/"
+Documentation = "https://chronocratic-datasets.readthedocs.io/"
 Repository = "https://github.com/chronocratic/datasets"
 Issues = "https://github.com/chronocratic/datasets/issues"
 

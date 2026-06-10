@@ -23,12 +23,21 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number
             });
-            if (pr.base.ref !== 'main') {
-              core.setFailed('Fast-forward check is only allowed for PRs targeting main.');
+            if (pr.base.ref !== 'main' || pr.head.ref !== 'dev') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `❌ \`/check-fast-forward\` only works on \`dev → main\` PRs `
+                    + `(this PR: \`${pr.head.ref} → ${pr.base.ref}\`).`
+              });
+              core.setFailed('Fast-forward check is only allowed for dev → main PRs.');
             }
-            if (pr.head.ref !== 'dev') {
-              core.setFailed('Fast-forward check is only allowed for PRs from dev to main.');
-            }
+
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Check if fast-forward is possible
         uses: sequoia-pgp/fast-forward@v1
