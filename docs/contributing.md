@@ -14,8 +14,8 @@ This project uses `uv` for environment management and package installation.
 ### Clone and Install
 
 ```bash
-git clone https://github.com/chronocratic/datasets.git
-cd datasets
+git clone https://github.com/chronocratic/chronocratic-datasets.git
+cd chronocratic-datasets
 
 # Install with development dependencies
 uv sync --all-extras
@@ -171,4 +171,4 @@ Because contributor PRs are squash-merged, the commit on `dev` uses the PR title
 
 By contributing, you agree that your contributions will be licensed under the
 BSD 3-Clause License. See the
-[LICENSE](https://github.com/chronocratic/datasets/blob/main/LICENSE) for details.
+[LICENSE](https://github.com/chronocratic/chronocratic-datasets/blob/main/LICENSE) for details.

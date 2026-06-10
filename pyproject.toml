@@ -39,10 +39,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/chronocratic/datasets"
+Homepage = "https://github.com/chronocratic/chronocratic-datasets"
 Documentation = "https://chronocratic-datasets.readthedocs.io/"
-Repository = "https://github.com/chronocratic/datasets"
-Issues = "https://github.com/chronocratic/datasets/issues"
+Repository = "https://github.com/chronocratic/chronocratic-datasets"
+Issues = "https://github.com/chronocratic/chronocratic-datasets/issues"
 
 [dependency-groups]
 dev = [
