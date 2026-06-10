@@ -1,10 +1,14 @@
-/* Wider right sidebar for long API names */
+/* Adaptive right sidebar — fit content, but cap at 340px */
 .bd-sidebar-secondary {
-    min-width: 280px;
+    width: auto;
+    max-width: 340px;
 }
 
-/* Allow ToC items to wrap gracefully */
+/* ToC entries wrap on long names instead of truncating */
 .pst-page-toc-nav .nav-item .toc-entry span {
+    display: inline-block;
+    overflow: visible;
+    text-overflow: clip;
     white-space: normal;
     word-break: break-word;
 }
