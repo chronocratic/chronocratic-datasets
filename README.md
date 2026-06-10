@@ -26,9 +26,14 @@ pip install chronocratic-datasets
 ## Quick Start
 
 ```python
+from pathlib import Path
+
 from chronocratic.datasets import ForecastingMode, WeatherModule
 
-weather = WeatherModule(mode=ForecastingMode.UNIVARIATE)
+weather = WeatherModule(
+    dataset_file_path=Path("data/weather.csv"),
+    mode=ForecastingMode.UNIVARIATE,
+)
 weather.prepare_data()
 train_loader = weather.train_dataloader()
 ```

@@ -24,12 +24,19 @@ A typical workflow looks like this:
 ### Forecasting Example
 
 ```python
+from pathlib import Path
+
 from chronocratic.datasets import ForecastingMode, WeatherModule
 
 # Create the data module
-weather = WeatherModule(mode=ForecastingMode.UNIVARIATE, seq_len=24, pred_len=168)
+weather = WeatherModule(
+    dataset_file_path=Path("data/weather.csv"),
+    mode=ForecastingMode.UNIVARIATE,
+    seq_len=24,
+    forecast_horizon=168,
+)
 
-# Download and prepare data (runs once, cached after that)
+# Prepare data (runs once, cached after that)
 weather.prepare_data()
 weather.setup()
 
@@ -44,10 +51,16 @@ train_loader = weather.train_dataloader()
 ### Classification Example
 
 ```python
+from pathlib import Path
+
 from chronocratic.datasets import UCRClassificationDataModule
 
 # Create the data module for a UCR dataset
-module = UCRClassificationDataModule(dataset_name="FogiDataset1", scale=True)
+module = UCRClassificationDataModule(
+    dataset_folder_path=Path("data/FogiDataset1"),
+    target_column_name="class",
+    scale_data=True,
+)
 
 # Prepare and setup
 module.prepare_data()
@@ -62,12 +75,12 @@ test_loader = module.test_dataloader()
 ## Key Concepts
 
 - **ForecastingMode** — Choose between `UNIVARIATE` and `MULTIVARIATE` input modes.
-- **ForecastingLoaderMode** — Choose how samples are constructed: `SAMPLE_ONLY`,
-  `SAMPLE_LABEL`, or `INPUT_OUTPUT`.
-- **ClassificationLoaderMode** — Choose between full-series and sliding-window loading
-  for classification tasks.
-- **Caching** — All datasets are cached locally after first download to speed up repeated runs.
-- **Scaling** — Enable or disable data normalization via the `scale` parameter.
+- **ForecastingLoaderMode** — Choose how samples are constructed: `RAW_SERIES`,
+  `INPUT_TARGET`, or `INPUT_ONLY`.
+- **ClassificationLoaderMode** — Choose between `SAMPLE_ONLY` and `SAMPLE_LABEL`
+  loading for classification tasks.
+- **Caching** — All datasets are cached locally after first processing to speed up repeated runs.
+- **Scaling** — Enable or disable data normalization via the `scale_data` parameter.
 
 ## Next Steps
 

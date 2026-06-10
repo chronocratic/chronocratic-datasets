@@ -15,15 +15,17 @@ The ETT dataset contains two sub-datasets:
 - **ETTh2** — Temperature data at hourly intervals (different sensor)
 
 ```python
-from chronocratic.datasets import ForecastingMode, ETTDataModule
+from pathlib import Path
+
+from chronocratic.datasets import ETTDataModule, ForecastingMode
 
 module = ETTDataModule(
+    dataset_file_path=Path("data/ETTm1.csv"),
+    variant="ETTm1",
     mode=ForecastingMode.UNIVARIATE,
-    dataset_name="ETTm1",
     seq_len=96,
-    label_len=48,
-    pred_len=96,
-    scale=True,
+    forecast_horizon=96,
+    scale_data=True,
     batch_size=32,
 )
 
@@ -33,17 +35,19 @@ module.setup()
 
 ### Weather
 
-The Weather dataset contains 21 features recorded every 10 minutes over 7 years.
+The Weather dataset contains 22 features recorded hourly over 7 years.
 
 ```python
+from pathlib import Path
+
 from chronocratic.datasets import ForecastingMode, WeatherModule
 
 module = WeatherModule(
+    dataset_file_path=Path("data/weather.csv"),
     mode=ForecastingMode.MULTIVARIATE,
     seq_len=24,
-    label_len=12,
-    pred_len=168,
-    scale=True,
+    forecast_horizon=168,
+    scale_data=True,
     batch_size=32,
 )
 
@@ -57,14 +61,16 @@ The Electricity dataset contains hourly power consumption data for 321 customers
 over 4 years.
 
 ```python
-from chronocratic.datasets import ForecastingMode, ElectricityLoadModule
+from pathlib import Path
+
+from chronocratic.datasets import ElectricityLoadModule, ForecastingMode
 
 module = ElectricityLoadModule(
+    dataset_file_path=Path("data/electricity.csv"),
     mode=ForecastingMode.MULTIVARIATE,
     seq_len=96,
-    label_len=48,
-    pred_len=96,
-    scale=True,
+    forecast_horizon=24,
+    scale_data=True,
     batch_size=32,
 )
 
@@ -90,24 +96,30 @@ ForecastingMode.MULTIVARIATE
 
 Controls how samples are returned from the dataset:
 
-- **SAMPLE_ONLY** — Returns only the input sample tensor
-- **SAMPLE_LABEL** — Returns the input sample and the label tensor
-- **INPUT_OUTPUT** — Returns input and output tensors for supervised learning
+- **RAW_SERIES** — Returns the full raw time series
+- **INPUT_TARGET** — Returns input and target tensors for supervised learning
+- **INPUT_ONLY** — Returns only the input tensor without targets
 
 ## Parameters
 
 All forecasting data modules accept these common parameters:
 
-| Parameter    | Type     | Description                              |
-| ------------ | -------- | ---------------------------------------- |
-| `mode`       | `ForecastingMode` | Input mode (UNIVARIATE/MULTIVARIATE) |
-| `seq_len`    | `int`    | Sequence length for the input window     |
-| `label_len`  | `int`    | Length of the label window               |
-| `pred_len`   | `int`    | Prediction horizon length                |
-| `scale`      | `bool`   | Whether to apply data normalization      |
-| `batch_size` | `int`    | Batch size for dataloaders (default: 32) |
-| `shuffle`    | `bool`   | Whether to shuffle training data         |
-| `num_workers`| `int`    | Number of DataLoader workers             |
+| Parameter               | Type                    | Description                                               |
+| ----------------------- | ----------------------- | --------------------------------------------------------- |
+| `dataset_file_path`     | `Path`                  | Path to the dataset file (required)                       |
+| `variant`               | `str`                   | ETT variant: `"ETTh1"`, `"ETTh2"`, `"ETTm1"`, `"ETTm2"`   |
+| `mode`                  | `ForecastingMode`       | Input mode (`UNIVARIATE` or `MULTIVARIATE`)               |
+| `seq_len`               | `int`                   | Sequence length for the input window (default: 128)       |
+| `forecast_horizon`      | `int`                   | Prediction horizon length (default: 96; 24 for Electricity) |
+| `scale_data`            | `bool`                  | Whether to apply data normalization (default: True)       |
+| `data_scaling_method`   | `ScalingMethod`         | Scaling algorithm: `NONE`, `MINMAX`, `STANDARD`           |
+| `data_scaling_range`    | `tuple[float, float]`   | Target min-max range (default: `(0, 1)`)                  |
+| `batch_size`            | `int`                   | Batch size for dataloaders (default: 32)                  |
+| `valid_size`            | `float`                 | Validation fraction (default: 0.1)                        |
+| `test_size`             | `float`                 | Test fraction (default: 0.5)                              |
+| `shuffle`               | `bool`                  | Whether to shuffle training data (default: False)         |
+| `num_workers`           | `int`                   | Number of DataLoader workers (default: 0)                 |
+| `step`                  | `int \| None`           | Stride between consecutive windows (default: None)        |
 
 ## Dataset Classes
 
