@@ -3,50 +3,58 @@
 All enumeration types are defined in {py:mod}`chronocratic.datasets.enums` and
 re-exported from the package root.
 
-## ClassificationLoaderMode
+## Classification Enums
+
+### ClassificationLoaderMode
 
 .. autoclass:: chronocratic.datasets.enums.ClassificationLoaderMode
    :members:
    :undoc-members:
 
-## ClassificationSplitMode
+### ClassificationSplitMode
 
 .. autoclass:: chronocratic.datasets.enums.ClassificationSplitMode
    :members:
    :undoc-members:
 
-## DataForm
+## Data Enums
+
+### DataForm
 
 .. autoclass:: chronocratic.datasets.enums.DataForm
    :members:
    :undoc-members:
 
-## DataPartition
+### DataPartition
 
 .. autoclass:: chronocratic.datasets.enums.DataPartition
    :members:
    :undoc-members:
 
-## ForecastingLoaderMode
+### TimeSeriesDatasetMode
+
+.. autoclass:: chronocratic.datasets.enums.TimeSeriesDatasetMode
+   :members:
+   :undoc-members:
+
+## Forecasting Enums
+
+### ForecastingLoaderMode
 
 .. autoclass:: chronocratic.datasets.enums.ForecastingLoaderMode
    :members:
    :undoc-members:
 
-## ForecastingMode
+### ForecastingMode
 
 .. autoclass:: chronocratic.datasets.enums.ForecastingMode
    :members:
    :undoc-members:
 
-## ScalingMethod
+## Scaling Enums
+
+### ScalingMethod
 
 .. autoclass:: chronocratic.datasets.enums.ScalingMethod
-   :members:
-   :undoc-members:
-
-## TimeSeriesDatasetMode
-
-.. autoclass:: chronocratic.datasets.enums.TimeSeriesDatasetMode
    :members:
    :undoc-members:

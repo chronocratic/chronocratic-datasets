@@ -12,8 +12,8 @@ Expect breaking changes before the 1.0 release. Feedback is welcome.
 
 - **Forecasting datasets:** ETT, Weather, Electricity with LightningDataModule integration
 - **Classification datasets:** UCR (univariate) and UEA (multivariate) benchmarks
-- **ForecastingLoaderMode** enum: `SAMPLE_ONLY`, `SAMPLE_LABEL`, `INPUT_OUTPUT`
-- **ClassificationLoaderMode** enum: `FULL_SERIES`, `SLIDING_WINDOW`
+- **ForecastingLoaderMode** enum: `RAW_SERIES`, `INPUT_TARGET`, `INPUT_ONLY`
+- **ClassificationLoaderMode** enum: `SAMPLE_ONLY`, `SAMPLE_LABEL`
 - **ForecastingMode** enum: `UNIVARIATE`, `MULTIVARIATE`
 - **Data caching:** Automatic NPZ caching for downloaded and preprocessed data
 - **Data scaling:** Configurable normalization via scikit-learn scalers

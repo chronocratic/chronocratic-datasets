@@ -10,11 +10,14 @@ Classification Archive, a standard benchmark collection.
 The UCR archive contains univariate time series classification datasets.
 
 ```python
+from pathlib import Path
+
 from chronocratic.datasets import UCRClassificationDataModule
 
 module = UCRClassificationDataModule(
-    dataset_name="FogiDataset1",
-    scale=True,
+    dataset_folder_path=Path("data/FogiDataset1"),
+    target_column_name="class",
+    scale_data=True,
     batch_size=32,
 )
 
@@ -27,11 +30,14 @@ module.setup()
 The UEA archive contains multivariate time series classification datasets.
 
 ```python
+from pathlib import Path
+
 from chronocratic.datasets import UEAClassificationDataModule
 
 module = UEAClassificationDataModule(
-    dataset_name="ArrowHead",
-    scale=True,
+    dataset_folder_path=Path("data/ArrowHead"),
+    target_column_name="class",
+    scale_data=True,
     batch_size=32,
 )
 
@@ -43,30 +49,33 @@ module.setup()
 
 Controls how classification samples are constructed:
 
-- **FULL_SERIES** — Each sample is the entire time series
-- **SLIDING_WINDOW** — Samples are extracted using a sliding window over the series
+- **SAMPLE_ONLY** — Returns only the input sample tensor (no labels)
+- **SAMPLE_LABEL** — Returns the input sample tensor and its label
 
 ```python
 from chronocratic.datasets import ClassificationLoaderMode
 
-ClassificationLoaderMode.FULL_SERIES
-ClassificationLoaderMode.SLIDING_WINDOW
+ClassificationLoaderMode.SAMPLE_ONLY
+ClassificationLoaderMode.SAMPLE_LABEL
 ```
 
 ## Parameters
 
 All classification data modules accept these common parameters:
 
-| Parameter       | Type     | Description                              |
-| --------------- | -------- | ---------------------------------------- |
-| `dataset_name`  | `str`    | Name of the dataset from the UCR/UEA archive |
-| `scale`         | `bool`   | Whether to apply data normalization      |
-| `batch_size`    | `int`    | Batch size for dataloaders (default: 32) |
-| `shuffle`       | `bool`   | Whether to shuffle training data         |
-| `num_workers`   | `int`    | Number of DataLoader workers             |
-| `train_split`   | `float`  | Fraction of data for training            |
-| `val_split`     | `float`  | Fraction of data for validation          |
-| `test_split`    | `float`  | Fraction of data for testing             |
+| Parameter               | Type                              | Description                                               |
+| ----------------------- | --------------------------------- | --------------------------------------------------------- |
+| `dataset_folder_path`   | `Path`                            | Path to the dataset ARFF directory (required)             |
+| `target_column_name`    | `str`                             | Name of the target/label column in the ARFF files (required) |
+| `batch_size`            | `int`                             | Batch size for dataloaders (default: 32)                  |
+| `valid_size`            | `float`                           | Validation fraction from training data (default: 0.1)     |
+| `shuffle`               | `bool`                            | Whether to shuffle training data (default: False)         |
+| `scale_data`            | `bool`                            | Whether to apply data normalization (default: True)       |
+| `data_scaling_method`   | `ScalingMethod`                   | Scaling algorithm: `NONE`, `MINMAX`, `STANDARD`           |
+| `data_scaling_range`    | `tuple[float, float]`             | Target min-max range (default: `(0, 1)`)                  |
+| `splitting_strategy`    | `ClassificationSplitMode`         | `AS_DEFINED` (use provided splits) or `MANUAL`            |
+| `test_size`             | `float`                           | Test set fraction for `MANUAL` splitting (default: 0.5)   |
+| `num_workers`           | `int`                             | Number of DataLoader workers (default: 0)                 |
 
 ## Dataset Classes
 
