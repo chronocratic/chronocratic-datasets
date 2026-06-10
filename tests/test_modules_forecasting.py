@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 from torch.utils.data import DataLoader
 
-from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
+from chronocratic.datasets.enums.data import ForecastingMode, ScalingMethod
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -58,13 +58,13 @@ class TestETTDataModuleConstructor:
 
     def test_import_ett_module(self) -> None:
         """ETTDataModule can be imported from ett module."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         assert ETTDataModule is not None
 
     def test_constructor_accepts_variant(self, synthetic_csv_file: Path) -> None:
         """Constructor accepts explicit variant parameter."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=synthetic_csv_file,
@@ -80,14 +80,14 @@ class TestETTDataModuleConstructor:
 
     def test_variant_validation_rejects_invalid(self, synthetic_csv_file: Path) -> None:
         """Constructor raises ValueError for unknown variant."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         with pytest.raises(ValueError, match='Unknown ETT variant'):
             ETTDataModule(dataset_file_path=synthetic_csv_file, variant='unknown_variant')
 
     def test_all_variants_accepted(self, synthetic_csv_file: Path) -> None:
         """All four valid variants are accepted without error."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         for variant in ['ETTh1', 'ETTh2', 'ETTm1', 'ETTm2']:
             module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
@@ -99,7 +99,7 @@ class TestETTSetDataSlices:
 
     def test_hourly_variant_slices(self, synthetic_csv_file: Path) -> None:
         """ETTh1/ETTh2 use 16/4/4 month slices (hourly resolution)."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         for variant in ['ETTh1', 'ETTh2']:
             module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
@@ -113,7 +113,7 @@ class TestETTSetDataSlices:
 
     def test_15min_variant_slices(self, synthetic_csv_file: Path) -> None:
         """ETTm1/ETTm2 use 4x multiplier for 15-min resolution."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         for variant in ['ETTm1', 'ETTm2']:
             module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
@@ -131,7 +131,7 @@ class TestETTPrepareData:
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing file."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(dataset_file_path=Path('/nonexistent/ETT.csv'), variant='ETTh1')
         with pytest.raises(FileNotFoundError):
@@ -148,13 +148,13 @@ class TestElectricityLoadModuleConstructor:
 
     def test_import_electricity_module(self) -> None:
         """ElectricityLoadModule can be imported from electricity module."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         assert ElectricityLoadModule is not None
 
     def test_constructor_params(self, electricity_csv_file: Path) -> None:
         """Constructor accepts standard forecasting params."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(
             dataset_file_path=electricity_csv_file,
@@ -174,7 +174,7 @@ class TestElectricityLoadPrepareData:
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing file."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(dataset_file_path=Path('/nonexistent/electricity.csv'))
         with pytest.raises(FileNotFoundError):
@@ -182,7 +182,7 @@ class TestElectricityLoadPrepareData:
 
     def test_dataset_name_is_electricity_load(self, electricity_csv_file: Path) -> None:
         """_dataset_name is set to 'ElectricityLoad'."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
         module.prepare_data()
@@ -198,7 +198,7 @@ class TestElectricityLoadTransform:
         Operates on _full_data_scaled (the already-scaled data array),
         transposing from (samples, features) to (features, samples, 1).
         """
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
         # Set synthetic scaled data: (3 samples, 2 features)
@@ -219,13 +219,13 @@ class TestWeatherModuleConstructor:
 
     def test_import_weather_module(self) -> None:
         """WeatherModule can be imported from weather module."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         assert WeatherModule is not None
 
     def test_constructor_params(self, synthetic_csv_file: Path) -> None:
         """Constructor accepts standard forecasting params."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(
             dataset_file_path=synthetic_csv_file,
@@ -244,7 +244,7 @@ class TestWeatherPrepareData:
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing file."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(dataset_file_path=Path('/nonexistent/weather.csv'))
         with pytest.raises(FileNotFoundError):
@@ -260,7 +260,7 @@ class TestWeatherTransform:
         Operates on _full_data_scaled (the already-scaled data array),
         expanding from (samples, features) to (1, samples, features).
         """
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(dataset_file_path=synthetic_csv_file)
         # Set synthetic scaled data: (3 samples, 2 features)
@@ -281,7 +281,7 @@ class TestForecastingModulesUseTensorDataset:
 
     def test_ett_uses_tensordataset_in_source(self) -> None:
         """ETT source code references TensorDataset."""
-        import tscollection.datasets.modules.ett as ett_module
+        import chronocratic.datasets.modules.ett as ett_module
 
         source = open(
             Path(ett_module.__file__).parent / 'ett.py'  # type: ignore[arg-type]
@@ -290,7 +290,7 @@ class TestForecastingModulesUseTensorDataset:
 
     def test_electricity_uses_tensordataset_in_source(self) -> None:
         """Electricity source code references TensorDataset."""
-        import tscollection.datasets.modules.electricity as elec_module
+        import chronocratic.datasets.modules.electricity as elec_module
 
         source = open(
             Path(elec_module.__file__).parent / 'electricity.py'  # type: ignore[arg-type]
@@ -299,7 +299,7 @@ class TestForecastingModulesUseTensorDataset:
 
     def test_weather_uses_tensordataset_in_source(self) -> None:
         """Weather source code references TensorDataset."""
-        import tscollection.datasets.modules.weather as weather_module
+        import chronocratic.datasets.modules.weather as weather_module
 
         source = open(
             Path(weather_module.__file__).parent / 'weather.py'  # type: ignore[arg-type]
@@ -312,7 +312,7 @@ class TestForecastingSlices:
 
     def test_weather_fractional_split(self, synthetic_csv_file: Path) -> None:
         """Weather uses 60/20/20 fractional split."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(dataset_file_path=synthetic_csv_file)
         module._full_data_raw = np.array(list(range(100))).reshape(-1, 1)
@@ -324,7 +324,7 @@ class TestForecastingSlices:
 
     def test_electricity_fractional_split(self, electricity_csv_file: Path) -> None:
         """Electricity uses 60/20/20 fractional split."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
         module._full_data_raw = np.array(list(range(100))).reshape(-1, 1)
@@ -379,7 +379,7 @@ class TestWeatherModuleIntegration:
         extraction, data transformation, and train/valid/test splitting
         via the 60/20/20 fractional path.
         """
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(
             dataset_file_path=weather_csv_file,
@@ -405,7 +405,7 @@ class TestWeatherModuleIntegration:
         fixture. Confirms Weather's fractional split pattern differs
         from ETT's absolute month-boundary splits.
         """
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(dataset_file_path=weather_csv_file)
         module.prepare_data()
@@ -425,7 +425,7 @@ class TestWeatherModuleIntegration:
         has shape (1, 120, total_features). DataLoader wraps this in
         TensorDataset.
         """
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(
             dataset_file_path=weather_csv_file,
@@ -522,7 +522,7 @@ class TestETTGoldenPathIntegration:
         mode=UNIVARIATE. Exercises sklearn scaling, time feature extraction,
         data transformation, and train/valid/test splitting.
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
@@ -550,7 +550,7 @@ class TestETTGoldenPathIntegration:
         _train_data_samples has multiple feature dimensions and
         num_features reflects all columns plus time features.
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
@@ -579,7 +579,7 @@ class TestETTGoldenPathIntegration:
         DataLoader. Extracting a batch from it should produce a tensor
         with the correct feature dimension (num_features).
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
@@ -609,7 +609,7 @@ class TestETTGoldenPathIntegration:
         Same golden-path flow as univariate test but with variant='ETTm1'
         to exercise 15-min resolution slice boundaries (4x multiplier).
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
@@ -662,7 +662,7 @@ class TestETTCacheIntegration:
 
     def test_prepare_data_writes_npz(self, ett_csv: Path, tmp_path: Path) -> None:
         """ETT: prepare_data() writes .npz file to cache directory."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         cache_dir = tmp_path / 'cache'
         module = ETTDataModule(
@@ -688,7 +688,7 @@ class TestETTCacheIntegration:
         """ETT: prepare_data() writes metadata.json with version=1 and split ranges."""
         import json
 
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         cache_dir = tmp_path / 'cache'
         module = ETTDataModule(
@@ -719,7 +719,7 @@ class TestETTCacheIntegration:
 
     def test_setup_reads_cache_and_sets_raw(self, ett_csv: Path, tmp_path: Path) -> None:
         """ETT: setup('fit') reads .npz from cache and sets _full_data_raw."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         cache_dir = tmp_path / 'cache'
         module = ETTDataModule(
@@ -747,7 +747,7 @@ class TestETTCacheIntegration:
 
     def test_transform_data_produces_correct_shape(self, ett_csv: Path, tmp_path: Path) -> None:
         """ETT: _transform_data produces _full_data_scaled with shape (1, samples, features)."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         cache_dir = tmp_path / 'cache'
         module = ETTDataModule(
@@ -800,7 +800,7 @@ class TestWeatherCacheIntegration:
 
     def test_prepare_data_writes_npz(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: prepare_data() writes .npz file to cache directory."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         cache_dir = tmp_path / 'cache'
         module = WeatherModule(
@@ -825,7 +825,7 @@ class TestWeatherCacheIntegration:
         """Weather: prepare_data() writes metadata.json with version=1 and splits."""
         import json
 
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         cache_dir = tmp_path / 'cache'
         module = WeatherModule(
@@ -855,7 +855,7 @@ class TestWeatherCacheIntegration:
 
     def test_setup_reads_cache_and_sets_raw(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: setup('fit') reads .npz from cache and sets _full_data_raw."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         cache_dir = tmp_path / 'cache'
         module = WeatherModule(
@@ -882,7 +882,7 @@ class TestWeatherCacheIntegration:
 
     def test_transform_data_produces_correct_shape(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: _transform_data produces (1, samples, features) shape."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         cache_dir = tmp_path / 'cache'
         module = WeatherModule(
@@ -934,7 +934,7 @@ class TestElectricityCacheIntegration:
 
     def test_prepare_data_writes_npz(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: prepare_data() writes .npz file to cache directory."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         cache_dir = tmp_path / 'cache'
         module = ElectricityLoadModule(
@@ -956,7 +956,7 @@ class TestElectricityCacheIntegration:
         """Electricity: prepare_data() writes metadata.json with version=1."""
         import json
 
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         cache_dir = tmp_path / 'cache'
         module = ElectricityLoadModule(
@@ -984,7 +984,7 @@ class TestElectricityCacheIntegration:
 
     def test_setup_reads_cache_and_sets_raw(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: setup('fit') reads .npz from cache and sets _full_data_raw."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         cache_dir = tmp_path / 'cache'
         module = ElectricityLoadModule(
@@ -1011,7 +1011,7 @@ class TestElectricityCacheIntegration:
 
     def test_transform_data_produces_correct_shape(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: transform produces (features, samples, 1) shape."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         cache_dir = tmp_path / 'cache'
         module = ElectricityLoadModule(
@@ -1051,7 +1051,7 @@ class TestForecastingSetupEdgeCases:
         DatetimeIndex), sets slices, and calls setup(). Verifies that
         the no-DatetimeIndex branch in forecasting.py is hit.
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
@@ -1084,7 +1084,7 @@ class TestForecastingSetupEdgeCases:
         Verifies the StandardScaler branch in forecasting.py is exercised.
         Pre-populates numpy _full_data_raw, sets slices, and calls setup().
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
@@ -1116,7 +1116,7 @@ class TestForecastingSetupEdgeCases:
         Verifies setup() respects the scale_data=False flag and produces
         valid data samples with unscaled values.
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
@@ -1165,7 +1165,7 @@ class TestForecastingBugFixes:
         scaler leaked validation data, the range would be wider (min would be
         near 0 for the full dataset, not just the train slice).
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
@@ -1209,7 +1209,7 @@ class TestForecastingBugFixes:
         Pre-populate _full_data_raw with known random values, copy to original,
         call setup. Assert values are unchanged after setup.
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         rng = np.random.default_rng(42)
         original = rng.standard_normal((100, 5)).astype(np.float32)
@@ -1249,7 +1249,7 @@ class TestForecastingBugFixes:
         Same setup as test_scale_data_false_preserves_values but with
         scale_data=True. Assert data values ARE different after setup.
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         rng = np.random.default_rng(42)
         original = rng.standard_normal((100, 5)).astype(np.float32)
@@ -1291,7 +1291,7 @@ class TestElectricityBugFixes:
         Instantiate ElectricityLoadModule, call prepare_data().
         Assert no IndexError is raised and cache files are written.
         """
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         csv_file = tmp_path / 'small_electricity.csv'
         dates = pd.date_range('2012-01-01', periods=100, freq='h')
@@ -1335,7 +1335,7 @@ class TestElectricityModuleIntegration:
         time feature extraction, transpose + expand_dims transform, and
         60/20/20 fractional train/valid/test splitting.
         """
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(
             dataset_file_path=electricity_csv_file,
@@ -1363,7 +1363,7 @@ class TestElectricityModuleIntegration:
         (axis=-1) adding dimension 1, then time features appended
         to that dimension.
         """
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(
             dataset_file_path=electricity_csv_file,
@@ -1397,7 +1397,7 @@ class TestSetupIdempotency:
 
     def test_ett_setup_fit_twice_no_double_scale(self) -> None:
         """ETT: setup('fit') called twice produces identical train samples."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
@@ -1423,7 +1423,7 @@ class TestSetupIdempotency:
 
     def test_weather_setup_fit_twice_no_double_scale(self) -> None:
         """Weather: setup('fit') called twice produces identical train samples."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
@@ -1447,7 +1447,7 @@ class TestSetupIdempotency:
 
     def test_electricity_setup_fit_twice_no_double_scale(self) -> None:
         """Electricity: setup('fit') called twice produces identical train samples."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
@@ -1494,7 +1494,7 @@ class TestPrepareDataIdempotency:
 
     def test_ett_prepare_data_runs_io_once(self, ett_csv: Path) -> None:
         """ETT: prepare_data() twice → pd.read_csv called once."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
@@ -1511,7 +1511,7 @@ class TestPrepareDataIdempotency:
 
     def test_weather_prepare_data_runs_io_once(self, synthetic_csv_file: Path) -> None:
         """Weather: prepare_data() twice → pd.read_csv called once."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(
             dataset_file_path=synthetic_csv_file,
@@ -1527,7 +1527,7 @@ class TestPrepareDataIdempotency:
 
     def test_electricity_prepare_data_runs_io_once(self, electricity_csv_file: Path) -> None:
         """Electricity: prepare_data() twice → pd.read_csv called once."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(
             dataset_file_path=electricity_csv_file,
@@ -1566,7 +1566,7 @@ class TestFinalizePrepareData:
 
     def test_ett_slices_set_after_setup(self, ett_csv: Path) -> None:
         """ETT: slices are populated by setup() after cache read."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
@@ -1584,7 +1584,7 @@ class TestFinalizePrepareData:
 
     def test_weather_slices_set_after_setup(self, synthetic_csv_file: Path) -> None:
         """Weather: slices are populated by setup() after cache read."""
-        from tscollection.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherModule
 
         module = WeatherModule(
             dataset_file_path=synthetic_csv_file,
@@ -1601,7 +1601,7 @@ class TestFinalizePrepareData:
 
     def test_electricity_slices_set_after_setup(self, electricity_csv_file: Path) -> None:
         """Electricity: slices are populated by setup() after cache read."""
-        from tscollection.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 
         module = ElectricityLoadModule(
             dataset_file_path=electricity_csv_file,
@@ -1641,7 +1641,7 @@ class TestPrepareDimensions:
 
     def test_pre_setup_dimensions(self, ett_csv: Path) -> None:
         """ETT: prepare_dimensions() after prepare_data() alone returns correct dims."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
@@ -1658,7 +1658,7 @@ class TestPrepareDimensions:
 
     def test_post_setup_dimensions(self, ett_csv: Path) -> None:
         """ETT: prepare_dimensions() after setup() returns cached values."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
@@ -1676,7 +1676,7 @@ class TestPrepareDimensions:
 
     def test_pre_setup_matches_post_setup(self, ett_csv: Path) -> None:
         """ETT: dimensions agree whether computed pre-setup or post-setup."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
@@ -1718,7 +1718,7 @@ class TestSetupStageGating:
 
     def test_fit_populates_scaler_cache(self, ett_csv: Path) -> None:
         """ETT: setup('fit') populates _data_scaler_cache."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
@@ -1736,7 +1736,7 @@ class TestSetupStageGating:
 
     def test_test_stage_reuses_scaler(self, ett_csv: Path) -> None:
         """ETT: setup('fit') then setup('test') reuses same scaler instance."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
@@ -1757,7 +1757,7 @@ class TestSetupStageGating:
 
     def test_validate_does_not_mutate(self, ett_csv: Path) -> None:
         """ETT: setup('validate') does not mutate _train_data_samples."""
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,

@@ -11,7 +11,11 @@ import pandas as pd
 import pytest
 from sklearn.preprocessing import MinMaxScaler
 
-from tscollection.datasets.utils.cache import atomic_save_metadata, atomic_save_npz, save_scaler
+from chronocratic.datasets.utils.cache import (
+    atomic_save_metadata,
+    atomic_save_npz,
+    save_scaler,
+)
 
 
 @pytest.fixture

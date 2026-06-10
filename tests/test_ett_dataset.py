@@ -5,12 +5,10 @@ FlexibleTimeSeriesDatasetSingleFile, injects ForecastingStrategySingleFile,
 and yields (input_tensor, target_tensor) tuples with correct shapes.
 """
 
-from __future__ import annotations
-
 
 def test_ett_yields_input_target(synthetic_forecast_data):
     """ETTDataset yields (input, target) pairs with correct shapes."""
-    from tscollection.datasets.datatypes.ett import ETTDataset
+    from chronocratic.datasets.datatypes.ett import ETTDataset
 
     ds = ETTDataset(data=synthetic_forecast_data, seq_len=96, step=1, forecast_horizon=24)
     inp, tgt = ds[0]
@@ -26,7 +24,7 @@ def test_ett_yields_input_target(synthetic_forecast_data):
 
 def test_ett_length(synthetic_forecast_data):
     """ETTDataset length matches expected sequence count."""
-    from tscollection.datasets.datatypes.ett import ETTDataset
+    from chronocratic.datasets.datatypes.ett import ETTDataset
 
     # 200 timesteps, seq_len=96, forecast_horizon=24, step=1
     # Max start index: 200 - 96 - 24 = 80, so indices 0..80 => 81 sequences
@@ -38,7 +36,7 @@ def test_ett_length(synthetic_forecast_data):
 
 def test_ett_forecast_horizon(synthetic_forecast_data):
     """ETTDataset target has forecast_horizon timesteps."""
-    from tscollection.datasets.datatypes.ett import ETTDataset
+    from chronocratic.datasets.datatypes.ett import ETTDataset
 
     horizon = 48
     ds = ETTDataset(data=synthetic_forecast_data, seq_len=96, step=1, forecast_horizon=horizon)
