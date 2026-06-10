@@ -17,7 +17,6 @@ All notable changes to **chronocratic-datasets** will be documented in this file
 - **Utility functions:** Cache management, feature extraction, ARFF parsing, collation
 - **Package structure:** Full `__init__.py` with 49 re-exported public symbols
 - **BSD 3-Clause license**
-- **CITATION.cff** for academic citation support
 - **Sphinx documentation** with autodoc-generated API reference
 
 ### Notes

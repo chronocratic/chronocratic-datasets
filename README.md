@@ -59,18 +59,6 @@ train_loader = weather.train_dataloader()
 
 Comprehensive documentation, including API reference, quickstart guides, and contributing instructions, is available at [chronocratic-datasets.readthedocs.io](https://chronocratic-datasets.readthedocs.io/en/stable/).
 
-## Citation
-
-If you use this package in your research, please cite it using the metadata in [CITATION.cff](CITATION.cff):
-
-```yaml
-title: "chronocratic-datasets"
-authors:
-  - name: "The Chronocratic Developers"
-version: "0.1.0"
-repository-code: "https://github.com/chronocratic/datasets"
-```
-
 ## License
 
 BSD 3-Clause — see [LICENSE](LICENSE) for the full text.
