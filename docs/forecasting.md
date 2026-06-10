@@ -1,4 +1,4 @@
-# Forecasting Datasets
+# Forecasting Modules
 
 The forecasting module provides data loaders for popular multivariate time series
 forecasting benchmarks, built on top of PyTorch Lightning's `LightningDataModule`.

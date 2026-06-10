@@ -1,4 +1,4 @@
-# Classification Datasets
+# Classification Modules
 
 The classification module provides data loaders for the UCR/UEA Time Series
 Classification Archive, a standard benchmark collection for time series
