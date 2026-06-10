@@ -5,10 +5,12 @@ from pathlib import Path
 # Add src/ to the path so autodoc can import chronocratic.datasets
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from chronocratic.datasets import __version__  # noqa: E402
+
 project = "chronocratic-datasets"
-copyright = "2024-2026, The Chronocratic Developers"
+copyright = "2026-Present, The Chronocratic Developers"
 author = "The Chronocratic Developers"
-release = "0.1.0"
+release = __version__
 
 extensions = [
     "sphinx.ext.autodoc",

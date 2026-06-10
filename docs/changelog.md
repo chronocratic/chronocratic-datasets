@@ -2,7 +2,11 @@
 
 All notable changes to **chronocratic-datasets** will be documented in this file.
 
-## v0.1.0 (2026-06-09)
+## v0.1.0a1 (2026-06-10) — First Alpha Release
+
+The first pre-release of chronocratic-datasets. This alpha introduces the complete set of time series datasets, a clean and type-safe API, and full PyTorch Lightning integration.
+
+Expect breaking changes before the 1.0 release. Feedback is welcome.
 
 ### Added
 
