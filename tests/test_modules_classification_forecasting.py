@@ -8,15 +8,15 @@ import pandas as pd
 import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
-from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
-from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
+from chronocratic.datasets.enums.data import ForecastingMode, ScalingMethod
+from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
+from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 
 
 @pytest.fixture
 def concrete_forecasting_class():
     """Concrete implementation of BaseForecastingTimeSeriesDataModule for testing."""
-    from tscollection.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
+    from chronocratic.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 
     class ConcreteForecasting(BaseForecastingTimeSeriesDataModule):
         def _do_prepare_data(self) -> None:
@@ -40,7 +40,7 @@ class TestBaseClassificationTimeSeriesDataModule:
     @pytest.fixture
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -79,7 +79,7 @@ class TestBaseClassificationTimeSeriesDataModule:
 
     def test_exposes_num_classes_property(self) -> None:
         """Classification base exposes num_classes property."""
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -94,7 +94,7 @@ class TestBaseClassificationTimeSeriesDataModule:
         # Verify the attribute exists in the class or is set via __init__.
         import inspect
 
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -109,7 +109,7 @@ class TestBaseForecastingTimeSeriesDataModule:
     @pytest.fixture
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -202,7 +202,7 @@ class TestPrepareDimensions:
 
     def test_base_prepare_dimensions_exists(self) -> None:
         """prepare_dimensions() exists on base and returns a 2-tuple."""
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             def _do_prepare_data(self) -> None:
@@ -223,7 +223,7 @@ class TestPrepareDimensions:
 
     def test_classification_raises_without_prepare_data(self) -> None:
         """Classification _compute_dimensions raises RuntimeError without prepare_data."""
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -394,7 +394,7 @@ class TestForecastingTypedAttrs:
 
     def test_cache_helpers_exist(self) -> None:
         """Forecasting base has cache helper methods."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -423,7 +423,7 @@ class TestForecastingTypedAttrs:
 
     def test_finalize_prepare_data_is_noop(self) -> None:
         """_finalize_prepare_data does not set slices for forecasting."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 

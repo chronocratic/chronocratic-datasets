@@ -6,7 +6,7 @@ correctly parse ARFF files and transform DataFrame columns.
 
 import pandas as pd
 
-from tscollection.datasets.utils.arff import process_df_according_to_dtypes, read_arff_as_df
+from chronocratic.datasets.utils.arff import process_df_according_to_dtypes, read_arff_as_df
 
 # --------------------------------------------------------------------------- #
 # read_arff_as_df tests                                                        #
