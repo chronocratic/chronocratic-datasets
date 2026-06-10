@@ -7,7 +7,7 @@ strategies, and dataset variants across modules and datasets.
 ```{eval-rst}
 .. automodule:: chronocratic.datasets.enums
    :members:
-   :undoc-members:
    :show-inheritance:
    :no-index:
+   :special-members: __init__
 ```
