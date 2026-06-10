@@ -58,7 +58,7 @@ uv run pytest tests/
 uv run pytest tests/ --cov=src/chronocratic/datasets
 
 # Run specific test file
-uv run pytest tests/test_package.py -v
+uv run pytest tests/test_public_api_exports.py -v
 ```
 
 ### Writing Tests

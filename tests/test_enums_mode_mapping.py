@@ -1,9 +1,9 @@
-"""Tests for enum refactoring and mode mapping (Phase 08 Plan 01).
+"""Tests for enum mode mapping and loader modes.
 
 Verifies:
 - TimeSeriesDatasetMode renamed values (SAMPLE_ONLY, SAMPLE_LABEL, INPUT_OUTPUT)
-- New ClassificationLoaderMode enum
-- New ForecastingLoaderMode enum
+- ClassificationLoaderMode enum
+- ForecastingLoaderMode enum
 - Mode mapping dicts (CLASSIFICATION_LOADER_MAP, FORECASTING_LOADER_MAP)
 - Enum exports from __init__.py
 """

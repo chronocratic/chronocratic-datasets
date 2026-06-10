@@ -1,4 +1,4 @@
-"""Tests for general utility functions.
+"""Tests for general helper utility functions.
 
 Verifies that custom_collate_fn pads short batches by cycling,
 centralize_variable_length_series centers NaN-padded data, and
