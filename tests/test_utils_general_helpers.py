@@ -1,8 +1,7 @@
 """Tests for general helper utility functions.
 
 Verifies that custom_collate_fn pads short batches by cycling,
-centralize_variable_length_series centers NaN-padded data, and
-process_data_with_varying_sequence_lengths_single handles 2-D/3-D data.
+and process_data_with_varying_sequence_lengths_single handles 2-D/3-D data.
 """
 
 import numpy as np
@@ -10,7 +9,7 @@ import pandas as pd
 import torch
 
 from chronocratic.datasets.utils.general import (
-    centralize_variable_length_series,
+    _centralize_variable_length_series,
     custom_collate_fn,
     process_data_with_varying_sequence_lengths_single,
 )
@@ -56,29 +55,24 @@ def test_custom_collate_fn_keyword_only() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# centralize_variable_length_series tests                                       #
+# _centralize_variable_length_series tests                                     #
 # --------------------------------------------------------------------------- #
 
 
 def test_centralize_variable_length_series() -> None:
     """Centering shifts valid data to middle of sequence."""
-    # batch=1, seq=5, features=2
-    # Valid data at indices 0 and 1 (right-padded pattern)
     series = np.array(
         [[[1.0, 2.0], [3.0, 4.0], [np.nan, np.nan], [np.nan, np.nan], [np.nan, np.nan]]]
     )
-    result = centralize_variable_length_series(series)
+    result = _centralize_variable_length_series(series)
 
-    # Shape should be preserved
     assert result.shape == series.shape
 
 
 def test_centralize_variable_length_series_already_centered() -> None:
     """Already centered data stays centered."""
-    # batch=1, seq=5, features=1
-    # NaN at start and end, valid in middle
     series = np.array([[[np.nan], [np.nan], [1.0], [2.0], [np.nan]]])
-    result = centralize_variable_length_series(series)
+    result = _centralize_variable_length_series(series)
 
     assert result.shape == series.shape
 
@@ -86,15 +80,13 @@ def test_centralize_variable_length_series_already_centered() -> None:
 def test_centralize_variable_length_series_batch() -> None:
     """Centering works on batch of sequences."""
     batch = np.zeros((2, 6, 3)) + np.nan
-    # First sample: valid at indices 0, 1
     batch[0, 0, :] = [1.0, 2.0, 3.0]
     batch[0, 1, :] = [4.0, 5.0, 6.0]
-    # Second sample: valid at indices 0, 1, 2
     batch[1, 0, :] = [1.0, 1.0, 1.0]
     batch[1, 1, :] = [2.0, 2.0, 2.0]
     batch[1, 2, :] = [3.0, 3.0, 3.0]
 
-    result = centralize_variable_length_series(batch)
+    result = _centralize_variable_length_series(batch)
 
     assert result.shape == batch.shape
 
@@ -149,11 +141,10 @@ def test_process_data_no_temporal_missing() -> None:
 
 
 def test_all_exports() -> None:
-    """__all__ exports three public functions alphabetically."""
+    """__all__ exports two public functions alphabetically."""
     import chronocratic.datasets.utils.general as general_mod
 
     assert general_mod.__all__ == [
-        'centralize_variable_length_series',
         'custom_collate_fn',
         'process_data_with_varying_sequence_lengths_single',
     ]

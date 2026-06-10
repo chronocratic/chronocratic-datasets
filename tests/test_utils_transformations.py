@@ -1,17 +1,14 @@
 """Tests for data transformation utilities.
 
-Verifies that convert_numpy_to_tensor, expand_data_dimensionality,
-and convert_data_to_np_array produce correct output types and shapes.
+Verifies that convert_numpy_to_tensor and expand_data_dimensionality
+produce correct output types and shapes.
 """
-
-from __future__ import annotations
 
 import numpy as np
 import pytest
 import torch
 
 from chronocratic.datasets.utils.transformations import (
-    convert_data_to_np_array,
     convert_numpy_to_tensor,
     expand_data_dimensionality,
 )
@@ -41,24 +38,15 @@ def test_expand_data_dimensionality():
     assert isinstance(result, np.ndarray)
 
 
-def test_convert_data_to_np_array():
-    """convert_data_to_np_array converts list/tuple to numpy array."""
-    data = [[1.0, 2.0], [3.0, 4.0]]
-    result = convert_data_to_np_array(data, dtype='float')
-    assert isinstance(result, np.ndarray)
-    assert result.dtype == np.float32
-    assert result.shape == (2, 2)
-
-
 def test_convert_numpy_to_tensor_type_error_list():
     """convert_numpy_to_tensor raises TypeError for list input (lines 25-29)."""
-    with pytest.raises(TypeError, match='Expected np.ndarray'):
+    with pytest.raises(TypeError, match=r'Expected np.ndarray'):
         convert_numpy_to_tensor(data=[1, 2, 3], dtype='float')
 
 
 def test_convert_numpy_to_tensor_type_error_dict():
     """convert_numpy_to_tensor raises TypeError for dict input (lines 25-29)."""
-    with pytest.raises(TypeError, match='Expected np.ndarray'):
+    with pytest.raises(TypeError, match=r'Expected np.ndarray'):
         convert_numpy_to_tensor(data={'a': 1}, dtype='float')
 
 

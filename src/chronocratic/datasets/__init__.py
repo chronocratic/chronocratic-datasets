@@ -1,7 +1,5 @@
 """chronocratic.datasets -- Time series datasets for PyTorch Lightning."""
 
-from __future__ import annotations
-
 from importlib.metadata import version
 
 __version__ = version(__name__)
@@ -46,19 +44,17 @@ from chronocratic.datasets.modules import (
     WeatherModule,
 )
 
-# Utils (20 symbols from utils/__init__.py __all__)
+# Utils (18 symbols from utils/__init__.py __all__)
 from chronocratic.datasets.utils import (
     atomic_save_metadata,
     atomic_save_npz,
     build_cache_key,
     CACHE_SCHEMA_VERSION,
-    centralize_variable_length_series,
     compose,
     create_data_scaler,
     custom_collate_fn,
     extract_time_features,
     flatten_list_of_np_arrays,
-    FunctionComposer,
     get_num_samples_from_ts,
     load_metadata,
     load_scaler,
@@ -96,7 +92,6 @@ __all__ = [
     'FlexibleTimeSeriesDatasetSingleFileMultipleSeries',
     'ForecastingLoaderMode',
     'ForecastingMode',
-    'FunctionComposer',
     'ScalingMethod',
     'TimeSeriesDataset',
     'TimeSeriesDatasetMode',
@@ -110,7 +105,6 @@ __all__ = [
     'atomic_save_metadata',
     'atomic_save_npz',
     'build_cache_key',
-    'centralize_variable_length_series',
     'compose',
     'create_data_scaler',
     'custom_collate_fn',
