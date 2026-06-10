@@ -44,10 +44,11 @@ jobs:
           MATCHED=()
 
           for path in "${FORBIDDEN[@]}"; do
-            matches=$(echo "$CHANGED" | grep "$path" || true)
-            if [ -n "$matches" ]; then
-              MATCHED+=($matches)
-            fi
+            # Anchor to a path boundary (start of path or after a '/') so e.g.
+            # CLAUDE.md does not match NOTCLAUDE.md.
+            while IFS= read -r f; do
+              [ -n "$f" ] && MATCHED+=("$f")
+            done < <(printf '%s\n' "$CHANGED" | grep -E "(^|/)$path" || true)
           done
 
           if [ "${#MATCHED[@]}" -gt 0 ]; then

@@ -4,6 +4,10 @@ on:
   issue_comment:
     types: [created]
 
+concurrency:
+  group: fast-forward-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   fast-forward:
     if: ${{ contains(github.event.comment.body, '/fast-forward')
@@ -81,5 +85,8 @@ jobs:
       - name: Clean up old backups
         run: |
           git fetch --prune origin
-          git branch -r | grep 'origin/main.backup.' | sort | head -n -5 | \
-            sed 's|origin/||' | xargs -I {} git push origin --delete {} || true
+          # Sort by the trailing YYYYMMDD-HHMMSS timestamp (4th dot field) so
+          # retention is chronological regardless of PR-number digit width.
+          git branch -r | grep 'origin/main.backup.' | sed 's| *origin/||' | \
+            sort -t. -k4 | head -n -5 | \
+            xargs -I {} git push origin --delete {} || true
