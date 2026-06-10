@@ -1,10 +1,10 @@
-"""Tests for new dataset classes (Phase 08 Plan 02).
+"""Tests for WeatherDataset and ElectricityDataset.
 
 Verifies:
 - FlexibleTimeSeriesDatasetSingleFileMultipleSeries handles 3D data
 - WeatherDataset instantiates and yields correct shapes
 - ElectricityDataset instantiates and yields correct shapes
-- New classes are exportable from datatypes __init__.py
+- Dataset classes are exportable from datatypes __init__.py
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Tests for package foundation."""
+"""Tests for public API exports and package configuration."""
 
 from __future__ import annotations
 
