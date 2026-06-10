@@ -14,7 +14,7 @@ import pytest
 import torch
 from sklearn.preprocessing import MinMaxScaler
 
-from tscollection.datasets.utils.cache import (
+from chronocratic.datasets.utils.cache import (
     CACHE_SCHEMA_VERSION,
     atomic_save_metadata,
     atomic_save_npz,

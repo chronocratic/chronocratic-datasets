@@ -2,9 +2,9 @@
 requires = ["setuptools>=68", "wheel"]
 
 [project]
-name = "tscollection-datasets"
+name = "chronocratic-datasets"
 version = "0.1.0"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.1,<3.0.0",
     "pandas>=2.2.0",

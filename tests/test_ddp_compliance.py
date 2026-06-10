@@ -14,7 +14,7 @@ import pandas as pd
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from tscollection.datasets.enums.data import ForecastingMode
+from chronocratic.datasets.enums.data import ForecastingMode
 
 # ---------------------------------------------------------------------------
 # Module-level DDP workers (must be top-level for mp.spawn pickling)
@@ -48,7 +48,7 @@ def _ddp_forecasting_worker(
         results_dir: Directory to write rank results for verification.
         csv_path: Path to synthetic CSV file.
     """
-    from tscollection.datasets.modules.weather import WeatherModule
+    from chronocratic.datasets.modules.weather import WeatherModule
 
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = str(port)
@@ -104,7 +104,7 @@ def _ddp_classification_worker(
         results_dir: Directory to write rank results for verification.
         dataset_dir: Path to synthetic UCR dataset directory.
     """
-    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = str(port)
@@ -284,12 +284,12 @@ class TestIsinstanceBranchElimination:
     def test_isinstance_branch_elimination(self) -> None:
         """No isinstance(*_full_data) branches remain in module source files.
 
-        Scans all Python files under src/tscollection/datasets/modules/
+        Scans all Python files under src/chronocratic/datasets/modules/
         for patterns like isinstance(self._full_data, ...) or
         isinstance(_full_data, ...). These were eliminated in phase 7
         by splitting _full_data into typed attributes.
         """
-        modules_dir = Path(__file__).parents[1] / 'src' / 'tscollection' / 'datasets' / 'modules'
+        modules_dir = Path(__file__).parents[1] / 'src' / 'chronocratic' / 'datasets' / 'modules'
         matches = []
         for py_file in modules_dir.rglob('*.py'):
             for lineno, line in enumerate(py_file.read_text().splitlines(), 1):
@@ -324,7 +324,7 @@ class TestSetupIdempotentWithCache:
         process, snapshots _train_data_samples, clears setup state,
         and verifies a fresh setup('fit') read produces identical data.
         """
-        from tscollection.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
 
         # Create synthetic CSV
         csv_file = tmp_path / 'ett.csv'

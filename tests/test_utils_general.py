@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from tscollection.datasets.utils.general import (
+from chronocratic.datasets.utils.general import (
     centralize_variable_length_series,
     custom_collate_fn,
     process_data_with_varying_sequence_lengths_single,
@@ -150,7 +150,7 @@ def test_process_data_no_temporal_missing() -> None:
 
 def test_all_exports() -> None:
     """__all__ exports three public functions alphabetically."""
-    import tscollection.datasets.utils.general as general_mod
+    import chronocratic.datasets.utils.general as general_mod
 
     assert general_mod.__all__ == [
         'centralize_variable_length_series',

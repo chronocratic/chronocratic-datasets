@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from torch.utils.data import DataLoader
 
-from tscollection.datasets.enums.data import (
+from chronocratic.datasets.enums.data import (
     ClassificationSplitMode,
     DataForm,
     TimeSeriesDatasetMode,
@@ -20,7 +20,7 @@ class TestUCRClassificationDataModule:
     @pytest.fixture
     def module_class(self):
         """Lazy-import the module class."""
-        from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+        from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
         return UCRClassificationDataModule
 
@@ -47,7 +47,7 @@ class TestUCRClassificationDataModule:
 
     def test_extends_classification_base(self, module_class: type) -> None:
         """UCRClassificationDataModule extends BaseClassificationTimeSeriesDataModule."""
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -174,7 +174,7 @@ def test_setup_idempotent(tmp_path: Path) -> None:
     setup('fit') to load and scale data, snapshots the train samples, then
     calls setup('fit') again and asserts data is unchanged (sentinel guard).
     """
-    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
     # Create synthetic UCR folder
     arff_content = """@relation test
@@ -223,7 +223,7 @@ def test_setup_unknown_stage_raises(tmp_path: Path) -> None:
 
     Verifies stage validation in the base class propagates to concrete modules.
     """
-    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
     dataset_dir = tmp_path / 'synthetic'
     dataset_dir.mkdir()
@@ -239,7 +239,7 @@ def test_setup_unknown_stage_raises(tmp_path: Path) -> None:
 
 def test_setup_fit_then_test_reuses_scaler(tmp_path: Path) -> None:
     """UCR: setup('fit') then setup('test') creates scaler only once."""
-    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
     # Create synthetic UCR folder
     arff_content = """@relation test
@@ -273,7 +273,7 @@ def test_setup_fit_then_test_reuses_scaler(tmp_path: Path) -> None:
     )
     mod.prepare_data()
     with patch(
-        'tscollection.datasets.modules._base.base.create_data_scaler',
+        'chronocratic.datasets.modules._base.base.create_data_scaler',
         side_effect=counting_scaler,
     ):
         mod.setup(stage='fit')
@@ -291,7 +291,7 @@ def test_cache_round_trip(tmp_path: Path) -> None:
     """
     import numpy as np
 
-    from tscollection.datasets.modules.ucr import UCRClassificationDataModule
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
     arff_content = """@relation test
 

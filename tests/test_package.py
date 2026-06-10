@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 import pathlib
 
-PACKAGE_ROOT = pathlib.Path(__file__).parent.parent / 'src' / 'tscollection' / 'datasets'
+PACKAGE_ROOT = pathlib.Path(__file__).parent.parent / 'src' / 'chronocratic' / 'datasets'
 EXPECTED_INIT_FILES = [
     PACKAGE_ROOT / '__init__.py',
     PACKAGE_ROOT / 'datatypes' / '__init__.py',
@@ -19,22 +19,22 @@ EXPECTED_INIT_FILES = [
 
 def test_version_defined():
     """Package exposes __version__."""
-    import tscollection.datasets
+    import chronocratic.datasets
 
-    assert hasattr(tscollection.datasets, '__version__')
-    assert tscollection.datasets.__version__ == '0.1.0'
+    assert hasattr(chronocratic.datasets, '__version__')
+    assert chronocratic.datasets.__version__ == '0.1.0'
 
 
-def test_import_tscollection_datasets():
-    """import tscollection.datasets resolves without errors."""
-    ts = importlib.import_module('tscollection.datasets')
+def test_import_chronocratic_datasets():
+    """import chronocratic.datasets resolves without errors."""
+    ts = importlib.import_module('chronocratic.datasets')
     assert hasattr(ts, '__all__')
     assert '__version__' in ts.__all__
 
 
 def test_enum_exports_in_root():
     """Enum types are exported from package root."""
-    from tscollection.datasets import (
+    from chronocratic.datasets import (
         ClassificationSplitMode,
         ForecastingMode,
         ScalingMethod,
@@ -56,12 +56,12 @@ def test_init_files_exist():
 def test_submodule_all_declarations():
     """Each submodule __init__.py has an __all__ declaration."""
     submodules = [
-        'tscollection.datasets.datatypes',
-        'tscollection.datasets.datatypes._base',
-        'tscollection.datasets.modules',
-        'tscollection.datasets.modules._base',
-        'tscollection.datasets.enums',
-        'tscollection.datasets.utils',
+        'chronocratic.datasets.datatypes',
+        'chronocratic.datasets.datatypes._base',
+        'chronocratic.datasets.modules',
+        'chronocratic.datasets.modules._base',
+        'chronocratic.datasets.enums',
+        'chronocratic.datasets.utils',
     ]
     for module_name in submodules:
         mod = importlib.import_module(module_name)

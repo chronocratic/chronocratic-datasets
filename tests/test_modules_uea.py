@@ -14,7 +14,7 @@ import pytest
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 
-from tscollection.datasets.enums.data import (
+from chronocratic.datasets.enums.data import (
     ClassificationSplitMode,
     DataForm,
     ScalingMethod,
@@ -81,13 +81,13 @@ class TestUEAClassificationDataModuleConstructor:
 
     def test_import_uea_module(self) -> None:
         """UEAClassificationDataModule can be imported from uea module."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         assert UEAClassificationDataModule is not None
 
     def test_constructor_accepts_params(self, synthetic_uea_folder: Path) -> None:
         """Constructor accepts dataset_folder_path, target_column_name, and config params."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder,
@@ -112,7 +112,7 @@ class TestUEAClassificationDataModuleConstructor:
 
     def test_data_form_is_nested(self, synthetic_uea_folder: Path) -> None:
         """data_form is hardcoded to DataForm.NESTED."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class'
@@ -125,7 +125,7 @@ class TestUEAProcessStackedData:
 
     def test_process_stacked_data_returns_tuple(self, synthetic_uea_folder: Path) -> None:
         """_process_stacked_data returns (np.ndarray, np.ndarray) tuple."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class'
@@ -145,7 +145,7 @@ class TestUEAProcessStackedData:
 
     def test_process_stacked_data_decodes_bytes(self, synthetic_uea_folder: Path) -> None:
         """_process_stacked_data handles byte-decoded labels."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class'
@@ -165,7 +165,7 @@ class TestUEAPrepareData:
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing folder."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=Path('/nonexistent/path'), target_column_name='class'
@@ -174,12 +174,12 @@ class TestUEAPrepareData:
             module.prepare_data()
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_prepare_data_loads_data(self, mock_read, synthetic_uea_folder: Path) -> None:
         """prepare_data loads train/test data and sets module state."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
@@ -202,14 +202,14 @@ class TestUEADataLoaders:
     """Tests for dataloader methods."""
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_train_dataloader_returns_dataloader(
         self, mock_read, synthetic_uea_folder: Path
     ) -> None:
         """train_dataloader returns a DataLoader instance."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
@@ -221,14 +221,14 @@ class TestUEADataLoaders:
         assert isinstance(loader, DataLoader)
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_val_dataloader_returns_dataloader_or_none(
         self, mock_read, synthetic_uea_folder: Path
     ) -> None:
         """val_dataloader returns None when valid_size=0."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder,
@@ -241,14 +241,14 @@ class TestUEADataLoaders:
         assert result is None
 
     @patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_test_dataloader_returns_dataloader(
         self, mock_read, synthetic_uea_folder: Path
     ) -> None:
         """test_dataloader returns a DataLoader instance."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
@@ -265,7 +265,7 @@ class TestUEAUsesScipyLoadarff:
 
     def test_uses_scipy_loadarff(self, synthetic_uea_folder: Path) -> None:
         """Module uses scipy.io.arff.loadarff directly (not utils/arff.py)."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
@@ -285,7 +285,7 @@ class TestUEAUsesScipyLoadarff:
 
     def test_uses_labelencoder(self, synthetic_uea_folder: Path) -> None:
         """Module uses sklearn LabelEncoder for label processing."""
-        from tscollection.datasets.modules.uea import UEAClassificationDataModule
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name='class'
@@ -313,10 +313,10 @@ def test_setup_idempotent(synthetic_uea_folder: Path) -> None:
     then calls setup('fit') again and asserts data is unchanged
     (sentinel guard).
     """
-    from tscollection.datasets.modules.uea import UEAClassificationDataModule
+    from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
     with patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     ):
         module = UEAClassificationDataModule(
@@ -338,10 +338,10 @@ def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
     the npz and metadata.json, clearing in-memory state and calling
     setup() restores data from cache that matches the original.
     """
-    from tscollection.datasets.modules.uea import UEAClassificationDataModule
+    from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
     with patch(
-        'tscollection.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     ):
         module = UEAClassificationDataModule(

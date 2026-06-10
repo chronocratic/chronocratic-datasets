@@ -38,7 +38,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
     """Verify the new MultipleSeries base class."""
 
     def test_import_from_datatypes(self):
-        from tscollection.datasets.datatypes import (
+        from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
 
@@ -46,13 +46,13 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
 
     def test_handles_3d_data(self, mock_multi_series_data: np.ndarray) -> None:
         """MultipleSeries correctly accepts 3D input (series, T, features)."""
-        from tscollection.datasets.datatypes import (
+        from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from tscollection.datasets.datatypes._base.strategies import (
+        from chronocratic.datasets.datatypes._base.strategies import (
             ForecastingStrategySingleFile,
         )
-        from tscollection.datasets.enums import TimeSeriesDatasetMode
+        from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         seq_len = 32
         step = 32
@@ -76,13 +76,13 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
         self, mock_multi_series_data: np.ndarray
     ) -> None:
         """dataset[i] returns (seq_len, features) shaped tensor."""
-        from tscollection.datasets.datatypes import (
+        from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from tscollection.datasets.datatypes._base.strategies import (
+        from chronocratic.datasets.datatypes._base.strategies import (
             ForecastingStrategySingleFile,
         )
-        from tscollection.datasets.enums import TimeSeriesDatasetMode
+        from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         seq_len = 32
         step = 32
@@ -110,13 +110,13 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
         self, mock_multi_series_data: np.ndarray
     ) -> None:
         """len(dataset) equals total valid windows across all series."""
-        from tscollection.datasets.datatypes import (
+        from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from tscollection.datasets.datatypes._base.strategies import (
+        from chronocratic.datasets.datatypes._base.strategies import (
             ForecastingStrategySingleFile,
         )
-        from tscollection.datasets.enums import TimeSeriesDatasetMode
+        from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         seq_len = 32
         step = 32
@@ -140,13 +140,13 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
 
     def test_negative_index_works(self, mock_multi_series_data: np.ndarray) -> None:
         """dataset[-1] returns last window without index errors."""
-        from tscollection.datasets.datatypes import (
+        from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from tscollection.datasets.datatypes._base.strategies import (
+        from chronocratic.datasets.datatypes._base.strategies import (
             ForecastingStrategySingleFile,
         )
-        from tscollection.datasets.enums import TimeSeriesDatasetMode
+        from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         dataset = FlexibleTimeSeriesDatasetSingleFileMultipleSeries(
             data=mock_multi_series_data,
@@ -172,13 +172,13 @@ class TestWeatherDataset:
     """Verify WeatherDataset class."""
 
     def test_import_from_datatypes(self):
-        from tscollection.datasets.datatypes import WeatherDataset
+        from chronocratic.datasets.datatypes import WeatherDataset
 
         assert WeatherDataset is not None
 
     def test_instantiates_with_2d_data(self) -> None:
         """WeatherDataset accepts (T, F) squeezed data."""
-        from tscollection.datasets.datatypes import WeatherDataset
+        from chronocratic.datasets.datatypes import WeatherDataset
 
         data = np.random.randn(2000, 22).astype(np.float32)
         dataset = WeatherDataset(
@@ -192,7 +192,7 @@ class TestWeatherDataset:
 
     def test_sample_shape(self) -> None:
         """WeatherDataset yields (seq_len, features) samples."""
-        from tscollection.datasets.datatypes import WeatherDataset
+        from chronocratic.datasets.datatypes import WeatherDataset
 
         data = np.random.randn(2000, 22).astype(np.float32)
         dataset = WeatherDataset(
@@ -218,13 +218,13 @@ class TestElectricityDataset:
     """Verify ElectricityDataset class."""
 
     def test_import_from_datatypes(self):
-        from tscollection.datasets.datatypes import ElectricityDataset
+        from chronocratic.datasets.datatypes import ElectricityDataset
 
         assert ElectricityDataset is not None
 
     def test_instantiates_with_3d_data(self) -> None:
         """ElectricityDataset accepts (series, T, features) data."""
-        from tscollection.datasets.datatypes import ElectricityDataset
+        from chronocratic.datasets.datatypes import ElectricityDataset
 
         data = np.random.randn(50, 1000, 1).astype(np.float32)
         dataset = ElectricityDataset(
@@ -238,7 +238,7 @@ class TestElectricityDataset:
 
     def test_total_length_multiplied_by_series(self) -> None:
         """Total samples scales with number of series."""
-        from tscollection.datasets.datatypes import ElectricityDataset
+        from chronocratic.datasets.datatypes import ElectricityDataset
 
         data_5 = np.random.randn(5, 500, 1).astype(np.float32)
         data_10 = np.random.randn(10, 500, 1).astype(np.float32)
@@ -270,17 +270,17 @@ class TestDatatypesExports:
     """Verify new classes are exported from datatypes __init__.py."""
 
     def test_weather_dataset_exported(self):
-        from tscollection.datasets.datatypes import WeatherDataset
+        from chronocratic.datasets.datatypes import WeatherDataset
 
         assert WeatherDataset is not None
 
     def test_electricity_dataset_exported(self):
-        from tscollection.datasets.datatypes import ElectricityDataset
+        from chronocratic.datasets.datatypes import ElectricityDataset
 
         assert ElectricityDataset is not None
 
     def test_multiple_series_exported(self):
-        from tscollection.datasets.datatypes import (
+        from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
 

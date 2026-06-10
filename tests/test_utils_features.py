@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from tscollection.datasets.utils.features import extract_time_features
+from chronocratic.datasets.utils.features import extract_time_features
 
 # --------------------------------------------------------------------------- #
 # extract_time_features tests                                                  #

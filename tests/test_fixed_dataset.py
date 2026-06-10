@@ -12,14 +12,14 @@ import pandas as pd
 import pytest
 import torch
 
-from tscollection.datasets.enums import TimeSeriesDatasetMode
+from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
 # --- Task 1 RED-phase tests (will fail until fixed.py is implemented) ---
 
 
 def test_fixed_yields_data_label():
     """FixedTimeSeriesDatasetUnivariate yields (torch.Tensor, int) in WITH_LABELS mode."""
-    from tscollection.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetUnivariate
+    from chronocratic.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
@@ -37,7 +37,7 @@ def test_fixed_yields_data_label():
 
 def test_fixed_seq_len_property():
     """FixedTimeSeriesDataset.seq_len returns int from data shape (read-only)."""
-    from tscollection.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetUnivariate
+    from chronocratic.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
@@ -56,7 +56,7 @@ def test_fixed_seq_len_property():
 
 def test_fixed_length():
     """FixedTimeSeriesDataset.__len__ returns number of samples."""
-    from tscollection.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetUnivariate
+    from chronocratic.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetUnivariate
 
     data = pd.DataFrame(np.random.default_rng().standard_normal((10, 50)).astype(np.float32))
     labels = pd.Series([0, 1] * 5)
@@ -72,7 +72,7 @@ def test_fixed_length():
 
 def test_multivariate_get_current_data():
     """FixedTimeSeriesDatasetMultivariate._get_current_data returns 3D slice."""
-    from tscollection.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetMultivariate
+    from chronocratic.datasets.datatypes._base.fixed import FixedTimeSeriesDatasetMultivariate
 
     # 5 samples, 30 timesteps, 4 features
     data = np.random.default_rng().standard_normal((5, 30, 4)).astype(np.float32)

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tscollection.datasets.enums.data import DataForm, ScalingMethod
+from chronocratic.datasets.enums.data import DataForm, ScalingMethod
 
 # --------------------------------------------------------------------------- #
 # create_data_scaler import tests                                              #
@@ -18,14 +18,14 @@ from tscollection.datasets.enums.data import DataForm, ScalingMethod
 
 def test_create_data_scaler_import() -> None:
     """create_data_scaler is importable from scaling module."""
-    from tscollection.datasets.utils.scaling import create_data_scaler
+    from chronocratic.datasets.utils.scaling import create_data_scaler
 
     assert callable(create_data_scaler)
 
 
 def test_no_dataformenum_defined() -> None:
     """scaling.py does not define a local DataFormEnum class."""
-    import tscollection.datasets.utils.scaling as scaling_mod
+    import chronocratic.datasets.utils.scaling as scaling_mod
 
     assert not hasattr(scaling_mod, 'DataFormEnum')
 
@@ -41,7 +41,7 @@ def test_create_data_scaler_regular_minmax() -> None:
     Train data is fit, all splits are transformed.
     Values should be in the specified range.
     """
-    from tscollection.datasets.utils.scaling import create_data_scaler
+    from chronocratic.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
         scale=True,
@@ -69,7 +69,7 @@ def test_create_data_scaler_regular_standard() -> None:
 
     Values should be zero-mean, unit-variance per feature.
     """
-    from tscollection.datasets.utils.scaling import create_data_scaler
+    from chronocratic.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
         scale=True,
@@ -94,7 +94,7 @@ def test_create_data_scaler_regular_standard() -> None:
 
 def test_create_data_scaler_regular_dataframe() -> None:
     """create_data_scaler preserves DataFrame type for regular data."""
-    from tscollection.datasets.utils.scaling import create_data_scaler
+    from chronocratic.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
         scale=True,
@@ -120,7 +120,7 @@ def test_create_data_scaler_regular_dataframe() -> None:
 
 def test_create_data_scaler_nested_preserves_shape() -> None:
     """create_data_scaler with NESTED data preserves 3-D shape."""
-    from tscollection.datasets.utils.scaling import create_data_scaler
+    from chronocratic.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
         scale=True,
@@ -149,7 +149,7 @@ def test_create_data_scaler_nested_preserves_shape() -> None:
 
 def test_create_data_scaler_multi_files() -> None:
     """create_data_scaler with MULTI_FILES scales list of 1-D arrays."""
-    from tscollection.datasets.utils.scaling import create_data_scaler
+    from chronocratic.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
         scale=True,
@@ -175,7 +175,7 @@ def test_create_data_scaler_multi_files() -> None:
 
 def test_create_data_scaler_no_scale() -> None:
     """create_data_scaler with scale=False returns data unchanged."""
-    from tscollection.datasets.utils.scaling import create_data_scaler
+    from chronocratic.datasets.utils.scaling import create_data_scaler
 
     scaler_fn = create_data_scaler(
         scale=False,
@@ -205,7 +205,7 @@ def test_get_scaler_minmax_enum() -> None:
     """_get_scaler accepts ScalingMethod.MINMAX enum member."""
     from sklearn.preprocessing import MinMaxScaler
 
-    from tscollection.datasets.utils.scaling import _get_scaler
+    from chronocratic.datasets.utils.scaling import _get_scaler
 
     scaler = _get_scaler(scaling_method=ScalingMethod.MINMAX, scaling_range=(0.0, 1.0))
     assert isinstance(scaler, MinMaxScaler)
@@ -215,7 +215,7 @@ def test_get_scaler_standard_enum() -> None:
     """_get_scaler accepts ScalingMethod.STANDARD enum member."""
     from sklearn.preprocessing import StandardScaler
 
-    from tscollection.datasets.utils.scaling import _get_scaler
+    from chronocratic.datasets.utils.scaling import _get_scaler
 
     scaler = _get_scaler(scaling_method=ScalingMethod.STANDARD, scaling_range=(0.0, 1.0))
     assert isinstance(scaler, StandardScaler)
@@ -223,7 +223,7 @@ def test_get_scaler_standard_enum() -> None:
 
 def test_get_scaler_invalid_raises() -> None:
     """_get_scaler raises ValueError for unknown method."""
-    from tscollection.datasets.utils.scaling import _get_scaler
+    from chronocratic.datasets.utils.scaling import _get_scaler
 
     with pytest.raises(ValueError, match='Unsupported scaling method'):
         _get_scaler(scaling_method=ScalingMethod.NONE, scaling_range=(0.0, 1.0))
@@ -236,6 +236,6 @@ def test_get_scaler_invalid_raises() -> None:
 
 def test_all_exports() -> None:
     """__all__ exports only create_data_scaler (not private helpers)."""
-    import tscollection.datasets.utils.scaling as scaling_mod
+    import chronocratic.datasets.utils.scaling as scaling_mod
 
     assert scaling_mod.__all__ == ['create_data_scaler']

@@ -27,7 +27,7 @@ convention = "google"
 
 [lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"src/tscollection/datasets/modules/**/*.py" = [
+"src/chronocratic/datasets/modules/**/*.py" = [
     "ANN401",  # Label properties return dataset-specific types; abstract **kwargs can't be narrowed.
     "N806",    # Allow X/y signal processing variable names in data module methods.
     "PLC0415", # Deferred imports in setup() to avoid circular deps and cold-start cost.
@@ -39,7 +39,7 @@ convention = "google"
 ]
 "notebooks/**/*.ipynb" = ["D", "E402", "T201"]
 "tests/**/*.py" = ["ANN", "D", "PLC0415", "PLR2004", "S101", "SLF001"]
-"src/tscollection/datasets/utils/**/*.py" = [
+"src/chronocratic/datasets/utils/**/*.py" = [
     "ANN401",  # scipy arff meta has no public type; collate_fn returns variable PyTorch types; scale_data inner fn params vary by data_form.
     "PLC0415", # Heavy scipy import deferred to function scope for performance.
     "PLR2004", # Dimension checks (==2, ==3) are universal numpy constants, not magic values.

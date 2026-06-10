@@ -23,7 +23,7 @@ class TestBaseTimeSeriesDataModule:
         """Create a minimal concrete subclass for testing."""
         # BaseTimeSeriesDataModule is abstract; we need a concrete subclass
 
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
@@ -51,7 +51,7 @@ class TestBaseTimeSeriesDataModule:
 
     def test_constructor_accepts_kwargs(self, concrete_module_class) -> None:
         """Constructor accepts all required keyword arguments."""
-        from tscollection.datasets.enums.data import DataForm, ScalingMethod
+        from chronocratic.datasets.enums.data import DataForm, ScalingMethod
 
         mod = concrete_module_class(
             batch_size=64,
@@ -84,7 +84,7 @@ class TestBaseTimeSeriesDataModule:
 
     def test_setup_calls_create_data_scaler(self, concrete_module_class) -> None:
         """setup() calls create_data_scaler and scales data samples."""
-        from tscollection.datasets.enums.data import ScalingMethod
+        from chronocratic.datasets.enums.data import ScalingMethod
 
         mod = concrete_module_class(
             batch_size=16,
@@ -122,7 +122,7 @@ class TestBaseTimeSeriesDataModule:
 
         real_dataset = TensorDataset(torch.randn(10, 5), torch.randint(0, 2, (10,)))
         with patch(
-            'tscollection.datasets.modules._base.base.DataLoader', wraps=DataLoader
+            'chronocratic.datasets.modules._base.base.DataLoader', wraps=DataLoader
         ) as mock_loader:
             module._process_test_dataloader(dataset_object=real_dataset)
             call_kwargs = mock_loader.call_args[1]
@@ -165,7 +165,7 @@ class TestBaseTimeSeriesDataModule:
 
         # Patch DataLoader to capture args
         with patch(
-            'tscollection.datasets.modules._base.base.DataLoader', wraps=DataLoader
+            'chronocratic.datasets.modules._base.base.DataLoader', wraps=DataLoader
         ) as mock_loader:
             mod_zero._process_train_dataloader(dataset_object=real_dataset)
             call_kwargs = mock_loader.call_args[1]
@@ -185,7 +185,7 @@ class TestBaseTimeSeriesDataModule:
 
         real_dataset = TensorDataset(torch.randn(5, 3))
         with patch(
-            'tscollection.datasets.modules._base.base.DataLoader', wraps=DataLoader
+            'chronocratic.datasets.modules._base.base.DataLoader', wraps=DataLoader
         ) as mock_loader:
             module._process_train_dataloader(dataset_object=real_dataset, strict_batch_size=True)
             call_kwargs = mock_loader.call_args[1]
@@ -193,7 +193,7 @@ class TestBaseTimeSeriesDataModule:
 
     def test_scaling_method_type_is_enum(self, concrete_module_class) -> None:
         """data_scaling_method is typed as ScalingMethod enum."""
-        from tscollection.datasets.enums.data import ScalingMethod
+        from chronocratic.datasets.enums.data import ScalingMethod
 
         mod = concrete_module_class(
             batch_size=16,
@@ -209,7 +209,7 @@ class TestBaseTimeSeriesDataModule:
 
     def test_data_form_type_is_enum(self, concrete_module_class) -> None:
         """data_form is typed as DataForm enum."""
-        from tscollection.datasets.enums.data import DataForm
+        from chronocratic.datasets.enums.data import DataForm
 
         mod = concrete_module_class(
             batch_size=16,
@@ -240,7 +240,7 @@ class TestSetupSentinel:
     @pytest.fixture
     def concrete_module_class(self):
         """Create a minimal concrete subclass for testing."""
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
@@ -278,7 +278,7 @@ class TestSetupSentinel:
         mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
 
         with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
+            'chronocratic.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
             mod.setup(stage='fit')
@@ -300,7 +300,7 @@ class TestSetupSentinel:
         mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
 
         with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
+            'chronocratic.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
             mod.setup(stage=None)
@@ -327,7 +327,7 @@ class TestSetupSentinel:
         mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
 
         with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
+            'chronocratic.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
             mod.setup(stage=None)
@@ -347,7 +347,7 @@ class TestPrepareDataWrapper:
     @pytest.fixture
     def concrete_module_with_counter(self):
         """Create a concrete subclass that counts _do_prepare_data calls."""
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class CountingModule(BaseTimeSeriesDataModule):
             """Minimal concrete module that tracks _do_prepare_data calls."""
@@ -408,7 +408,7 @@ class TestPrepareDataWrapper:
         After the rename, prepare_data is concrete on the base
         and _do_prepare_data is the abstract method subclasses implement.
         """
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         # _do_prepare_data must be abstract
         assert getattr(BaseTimeSeriesDataModule._do_prepare_data, '__isabstractmethod__', False)
@@ -428,7 +428,7 @@ class TestSetupStageGating:
     @pytest.fixture
     def concrete_module_class(self):
         """Create a minimal concrete subclass for testing."""
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
@@ -492,7 +492,7 @@ class TestSetupStageGating:
         mod._test_data_samples = pd.DataFrame({'a': [4.0]})
 
         with patch(
-            'tscollection.datasets.modules._base.base.create_data_scaler',
+            'chronocratic.datasets.modules._base.base.create_data_scaler',
             side_effect=counting_scaler,
         ):
             mod.setup(stage='fit')
@@ -530,7 +530,7 @@ class TestCacheInfrastructure:
     @pytest.fixture
     def concrete_module_class(self):
         """Create a minimal concrete subclass for testing."""
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
@@ -679,7 +679,7 @@ class TestPrepareDimensionsCache:
     @pytest.fixture
     def concrete_module_class(self):
         """Create a minimal concrete subclass for testing."""
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             """Minimal concrete subclass for testing."""
@@ -705,7 +705,7 @@ class TestPrepareDimensionsCache:
 
     def test_reads_metadata_when_num_features_none(self, concrete_module_class, tmp_path) -> None:
         """prepare_dimensions() with _num_features=None reads metadata.json via load_metadata."""
-        from tscollection.datasets.utils.cache import atomic_save_metadata
+        from chronocratic.datasets.utils.cache import atomic_save_metadata
 
         mod = concrete_module_class(
             batch_size=16,
@@ -758,7 +758,7 @@ class TestPrepareDimensionsCache:
         self, concrete_module_class, tmp_path
     ) -> None:
         """prepare_dimensions() raises ValueError when metadata version != 1."""
-        from tscollection.datasets.utils.cache import atomic_save_metadata
+        from chronocratic.datasets.utils.cache import atomic_save_metadata
 
         mod = concrete_module_class(
             batch_size=16,
@@ -801,7 +801,7 @@ class TestPrepareDimensionsCache:
         )
         mod._cache_key = 'synthetic'
         # Write a metadata file that matches synthetic_cache_dir content
-        from tscollection.datasets.utils.cache import load_metadata
+        from chronocratic.datasets.utils.cache import load_metadata
 
         meta = load_metadata(synthetic_cache_dir / 'metadata.json')
         assert meta['n_features'] == 7

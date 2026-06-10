@@ -13,31 +13,31 @@ class TestClassificationSplitMode:
 
     def test_as_defined_value(self) -> None:
         """ClassificationSplitMode.AS_DEFINED equals 'as_defined'."""
-        from tscollection.datasets.enums import ClassificationSplitMode
+        from chronocratic.datasets.enums import ClassificationSplitMode
 
         assert ClassificationSplitMode.AS_DEFINED == 'as_defined'
 
     def test_manual_value(self) -> None:
         """ClassificationSplitMode.MANUAL equals 'manual'."""
-        from tscollection.datasets.enums import ClassificationSplitMode
+        from chronocratic.datasets.enums import ClassificationSplitMode
 
         assert ClassificationSplitMode.MANUAL == 'manual'
 
     def test_import_from_root(self) -> None:
-        """ClassificationSplitMode is importable from tscollection.datasets."""
-        from tscollection.datasets import ClassificationSplitMode
+        """ClassificationSplitMode is importable from chronocratic.datasets."""
+        from chronocratic.datasets import ClassificationSplitMode
 
         assert ClassificationSplitMode.AS_DEFINED == 'as_defined'
 
     def test_old_name_does_not_exist(self) -> None:
         """SplittingStrategy should no longer be exported from enums."""
-        import tscollection.datasets.enums as enums_module
+        import chronocratic.datasets.enums as enums_module
 
         assert not hasattr(enums_module, 'SplittingStrategy')
 
     def test_old_name_not_in_root(self) -> None:
         """SplittingStrategy should no longer be exported from root package."""
-        import tscollection.datasets as datasets_module
+        import chronocratic.datasets as datasets_module
 
         assert not hasattr(datasets_module, 'SplittingStrategy')
 
@@ -57,14 +57,14 @@ class TestSeparateTargetFeatureFromDf:
         )
 
     def test_import_from_utils(self) -> None:
-        """separate_target_feature_from_df is importable from tscollection.datasets.utils."""
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        """separate_target_feature_from_df is importable from chronocratic.datasets.utils."""
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         assert callable(separate_target_feature_from_df)
 
     def test_separates_correctly(self, sample_df: pd.DataFrame) -> None:
         """Returns (features_df, target_series) with correct shapes."""
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         features, target = separate_target_feature_from_df(sample_df, 'label')
 
@@ -77,7 +77,7 @@ class TestSeparateTargetFeatureFromDf:
 
     def test_feature_count_reduced(self, sample_df: pd.DataFrame) -> None:
         """Features DataFrame has one fewer column than original."""
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         features, _ = separate_target_feature_from_df(sample_df, 'label')
 
@@ -85,7 +85,7 @@ class TestSeparateTargetFeatureFromDf:
 
     def test_missing_column_raises_keyerror(self, sample_df: pd.DataFrame) -> None:
         """KeyError raised when target column doesn't exist."""
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         with pytest.raises(KeyError):
             separate_target_feature_from_df(sample_df, 'nonexistent_column')
@@ -93,7 +93,7 @@ class TestSeparateTargetFeatureFromDf:
     def test_numeric_target(self) -> None:
         """Works with numeric target columns."""
         df = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6], 'target': [0, 1, 0]})
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         features, target = separate_target_feature_from_df(df, 'target')
 
@@ -105,7 +105,7 @@ class TestSeparateTargetFeatureFromDf:
         df = pd.DataFrame(
             {'feat1': [1.0, 2.0, 3.0], 'label': ['A', 'B', 'A'], 'feat2': [10.0, 20.0, 30.0]}
         )
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         features, target = separate_target_feature_from_df(df, 'label')
 
@@ -115,7 +115,7 @@ class TestSeparateTargetFeatureFromDf:
     def test_custom_index_preserved(self, sample_df: pd.DataFrame) -> None:
         """Non-default index is preserved on both returned objects."""
         sample_df.index = [10, 20, 30, 40, 50]
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         features, target = separate_target_feature_from_df(sample_df, 'label')
 
@@ -125,7 +125,7 @@ class TestSeparateTargetFeatureFromDf:
     def test_single_column_dataframe(self) -> None:
         """Returns empty DataFrame when target is the only column."""
         df = pd.DataFrame({'only': ['x', 'y', 'z']})
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         features, target = separate_target_feature_from_df(df, 'only')
 
@@ -136,7 +136,7 @@ class TestSeparateTargetFeatureFromDf:
     def test_empty_dataframe(self) -> None:
         """Returns empty results without error on zero-row DataFrame."""
         df = pd.DataFrame({'a': pd.Series(dtype=float), 'target': pd.Series(dtype=int)})
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         features, target = separate_target_feature_from_df(df, 'target')
 
@@ -147,7 +147,7 @@ class TestSeparateTargetFeatureFromDf:
     def test_target_modification_isolation(self) -> None:
         """Modifying returned target Series does not affect original DataFrame."""
         df = pd.DataFrame({'feat': [1.0, 2.0, 3.0], 'target': [10, 20, 30]})
-        from tscollection.datasets.utils import separate_target_feature_from_df
+        from chronocratic.datasets.utils import separate_target_feature_from_df
 
         _, target = separate_target_feature_from_df(df, 'target')
 

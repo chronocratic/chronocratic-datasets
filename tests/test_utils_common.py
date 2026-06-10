@@ -6,8 +6,8 @@ flatten_list_of_np_arrays produces correct 1-D flattened output.
 
 import numpy as np
 
-from tscollection.datasets.enums.data import DataForm
-from tscollection.datasets.utils.common import flatten_list_of_np_arrays
+from chronocratic.datasets.enums.data import DataForm
+from chronocratic.datasets.utils.common import flatten_list_of_np_arrays
 
 # --------------------------------------------------------------------------- #
 # DataForm enum tests                                                          #

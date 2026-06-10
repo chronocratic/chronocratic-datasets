@@ -8,9 +8,9 @@ import pandas as pd
 import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from tscollection.datasets.enums.data import ForecastingMode, ScalingMethod
-from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
-from tscollection.datasets.utils.features import TIME_FEATURE_COUNT
+from chronocratic.datasets.enums.data import ForecastingMode, ScalingMethod
+from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
+from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 
 
 class TestBaseClassificationTimeSeriesDataModule:
@@ -19,7 +19,7 @@ class TestBaseClassificationTimeSeriesDataModule:
     @pytest.fixture
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -58,7 +58,7 @@ class TestBaseClassificationTimeSeriesDataModule:
 
     def test_exposes_num_classes_property(self) -> None:
         """Classification base exposes num_classes property."""
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -73,7 +73,7 @@ class TestBaseClassificationTimeSeriesDataModule:
         # Verify the attribute exists in the class or is set via __init__.
         import inspect
 
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -88,7 +88,7 @@ class TestBaseForecastingTimeSeriesDataModule:
     @pytest.fixture
     def module_class(self):
         """Lazy-import the module class to verify it exists."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -125,7 +125,7 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_minmax(self) -> None:
         """_prepare_data_scaler returns MinMaxScaler for ScalingMethod.MINMAX."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -161,7 +161,7 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_standard(self) -> None:
         """_prepare_data_scaler returns StandardScaler for ScalingMethod.STANDARD."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -197,7 +197,7 @@ class TestBaseForecastingTimeSeriesDataModule:
 
     def test_prepare_data_scaler_invalid_raises(self) -> None:
         """_prepare_data_scaler raises ValueError for unsupported method."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -237,7 +237,7 @@ class TestPrepareDimensions:
 
     def test_base_prepare_dimensions_exists(self) -> None:
         """prepare_dimensions() exists on base and returns a 2-tuple."""
-        from tscollection.datasets.modules._base.base import BaseTimeSeriesDataModule
+        from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         class ConcreteTestModule(BaseTimeSeriesDataModule):
             def _do_prepare_data(self) -> None:
@@ -258,7 +258,7 @@ class TestPrepareDimensions:
 
     def test_classification_raises_without_prepare_data(self) -> None:
         """Classification _compute_dimensions raises RuntimeError when _train_data_samples is None."""
-        from tscollection.datasets.modules._base.classification import (
+        from chronocratic.datasets.modules._base.classification import (
             BaseClassificationTimeSeriesDataModule,
         )
 
@@ -293,7 +293,7 @@ class TestPrepareDimensions:
 
     def test_forecasting_pre_setup_with_dataframe(self) -> None:
         """Forecasting _compute_dimensions adds TIME_FEATURE_COUNT for DataFrame _full_data."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -333,7 +333,7 @@ class TestPrepareDimensions:
 
     def test_forecasting_pre_setup_with_numpy(self) -> None:
         """Forecasting _compute_dimensions does NOT add TIME_FEATURE_COUNT for numpy _full_data."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -371,7 +371,7 @@ class TestPrepareDimensions:
 
     def test_post_setup_returns_cached(self) -> None:
         """prepare_dimensions() returns cached _num_features when set."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -418,7 +418,7 @@ class TestForecastingTypedAttrs:
 
     def test_has_typed_attributes(self) -> None:
         """Forecasting base has _full_data_raw, _time_index, _full_data_scaled."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -458,7 +458,7 @@ class TestForecastingTypedAttrs:
 
     def test_full_data_property_routes_to_raw_before_scaling(self) -> None:
         """full_data property returns _full_data_raw before scaling."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -497,7 +497,7 @@ class TestForecastingTypedAttrs:
 
     def test_dataframe_injection_sets_time_index(self) -> None:
         """Setting typed attributes with DataFrame data works correctly."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -541,7 +541,7 @@ class TestForecastingTypedAttrs:
 
     def test_cache_helpers_exist(self) -> None:
         """Forecasting base has cache helper methods."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -557,7 +557,7 @@ class TestForecastingTypedAttrs:
 
     def test_resolve_cache_dir_returns_path(self) -> None:
         """_resolve_cache_dir returns a Path object."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
@@ -595,7 +595,7 @@ class TestForecastingTypedAttrs:
 
     def test_finalize_prepare_data_is_noop(self) -> None:
         """_finalize_prepare_data does not set slices for forecasting."""
-        from tscollection.datasets.modules._base.forecasting import (
+        from chronocratic.datasets.modules._base.forecasting import (
             BaseForecastingTimeSeriesDataModule,
         )
 
