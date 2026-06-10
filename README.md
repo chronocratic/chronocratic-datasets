@@ -6,7 +6,7 @@ Ready-to-use time series datasets for PyTorch Lightning.
 [![Python 3.12+](https://img.shields.io/pypi/pyversions/chronocratic-datasets.svg)](https://pypi.org/project/chronocratic-datasets/)
 [![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Build and Test](https://github.com/chronocratic/datasets/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/chronocratic/datasets/actions/workflows/build-and-test.yml)
-[![Documentation Status](https://readthedocs.org/projects/chronocratic-datasets/badge/?version=stable)](https://chronocratic-datasets.readthedocs.io/en/stable/)
+[![Documentation Status](https://readthedocs.org/projects/chronocratic-datasets/badge/?version=stable)](https://chronocratic-datasets.readthedocs.io/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/chronocratic-datasets)](https://pypi.org/project/chronocratic-datasets/)
 [![GitHub Stars](https://img.shields.io/github/stars/chronocratic/datasets)](https://github.com/chronocratic/datasets)
 
@@ -63,7 +63,7 @@ train_loader = weather.train_dataloader()
 
 ## Documentation
 
-Comprehensive documentation, including API reference, quickstart guides, and contributing instructions, is available at [chronocratic-datasets.readthedocs.io](https://chronocratic-datasets.readthedocs.io/en/stable/).
+Comprehensive documentation, including API reference, quickstart guides, and contributing instructions, is available at [chronocratic-datasets.readthedocs.io](https://chronocratic-datasets.readthedocs.io/).
 
 ## License
 
