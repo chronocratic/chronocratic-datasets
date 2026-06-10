@@ -1,11 +1,9 @@
 """Data transformation helpers for PyTorch datasets."""
 
-from __future__ import annotations
-
 import numpy as np
 import torch
 
-__all__ = ['convert_data_to_np_array', 'convert_numpy_to_tensor', 'expand_data_dimensionality']
+__all__ = ['convert_numpy_to_tensor', 'expand_data_dimensionality']
 
 
 def convert_numpy_to_tensor(data: np.ndarray, dtype: str = 'float') -> torch.Tensor:
@@ -22,30 +20,13 @@ def convert_numpy_to_tensor(data: np.ndarray, dtype: str = 'float') -> torch.Ten
         TypeError: If data is not a numpy array.
     """
     if not isinstance(data, np.ndarray):
-        msg = (
-            f'Expected np.ndarray, got {type(data).__name__}. '
-            'Use convert_data_to_np_array() for list/tuple inputs.'
-        )
+        msg = f'Expected np.ndarray, got {type(data).__name__}.'
         raise TypeError(msg)
     dtype_map = {'float': torch.float, 'long': torch.long, 'int': torch.int, 'double': torch.double}
     if dtype not in dtype_map:
         msg = f'Unsupported dtype "{dtype}". Choose from {list(dtype_map.keys())}.'
         raise ValueError(msg)
     return torch.from_numpy(data.copy()).to(dtype=dtype_map[dtype])
-
-
-def convert_data_to_np_array(data: list | tuple, dtype: str = 'float') -> np.ndarray:
-    """Convert a list or tuple to a numpy array.
-
-    Args:
-        data: Input iterable.
-        dtype: Target dtype name ('float' or 'int').
-
-    Returns:
-        Numpy array.
-    """
-    dtype_map = {'float': np.float32, 'int': np.int32}
-    return np.array(data).astype(dtype_map[dtype])
 
 
 def expand_data_dimensionality(

@@ -6,11 +6,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data.dataloader import default_collate
 
-__all__ = [
-    'centralize_variable_length_series',
-    'custom_collate_fn',
-    'process_data_with_varying_sequence_lengths_single',
-]
+__all__ = ['custom_collate_fn', 'process_data_with_varying_sequence_lengths_single']
 
 
 def custom_collate_fn(batch: list[Any], *, desired_batch_size: int) -> Any:
@@ -38,7 +34,7 @@ def custom_collate_fn(batch: list[Any], *, desired_batch_size: int) -> Any:
     return default_collate(batch)
 
 
-def centralize_variable_length_series(series_batch: np.ndarray) -> np.ndarray:
+def _centralize_variable_length_series(series_batch: np.ndarray) -> np.ndarray:
     """Center variable-length time series within a fixed-length sequence.
 
     Shifts the valid (non-NaN) portion of each series to the centre
@@ -94,7 +90,7 @@ def process_data_with_varying_sequence_lengths_single(
     # temporal_missing is a 1-D boolean array of shape (seq_len,)
     temporal_missing_flat = np.asarray(temporal_missing).flat
     if temporal_missing_flat[0] or temporal_missing_flat[-1]:
-        data = centralize_variable_length_series(data)
+        data = _centralize_variable_length_series(data)
 
     if len(original_data_shape) == 2:
         data = np.squeeze(data, axis=-1)

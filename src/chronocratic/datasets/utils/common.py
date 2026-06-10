@@ -5,19 +5,29 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pandas as pd
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    import pandas as pd
-
 __all__ = [
-    'FunctionComposer',
     'compose',
     'flatten_list_of_np_arrays',
     'get_num_samples_from_ts',
     'separate_target_feature_from_df',
 ]
+
+
+def flatten_list_of_np_arrays(list_of_np_arrays: list[np.ndarray]) -> np.ndarray:
+    """Flatten a list of numpy arrays into a single 1-D array.
+
+    Args:
+        list_of_np_arrays: A list of numpy arrays.
+
+    Returns:
+        A single flattened numpy array.
+    """
+    return np.concatenate(list_of_np_arrays).ravel()
 
 
 def get_num_samples_from_ts(ts: np.ndarray | list[np.ndarray]) -> int:
@@ -32,11 +42,11 @@ def get_num_samples_from_ts(ts: np.ndarray | list[np.ndarray]) -> int:
     return len(ts)
 
 
-class FunctionComposer:
-    """Composes a list of callables into a single callable.
+class _FunctionComposer:
+    """Compose a list of callables into a single callable.
 
     Functions are applied in the order they were provided.
-    None values in the list are filtered out.
+    None values are filtered out.
 
     Args:
         functions: A list of callables to compose.
@@ -64,19 +74,7 @@ def compose(*functions: Callable) -> Callable:
     Returns:
         A callable that applies all functions in order.
     """
-    return FunctionComposer(list(functions))
-
-
-def flatten_list_of_np_arrays(list_of_np_arrays: list[np.ndarray]) -> np.ndarray:
-    """Flatten a list of numpy arrays into a single 1-D array.
-
-    Args:
-        list_of_np_arrays: A list of numpy arrays.
-
-    Returns:
-        A single flattened numpy array.
-    """
-    return np.concatenate(list_of_np_arrays).ravel()
+    return _FunctionComposer(list(functions))
 
 
 def separate_target_feature_from_df(
