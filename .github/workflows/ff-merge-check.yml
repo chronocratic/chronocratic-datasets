@@ -1,19 +1,36 @@
-name: pull-request
+name: Check Fast-Forward
+
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+
 jobs:
   check-fast-forward:
-    if: ${{ github.base_ref == 'main' && github.head_ref == 'dev' }}
+    if: ${{ contains(github.event.comment.body, '/check-fast-forward')
+            && github.event.issue.pull_request }}
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       pull-requests: write
       issues: write
-
     steps:
-      - name: Checking if fast forwarding is possible
+      - name: Verify target branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            if (pr.base.ref !== 'main') {
+              core.setFailed('Fast-forward check is only allowed for PRs targeting main.');
+            }
+            if (pr.head.ref !== 'dev') {
+              core.setFailed('Fast-forward check is only allowed for PRs from dev to main.');
+            }
+
+      - name: Check if fast-forward is possible
         uses: sequoia-pgp/fast-forward@v1
         with:
           merge: false
