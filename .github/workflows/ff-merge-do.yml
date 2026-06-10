@@ -13,7 +13,6 @@ jobs:
     if: ${{ contains(github.event.comment.body, '/fast-forward')
             && github.event.issue.pull_request }}
     runs-on: ubuntu-latest
-    environment: ff_merge
     permissions:
       contents: write
       pull-requests: write
@@ -23,7 +22,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.FF_MERGE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure git
         run: |
@@ -83,7 +82,7 @@ jobs:
         with:
           merge: true
           comment: always
-          github_token: ${{ secrets.FF_MERGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clean up old backups
         run: |
