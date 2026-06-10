@@ -5,8 +5,6 @@ FixedTimeSeriesDatasetUnivariate, applies default transforms, and yields
 (data, label) tuples in WITH_LABELS mode.
 """
 
-from __future__ import annotations
-
 import numpy as np
 import torch
 

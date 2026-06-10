@@ -1,7 +1,5 @@
 """Tests for public API exports and package configuration."""
 
-from __future__ import annotations
-
 import importlib
 import pathlib
 

@@ -4,8 +4,6 @@ Verifies that extract_time_features produces correct (N, 7) float32
 arrays from pandas DatetimeIndex objects.
 """
 
-from __future__ import annotations
-
 import numpy as np
 import pandas as pd
 

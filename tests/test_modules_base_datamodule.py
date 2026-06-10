@@ -4,8 +4,6 @@ Verifies the shared base class for all data modules has correct
 constructor, properties, setup, and dataloader construction.
 """
 
-from __future__ import annotations
-
 from functools import partial
 from unittest.mock import MagicMock, patch
 

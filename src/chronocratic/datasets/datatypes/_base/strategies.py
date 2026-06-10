@@ -5,8 +5,6 @@ datasets can share the same base dataset class while differing in how
 they count sequences and extract labels.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import cast
 

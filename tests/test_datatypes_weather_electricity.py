@@ -7,8 +7,6 @@ Verifies:
 - Dataset classes are exportable from datatypes __init__.py
 """
 
-from __future__ import annotations
-
 import numpy as np
 import pytest
 

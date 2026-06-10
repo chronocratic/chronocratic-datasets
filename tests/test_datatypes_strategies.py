@@ -4,8 +4,6 @@ Verifies that Strategy pattern classes correctly compute window counts
 and extract labels for forecasting and classification datasets.
 """
 
-from __future__ import annotations
-
 import numpy as np
 import pytest
 

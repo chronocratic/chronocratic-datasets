@@ -5,8 +5,6 @@ FlexibleTimeSeriesDatasetSingleFile, injects ForecastingStrategySingleFile,
 and yields (input_tensor, target_tensor) tuples with correct shapes.
 """
 
-from __future__ import annotations
-
 
 def test_ett_yields_input_target(synthetic_forecast_data):
     """ETTDataset yields (input, target) pairs with correct shapes."""

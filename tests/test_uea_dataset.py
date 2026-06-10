@@ -5,8 +5,6 @@ FixedTimeSeriesDatasetMultivariate, applies default transforms, and yields
 (data, label) tuples in WITH_LABELS mode with proper 3D shapes.
 """
 
-from __future__ import annotations
-
 import numpy as np
 import pandas as pd
 import torch

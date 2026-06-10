@@ -1,7 +1,5 @@
 """chronocratic.datasets.datatypes — Dataset type classes."""
 
-from __future__ import annotations
-
 from chronocratic.datasets.datatypes._base import (
     FixedTimeSeriesDatasetMultivariate,
     FixedTimeSeriesDatasetUnivariate,

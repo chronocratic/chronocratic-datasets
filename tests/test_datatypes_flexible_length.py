@@ -5,8 +5,6 @@ produces sliding-window sequences, and raises IndexError for
 out-of-range indices.
 """
 
-from __future__ import annotations
-
 import numpy as np
 import pytest
 import torch
