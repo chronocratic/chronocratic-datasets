@@ -438,7 +438,6 @@ wheels = [
 
 [[package]]
 name = "chronocratic-datasets"
-version = "0.1.0a1"
 source = { editable = "." }
 dependencies = [
     { name = "lightning" },

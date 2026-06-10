@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -26,6 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -42,6 +48,9 @@ jobs:
     needs: [test, lint]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -58,6 +67,9 @@ jobs:
     needs: [test, lint]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
