@@ -225,3 +225,6 @@ _sources/
 
 # setuptools-scm generated version file
 src/chronocratic/datasets/_version.py
+
+# serena
+.serena/
