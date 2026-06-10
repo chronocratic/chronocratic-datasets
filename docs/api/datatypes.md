@@ -1,71 +1,45 @@
-# Datatype API Reference
+# Dataset API Reference
 
 Dataset classes are defined in {py:mod}`chronocratic.datasets.datatypes` and
 re-exported from the package root. They provide PyTorch `Dataset` implementations
 for time series data.
 
-## Base Classes
+## Base Datasets
 
-### TimeSeriesDataset
+Abstract and mixin classes that define the core interface for time series datasets.
 
-.. autoclass:: chronocratic.datasets.datatypes.TimeSeriesDataset
-   :members:
-   :undoc-members:
-
-### FixedTimeSeriesDatasetUnivariate
-
-.. autoclass:: chronocratic.datasets.datatypes.FixedTimeSeriesDatasetUnivariate
-   :members:
-   :undoc-members:
-
-### FixedTimeSeriesDatasetMultivariate
-
-.. autoclass:: chronocratic.datasets.datatypes.FixedTimeSeriesDatasetMultivariate
-   :members:
-   :undoc-members:
-
-### FlexibleTimeSeriesDatasetSingleFile
-
-.. autoclass:: chronocratic.datasets.datatypes.FlexibleTimeSeriesDatasetSingleFile
-   :members:
-   :undoc-members:
-
-### FlexibleTimeSeriesDatasetSingleFileMultipleSeries
-
-.. autoclass:: chronocratic.datasets.datatypes.FlexibleTimeSeriesDatasetSingleFileMultipleSeries
-   :members:
-   :undoc-members:
+- {py:class}`TimeSeriesDataset` — Root base class. Defines the standard `__getitem__`
+  and `__len__` contract for all time series datasets.
+- {py:class}`FixedTimeSeriesDatasetUnivariate` — For univariate series with a fixed
+  length. Handles single-channel data with consistent indexing.
+- {py:class}`FixedTimeSeriesDatasetMultivariate` — For multivariate series with
+  fixed length. Supports per-variable scaling.
+- {py:class}`FlexibleTimeSeriesDatasetSingleFile` — For datasets stored in a single
+  file with variable window sizes.
+- {py:class}`FlexibleTimeSeriesDatasetSingleFileMultipleSeries` — Extension for
+  multi-series files where each series may have different lengths.
 
 ## Forecasting Datasets
 
-### ETTDataset
+Concrete dataset implementations for forecasting benchmarks.
 
-.. autoclass:: chronocratic.datasets.datatypes.ETTDataset
-   :members:
-   :undoc-members:
-
-### WeatherDataset
-
-.. autoclass:: chronocratic.datasets.datatypes.WeatherDataset
-   :members:
-   :undoc-members:
-
-### ElectricityDataset
-
-.. autoclass:: chronocratic.datasets.datatypes.ElectricityDataset
-   :members:
-   :undoc-members:
+- {py:class}`ETTDataset` — ETT dataset loader. Supports both ETTm1 and ETTm2 variants.
+- {py:class}`WeatherDataset` — Weather dataset loader.
+- {py:class}`ElectricityDataset` — Hourly electricity load dataset loader.
 
 ## Classification Datasets
 
-### UCRClassificationUnivariateDataset
+Concrete dataset implementations for classification benchmarks.
 
-.. autoclass:: chronocratic.datasets.datatypes.UCRClassificationUnivariateDataset
+- {py:class}`UCRClassificationUnivariateDataset` — UCR archive loader for univariate,
+  fixed-length classification.
+- {py:class}`UEAClassificationMultivariateDataset` — UEA archive loader for
+  multivariate and variable-length classification.
+
+```{eval-rst}
+.. automodule:: chronocratic.datasets.datatypes
    :members:
+   :imported-members:
    :undoc-members:
-
-### UEAClassificationMultivariateDataset
-
-.. autoclass:: chronocratic.datasets.datatypes.UEAClassificationMultivariateDataset
-   :members:
-   :undoc-members:
+   :show-inheritance:
+```

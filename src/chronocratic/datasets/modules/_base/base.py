@@ -180,14 +180,15 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         """Validate file paths and perform lightweight checks.
 
         Concrete wrapper that drives the template:
+
         1. Check idempotency sentinel (skip if already called).
         2. Call ``_do_prepare_data()`` (abstract — subclass I/O).
         3. Call ``_finalize_prepare_data()`` (hook — no-op default,
            forecasting overrides to set slices).
         4. Set sentinel.
 
-        ``prepare_data()`` does NOT load or split data —
-        that happens in ``setup()``.
+        ``prepare_data()`` does NOT load or split data. That happens in
+        ``setup()``.
         """
         if self._prepare_data_called:
             return
