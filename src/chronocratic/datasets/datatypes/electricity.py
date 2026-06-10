@@ -20,9 +20,7 @@ if TYPE_CHECKING:
 from chronocratic.datasets.datatypes._base.flexible import (
     FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
 )
-from chronocratic.datasets.datatypes._base.strategies import (
-    ForecastingStrategySingleFile,
-)
+from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
 from chronocratic.datasets.utils.transformations import convert_numpy_to_tensor
 
 __all__ = ['ElectricityDataset']

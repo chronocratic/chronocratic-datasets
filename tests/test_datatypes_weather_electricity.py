@@ -47,9 +47,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
         from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from chronocratic.datasets.datatypes._base.strategies import (
-            ForecastingStrategySingleFile,
-        )
+        from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
         from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         seq_len = 32
@@ -73,9 +71,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
         from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from chronocratic.datasets.datatypes._base.strategies import (
-            ForecastingStrategySingleFile,
-        )
+        from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
         from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         seq_len = 32
@@ -105,9 +101,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
         from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from chronocratic.datasets.datatypes._base.strategies import (
-            ForecastingStrategySingleFile,
-        )
+        from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
         from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         seq_len = 32
@@ -133,9 +127,7 @@ class TestFlexibleTimeSeriesDatasetSingleFileMultipleSeries:
         from chronocratic.datasets.datatypes import (
             FlexibleTimeSeriesDatasetSingleFileMultipleSeries,
         )
-        from chronocratic.datasets.datatypes._base.strategies import (
-            ForecastingStrategySingleFile,
-        )
+        from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
         from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
         dataset = FlexibleTimeSeriesDatasetSingleFileMultipleSeries(

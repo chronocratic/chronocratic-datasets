@@ -273,8 +273,7 @@ def test_setup_fit_then_test_reuses_scaler(tmp_path: Path) -> None:
     )
     mod.prepare_data()
     with patch(
-        'chronocratic.datasets.modules._base.base.create_data_scaler',
-        side_effect=counting_scaler,
+        'chronocratic.datasets.modules._base.base.create_data_scaler', side_effect=counting_scaler
     ):
         mod.setup(stage='fit')
         assert mod._scaler_cache is not None
