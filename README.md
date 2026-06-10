@@ -35,6 +35,7 @@ weather = WeatherModule(
     mode=ForecastingMode.UNIVARIATE,
 )
 weather.prepare_data()
+weather.setup()
 train_loader = weather.train_dataloader()
 ```
 
