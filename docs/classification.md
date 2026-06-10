@@ -1,13 +1,17 @@
 # Classification Datasets
 
 The classification module provides data loaders for the UCR/UEA Time Series
-Classification Archive, a standard benchmark collection.
+Classification Archive, a standard benchmark collection for time series
+classification research.
 
-## Available Datasets
+For full parameter reference, see the {doc}`api/modules` API documentation for
+{py:mod}`chronocratic.datasets.modules`.
 
-### UCR (Univariate)
+## UCR Classification Data Module
 
-The UCR archive contains univariate time series classification datasets.
+The UCR archive contains **univariate, equal-length** time series classification
+datasets stored in ARFF format. Each dataset directory provides `TRAIN.arff`
+and `TEST.arff` files with feature columns and a target label column.
 
 ```python
 from pathlib import Path
@@ -23,11 +27,22 @@ module = UCRClassificationDataModule(
 
 module.prepare_data()
 module.setup()
+train_loader = module.train_dataloader()
 ```
 
-### UEA (Multivariate)
+**Key details:**
 
-The UEA archive contains multivariate time series classification datasets.
+- `dataset_folder_path` points to the directory containing the `.arff` files.
+  The module auto-discovers `{dataset_name}_TRAIN.arff` and `{dataset_name}_TEST.arff`.
+- `target_column_name` specifies the label column name in the ARFF files.
+- Sequence length is derived from the number of feature columns.
+- Handles variable-length series automatically via padding.
+
+## UEA Classification Data Module
+
+The UEA archive contains **multivariate and/or variable-length** time series
+classification datasets stored in nested ARFF format. These datasets have
+multiple dimensions per timestep and may have different sequence lengths per sample.
 
 ```python
 from pathlib import Path
@@ -43,43 +58,39 @@ module = UEAClassificationDataModule(
 
 module.prepare_data()
 module.setup()
+train_loader = module.train_dataloader()
 ```
+
+**Key details:**
+
+- Uses `scipy.io.arff.loadarff` directly for reading nested ARFF format.
+- Automatically encodes string labels via `sklearn.preprocessing.LabelEncoder`.
+- Data form is `NESTED`, meaning each sample may have variable length and multiple dimensions.
+- Sequence length and feature count are derived from the data at load time.
 
 ## ClassificationLoaderMode
 
-Controls how classification samples are constructed:
+Controls how classification samples are constructed by DataLoaders:
 
-- **SAMPLE_ONLY** — Returns only the input sample tensor (no labels)
-- **SAMPLE_LABEL** — Returns the input sample tensor and its label
+- **SAMPLE_ONLY** -- Returns only the input sample tensor (no labels)
+- **SAMPLE_LABEL** -- Returns the input sample tensor and its label
+
+Set this on the `train_dataloader()`, `val_dataloader()`, and `test_dataloader()`
+calls via the `mode` keyword argument. The default is `SAMPLE_LABEL`.
 
 ```python
 from chronocratic.datasets import ClassificationLoaderMode
 
-ClassificationLoaderMode.SAMPLE_ONLY
-ClassificationLoaderMode.SAMPLE_LABEL
+# With labels (default)
+train_loader = module.train_dataloader()
+
+# Without labels
+train_loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
 ```
-
-## Parameters
-
-All classification data modules accept these common parameters:
-
-| Parameter               | Type                              | Description                                               |
-| ----------------------- | --------------------------------- | --------------------------------------------------------- |
-| `dataset_folder_path`   | `Path`                            | Path to the dataset ARFF directory (required)             |
-| `target_column_name`    | `str`                             | Name of the target/label column in the ARFF files (required) |
-| `batch_size`            | `int`                             | Batch size for dataloaders (default: 32)                  |
-| `valid_size`            | `float`                           | Validation fraction from training data (default: 0.1)     |
-| `shuffle`               | `bool`                            | Whether to shuffle training data (default: False)         |
-| `scale_data`            | `bool`                            | Whether to apply data normalization (default: True)       |
-| `data_scaling_method`   | `ScalingMethod`                   | Scaling algorithm: `NONE`, `MINMAX`, `STANDARD`           |
-| `data_scaling_range`    | `tuple[float, float]`             | Target min-max range (default: `(0, 1)`)                  |
-| `splitting_strategy`    | `ClassificationSplitMode`         | `AS_DEFINED` (use provided splits) or `MANUAL`            |
-| `test_size`             | `float`                           | Test set fraction for `MANUAL` splitting (default: 0.5)   |
-| `num_workers`           | `int`                             | Number of DataLoader workers (default: 0)                 |
 
 ## Dataset Classes
 
-Under the hood, the data modules use these dataset classes:
+Under the hood, the data modules use these PyTorch Dataset classes:
 
 - {py:class}`~chronocratic.datasets.datatypes.UCRClassificationUnivariateDataset`
 - {py:class}`~chronocratic.datasets.datatypes.UEAClassificationMultivariateDataset`
@@ -88,8 +99,14 @@ See the {doc}`api/datatypes` reference for full class documentation.
 
 ## Data Splitting
 
-The package provides flexible data splitting via {py:class}`~chronocratic.datasets.enums.ClassificationSplitMode`
-and {py:class}`~chronocratic.datasets.enums.DataPartition`.
+The package provides flexible data splitting via
+{py:class}`~chronocratic.datasets.enums.ClassificationSplitMode` and
+{py:class}`~chronocratic.datasets.enums.DataPartition`.
+
+Use `splitting_strategy=ClassificationSplitMode.AS_DEFINED` to keep the
+original train/test split from the archive, or
+`splitting_strategy=ClassificationSplitMode.MANUAL` to re-split the combined
+data with a custom `test_size` fraction.
 
 ## Next Steps
 

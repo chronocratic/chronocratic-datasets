@@ -2,17 +2,48 @@
 
 The forecasting module provides data loaders for popular multivariate time series
 forecasting benchmarks, built on top of PyTorch Lightning's `LightningDataModule`.
+Each module handles data loading, splitting, caching, and provides ready-to-use
+DataLoaders for training, validation, and testing.
 
-## Available Datasets
+For full parameter reference, see the {doc}`api/modules` API documentation for
+{py:mod}`chronocratic.datasets.modules`.
 
-### ETT (Electricity Transformer Temperature)
+## Weather Module
 
-The ETT dataset contains two sub-datasets:
+The Weather dataset contains 22 meteorological features recorded hourly over 7 years
+(2012-2017). It uses fixed 60/20/20 temporal splits (train/validation/test).
 
-- **ETTm1** — Temperature data at 15-minute intervals
-- **ETTm2** — Temperature data at 15-minute intervals (different sensor)
-- **ETTh1** — Temperature data at hourly intervals
-- **ETTh2** — Temperature data at hourly intervals (different sensor)
+```python
+from pathlib import Path
+
+from chronocratic.datasets import ForecastingMode, WeatherModule
+
+module = WeatherModule(
+    dataset_file_path=Path("data/weather.csv"),
+    mode=ForecastingMode.MULTIVARIATE,
+    seq_len=24,
+    forecast_horizon=168,
+    scale_data=True,
+    batch_size=32,
+)
+
+module.prepare_data()
+module.setup()
+train_loader = module.train_dataloader()
+```
+
+In **univariate mode**, only the last column (`WetBulbCelsius`) is retained as the target
+variable. In **multivariate mode**, all 22 features are used.
+
+## ETT Data Module
+
+The ETT (Electricity Transformer Temperature) dataset contains two frequency variants:
+
+- **ETTh1, ETTh2** -- Hourly temperature data (17,420 timesteps)
+- **ETTm1, ETTm2** -- 15-minute temperature data (69,680 timesteps)
+
+The module requires an explicit `variant` parameter to determine the correct
+16-month / 4-month / 4-month train/validation/test split boundaries.
 
 ```python
 from pathlib import Path
@@ -33,32 +64,14 @@ module.prepare_data()
 module.setup()
 ```
 
-### Weather
+In **univariate mode**, only the `OT` (outer temperature) column is used.
 
-The Weather dataset contains 22 features recorded hourly over 7 years.
+## Electricity Load Module
 
-```python
-from pathlib import Path
-
-from chronocratic.datasets import ForecastingMode, WeatherModule
-
-module = WeatherModule(
-    dataset_file_path=Path("data/weather.csv"),
-    mode=ForecastingMode.MULTIVARIATE,
-    seq_len=24,
-    forecast_horizon=168,
-    scale_data=True,
-    batch_size=32,
-)
-
-module.prepare_data()
-module.setup()
-```
-
-### Electricity
-
-The Electricity dataset contains hourly power consumption data for 321 customers
-over 4 years.
+The Electricity dataset contains hourly power consumption data for 370 independent
+customers over 3 years (2012-2014). Each customer is treated as a separate time
+series (not as a feature), producing shape `(370, T, 1)` after transformation.
+It uses fixed 60/20/20 temporal splits.
 
 ```python
 from pathlib import Path
@@ -78,12 +91,14 @@ module.prepare_data()
 module.setup()
 ```
 
+In **univariate mode**, only customer `MT_001` is retained.
+
 ## ForecastingMode
 
-Controls how the input sequence is constructed:
+Controls which variables are included in each sample:
 
-- **UNIVARIATE** — Use a single target variable per sample
-- **MULTIVARIATE** — Use all available variables per sample
+- **UNIVARIATE** -- Use a single target variable per sample
+- **MULTIVARIATE** -- Use all available variables per sample
 
 ```python
 from chronocratic.datasets import ForecastingMode
@@ -94,36 +109,26 @@ ForecastingMode.MULTIVARIATE
 
 ## ForecastingLoaderMode
 
-Controls how samples are returned from the dataset:
+Controls how samples are returned from the DataLoader:
 
-- **RAW_SERIES** — Returns the full raw time series
-- **INPUT_TARGET** — Returns input and target tensors for supervised learning
-- **INPUT_ONLY** — Returns only the input tensor without targets
+- **RAW_SERIES** -- Returns the full raw time series
+- **INPUT_TARGET** -- Returns input and target tensors for supervised learning
+- **INPUT_ONLY** -- Returns only the input tensor without targets
 
-## Parameters
+Set this on the `train_dataloader()`, `val_dataloader()`, and `test_dataloader()`
+calls via the `loader_mode` keyword argument. The default is `RAW_SERIES`.
 
-All forecasting data modules accept these common parameters:
+```python
+# Raw full series (default)
+train_loader = module.train_dataloader()
 
-| Parameter               | Type                    | Description                                               |
-| ----------------------- | ----------------------- | --------------------------------------------------------- |
-| `dataset_file_path`     | `Path`                  | Path to the dataset file (required)                       |
-| `variant`               | `str`                   | ETT variant: `"ETTh1"`, `"ETTh2"`, `"ETTm1"`, `"ETTm2"`   |
-| `mode`                  | `ForecastingMode`       | Input mode (`UNIVARIATE` or `MULTIVARIATE`)               |
-| `seq_len`               | `int`                   | Sequence length for the input window (default: 128)       |
-| `forecast_horizon`      | `int`                   | Prediction horizon length (default: 96; 24 for Electricity) |
-| `scale_data`            | `bool`                  | Whether to apply data normalization (default: True)       |
-| `data_scaling_method`   | `ScalingMethod`         | Scaling algorithm: `NONE`, `MINMAX`, `STANDARD`           |
-| `data_scaling_range`    | `tuple[float, float]`   | Target min-max range (default: `(0, 1)`)                  |
-| `batch_size`            | `int`                   | Batch size for dataloaders (default: 32)                  |
-| `valid_size`            | `float`                 | Validation fraction (default: 0.1)                        |
-| `test_size`             | `float`                 | Test fraction (default: 0.5)                              |
-| `shuffle`               | `bool`                  | Whether to shuffle training data (default: False)         |
-| `num_workers`           | `int`                   | Number of DataLoader workers (default: 0)                 |
-| `step`                  | `int \| None`           | Stride between consecutive windows (default: None)        |
+# Supervised learning format: (input_window, target_window)
+train_loader = module.train_dataloader(loader_mode=ForecastingLoaderMode.INPUT_TARGET)
+```
 
 ## Dataset Classes
 
-Under the hood, the data modules use these dataset classes:
+Under the hood, the data modules use these PyTorch Dataset classes:
 
 - {py:class}`~chronocratic.datasets.datatypes.ETTDataset`
 - {py:class}`~chronocratic.datasets.datatypes.WeatherDataset`
