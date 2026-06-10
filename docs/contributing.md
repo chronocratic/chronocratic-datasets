@@ -105,4 +105,5 @@ To add a new dataset:
 ## License
 
 By contributing, you agree that your contributions will be licensed under the
-BSD 3-Clause License. See [LICENSE](LICENSE) for details.
+BSD 3-Clause License. See the
+[LICENSE](https://github.com/chronocratic/datasets/blob/main/LICENSE) for details.
