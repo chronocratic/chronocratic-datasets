@@ -12,3 +12,10 @@
     white-space: normal;
     word-break: break-word;
 }
+
+/* Also fix the ToC link itself which wraps the span */
+.pst-page-toc-nav .nav-link {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal !important;
+}
