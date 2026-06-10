@@ -95,6 +95,71 @@ To add a new dataset:
 5. Add tests in `tests/`
 6. Document in the appropriate guide page
 
+## Branching Strategy
+
+This project uses a two-line branching model with `dev` and `main` as the only long-lived branches. Both maintain strictly linear histories.
+
+### Philosophy
+
+A linear history is not cosmetic. It makes every commit independently deployable in theory, trivial to bisect, and easy to reason about during code review. Merge commits obscure causality: did bug X come from branch A, B, or the three-way merge itself? Squash-merge and fast-forward policies eliminate that ambiguity.
+
+`dev` is the integration branch. It collects feature work, may be unstable, and is the source for all releases. `main` is the release branch. It tracks published versions only — every commit on `main` corresponds to a tag on PyPI.
+
+### Branch Rules
+
+| Rule | `dev` | `main` |
+| --- | --- | --- |
+| Source for feature branches | Yes | No |
+| Who can open PRs | Everyone | Maintainers only |
+| Merge strategy | Squash only | Fast-forward only |
+| Rebase allowed | Yes (before PR) | No |
+| Force-push allowed | Own branches only | Never |
+
+### Contributing Workflow
+
+All contribution branches must be created from `dev`. All PRs from contributors target `dev`.
+
+```bash
+# 1. Sync with remote dev
+git fetch origin
+git checkout dev
+git pull
+
+# 2. Create feature branch from dev
+git checkout -b feat/your-feature
+
+# 3. Commit, push, open PR against dev
+git push -u origin feat/your-feature
+```
+
+PRs into `dev` are **squash-merged**. This collapses all intermediate commits into a single clean commit on `dev`. The commit message is rewritten at merge time to follow conventional commits format. Your local branch may have twenty exploratory commits; `dev` sees one.
+
+Rebase your feature branch onto `dev` before opening a PR — or immediately after reviewers request changes — so the squash target is clean and CI runs against the latest code.
+
+### Release Workflow
+
+PRs from `dev` into `main` are **restricted to maintainers** and must be **fast-forward merged**. No squash, no merge commit. Fast-forward means every commit on `main` was already reviewed and integrated into `dev`; the act of merging to `main` is a release assertion, not a code change.
+
+Because `dev` squash-merges feature work and `main` fast-forwards from `dev`, both branches stay linear. `git log --oneline main` reads as a chronological changelog. `git bisect` works without navigating merge diamonds.
+
+### Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+type(scope): summary
+
+[optional body]
+```
+
+Types: `feat`, `fix`, `docs`, `ci`, `refactor`, `test`, `chore`. Scope is the affected submodule. Summary is imperative mood, no period. Example:
+
+```
+feat(classification): add UCRElectricalGM12 dataset loader
+```
+
+Because contributor PRs are squash-merged, the commit on `dev` uses the PR title as the subject line. Write PR titles in conventional commits format. Local commits on your feature branch need not follow the format — they are development notes, not release history.
+
 ## Pull Requests
 
 - Write clear commit messages following conventional commits
