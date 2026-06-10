@@ -6,31 +6,31 @@ for time series data.
 
 ## Base Classes
 
-## TimeSeriesDataset
+### TimeSeriesDataset
 
 .. autoclass:: chronocratic.datasets.datatypes.TimeSeriesDataset
    :members:
    :undoc-members:
 
-## FixedTimeSeriesDatasetUnivariate
+### FixedTimeSeriesDatasetUnivariate
 
 .. autoclass:: chronocratic.datasets.datatypes.FixedTimeSeriesDatasetUnivariate
    :members:
    :undoc-members:
 
-## FixedTimeSeriesDatasetMultivariate
+### FixedTimeSeriesDatasetMultivariate
 
 .. autoclass:: chronocratic.datasets.datatypes.FixedTimeSeriesDatasetMultivariate
    :members:
    :undoc-members:
 
-## FlexibleTimeSeriesDatasetSingleFile
+### FlexibleTimeSeriesDatasetSingleFile
 
 .. autoclass:: chronocratic.datasets.datatypes.FlexibleTimeSeriesDatasetSingleFile
    :members:
    :undoc-members:
 
-## FlexibleTimeSeriesDatasetSingleFileMultipleSeries
+### FlexibleTimeSeriesDatasetSingleFileMultipleSeries
 
 .. autoclass:: chronocratic.datasets.datatypes.FlexibleTimeSeriesDatasetSingleFileMultipleSeries
    :members:
@@ -38,19 +38,19 @@ for time series data.
 
 ## Forecasting Datasets
 
-## ETTDataset
+### ETTDataset
 
 .. autoclass:: chronocratic.datasets.datatypes.ETTDataset
    :members:
    :undoc-members:
 
-## WeatherDataset
+### WeatherDataset
 
 .. autoclass:: chronocratic.datasets.datatypes.WeatherDataset
    :members:
    :undoc-members:
 
-## ElectricityDataset
+### ElectricityDataset
 
 .. autoclass:: chronocratic.datasets.datatypes.ElectricityDataset
    :members:
@@ -58,13 +58,13 @@ for time series data.
 
 ## Classification Datasets
 
-## UCRClassificationUnivariateDataset
+### UCRClassificationUnivariateDataset
 
 .. autoclass:: chronocratic.datasets.datatypes.UCRClassificationUnivariateDataset
    :members:
    :undoc-members:
 
-## UEAClassificationMultivariateDataset
+### UEAClassificationMultivariateDataset
 
 .. autoclass:: chronocratic.datasets.datatypes.UEAClassificationMultivariateDataset
    :members:

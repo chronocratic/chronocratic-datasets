@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from chronocratic.datasets import __version__  # noqa: E402
 
 project = "chronocratic-datasets"
+html_title = "chronocratic"
 copyright = "2026-Present, The Chronocratic Developers"
 author = "The Chronocratic Developers"
 release = __version__

@@ -6,19 +6,19 @@ re-exported from the package root. They provide PyTorch Lightning
 
 ## Base Modules
 
-## BaseTimeSeriesDataModule
+### BaseTimeSeriesDataModule
 
 .. autoclass:: chronocratic.datasets.modules.BaseTimeSeriesDataModule
    :members:
    :undoc-members:
 
-## BaseForecastingTimeSeriesDataModule
+### BaseForecastingTimeSeriesDataModule
 
 .. autoclass:: chronocratic.datasets.modules.BaseForecastingTimeSeriesDataModule
    :members:
    :undoc-members:
 
-## BaseClassificationTimeSeriesDataModule
+### BaseClassificationTimeSeriesDataModule
 
 .. autoclass:: chronocratic.datasets.modules.BaseClassificationTimeSeriesDataModule
    :members:
@@ -26,19 +26,19 @@ re-exported from the package root. They provide PyTorch Lightning
 
 ## Forecasting Modules
 
-## ETTDataModule
+### ETTDataModule
 
 .. autoclass:: chronocratic.datasets.modules.ETTDataModule
    :members:
    :undoc-members:
 
-## WeatherModule
+### WeatherModule
 
 .. autoclass:: chronocratic.datasets.modules.WeatherModule
    :members:
    :undoc-members:
 
-## ElectricityLoadModule
+### ElectricityLoadModule
 
 .. autoclass:: chronocratic.datasets.modules.ElectricityLoadModule
    :members:
@@ -46,13 +46,13 @@ re-exported from the package root. They provide PyTorch Lightning
 
 ## Classification Modules
 
-## UCRClassificationDataModule
+### UCRClassificationDataModule
 
 .. autoclass:: chronocratic.datasets.modules.UCRClassificationDataModule
    :members:
    :undoc-members:
 
-## UEAClassificationDataModule
+### UEAClassificationDataModule
 
 .. autoclass:: chronocratic.datasets.modules.UEAClassificationDataModule
    :members:
