@@ -1,26 +1,30 @@
-/* Make right sidebar wider and prevent horizontal overflow */
+/* Make right sidebar wider */
 .bd-sidebar-secondary {
-    min-width: 300px;
-    max-width: 400px;
+    min-width: 300px !important;
+    max-width: 400px !important;
 }
 
-/* Ensure ToC items wrap fully — no truncation or scroll */
-.pst-page-toc-nav .nav-item .toc-entry {
+/* Override ALL pydata theme ToC truncation — force wrapping */
+.pst-page-toc-nav .nav {
+    overflow: visible !important;
+    white-space: normal !important;
+}
+
+.pst-page-toc-nav .nav-item,
+.pst-page-toc-nav .nav-item *,
+.pst-page-toc-nav .nav-link,
+.pst-page-toc-nav .nav-link *,
+.pst-page-toc-nav .toc-entry,
+.pst-page-toc-nav .toc-entry * {
     white-space: normal !important;
     overflow: visible !important;
     text-overflow: clip !important;
 }
 
-.pst-page-toc-nav .nav-item .toc-entry span {
-    display: inline-block;
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-}
-
-.pst-page-toc-nav .nav-link {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    display: block;
+/* The actual text spans — allow wrapping and break long words */
+.pst-page-toc-nav .nav-link span {
+    display: inline !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
 }

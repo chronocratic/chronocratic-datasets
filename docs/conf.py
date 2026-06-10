@@ -26,8 +26,9 @@ html_theme_options = {
     "secondary_sidebar_items": ["page-toc", "sourcelink"],
 }
 
+html_static_path = ["_static"]
 html_css_files = [
-    "_static/custom.css",
+    "custom.css",
 ]
 
 source_suffix = {
