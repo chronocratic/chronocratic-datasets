@@ -58,19 +58,38 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Resolve fragment type from labels
+      # A `changelog:<type>` label wins; otherwise infer from the Conventional
+      # Commits prefix of the PR title; otherwise fall back to `changed`.
+      - name: Resolve fragment type
         if: steps.check.outputs.exists == 'false'
         id: type
         env:
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TYPE="changed"
+          TYPE=""
           if   echo "$LABELS" | grep -q '"changelog:added"';      then TYPE="added"
           elif echo "$LABELS" | grep -q '"changelog:fixed"';      then TYPE="fixed"
+          elif echo "$LABELS" | grep -q '"changelog:changed"';    then TYPE="changed"
           elif echo "$LABELS" | grep -q '"changelog:removed"';    then TYPE="removed"
           elif echo "$LABELS" | grep -q '"changelog:deprecated"'; then TYPE="deprecated"
           elif echo "$LABELS" | grep -q '"changelog:security"';   then TYPE="security"
           fi
+
+          if [ -z "$TYPE" ]; then
+            # Lowercase Conventional Commits verb before the first ( or : or !
+            PREFIX="$(printf '%s' "$PR_TITLE" | sed -E 's/^([a-zA-Z]+).*/\1/' | tr '[:upper:]' '[:lower:]')"
+            case "$PREFIX" in
+              fix)                       TYPE="fixed" ;;
+              feat)                      TYPE="added" ;;
+              revert|remove)             TYPE="removed" ;;
+              deprecate)                 TYPE="deprecated" ;;
+              security)                  TYPE="security" ;;
+              refactor|perf|change)      TYPE="changed" ;;
+              *)                         TYPE="changed" ;;
+            esac
+          fi
+
           echo "type=$TYPE" >> "$GITHUB_OUTPUT"
 
       # Only same-repo PRs can be pushed to. Forks fall through to the check

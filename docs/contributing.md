@@ -94,16 +94,30 @@ adds a small **news fragment** to `changelog.d/`. They are assembled into
 ### Fragments are created automatically
 
 When you open a PR into `dev`, CI writes a fragment for you: it takes your PR
-title, strips any Conventional Commits prefix (`fix:`, `feat(x):`, …), and
-commits `changelog.d/<pr>.changed.md` to your branch. Pull before pushing again
-so you don't lose it. Most PRs need nothing more — just give the PR a clear,
-user-facing title.
+title, strips the Conventional Commits prefix (`fix:`, `feat(x):`, …) for the
+body text, and commits `changelog.d/<pr>.<type>.md` to your branch. Pull before
+pushing again so you don't lose it. Most PRs need nothing more — just give the
+PR a clear, user-facing title with the right prefix.
+
+The fragment type is inferred from that prefix:
+
+| Title prefix              | Fragment type |
+| ------------------------- | ------------- |
+| `fix:`                    | `fixed`       |
+| `feat:`                   | `added`       |
+| `refactor:`, `perf:`      | `changed`     |
+| `revert:`, `remove…`      | `removed`     |
+| `deprecate…`              | `deprecated`  |
+| `security:`               | `security`    |
+| anything else             | `changed`     |
+
+A `changelog:<type>` label, if present, overrides the inferred type.
 
 Two cases need manual action:
 
-- **Wrong type.** The auto-fragment is always `changed`. If your change is an
-  add/fix/removal/etc., rename the file's type (e.g. `42.changed.md` →
-  `42.fixed.md`) or replace it with one you create yourself (see below).
+- **Wrong type.** If the inferred type is off, rename the file's type (e.g.
+  `42.changed.md` → `42.fixed.md`) or replace it with one you create yourself
+  (see below).
 - **No user-facing change.** Chores, refactors, and internal docs don't belong
   in the changelog — add the `skip-changelog` label and CI skips the fragment
   entirely.
