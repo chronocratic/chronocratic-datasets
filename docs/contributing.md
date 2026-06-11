@@ -91,9 +91,29 @@ Instead of editing `CHANGELOG.md` directly (which causes merge conflicts), each 
 adds a small **news fragment** to `changelog.d/`. They are assembled into
 `CHANGELOG.md` at release time.
 
-Every PR with a user-visible change must add a fragment. Filename format is
-`<issue-or-pr>.<type>.md`, where `<type>` is one of `added`, `changed`,
-`deprecated`, `removed`, `fixed`, or `security`:
+### Fragments are created automatically
+
+When you open a PR into `dev`, CI writes a fragment for you: it takes your PR
+title, strips any Conventional Commits prefix (`fix:`, `feat(x):`, …), and
+commits `changelog.d/<pr>.changed.md` to your branch. Pull before pushing again
+so you don't lose it. Most PRs need nothing more — just give the PR a clear,
+user-facing title.
+
+Two cases need manual action:
+
+- **Wrong type.** The auto-fragment is always `changed`. If your change is an
+  add/fix/removal/etc., rename the file's type (e.g. `42.changed.md` →
+  `42.fixed.md`) or replace it with one you create yourself (see below).
+- **No user-facing change.** Chores, refactors, and internal docs don't belong
+  in the changelog — add the `skip-changelog` label and CI skips the fragment
+  entirely.
+- **Fork PRs.** CI can't push to a fork, so it only *checks* that a fragment
+  exists. Add one by hand (below) before the check will pass.
+
+### Creating a fragment by hand
+
+Filename format is `<issue-or-pr>.<type>.md`, where `<type>` is one of `added`,
+`changed`, `deprecated`, `removed`, `fixed`, or `security`:
 
 ```bash
 # tied to issue/PR #42
@@ -103,10 +123,12 @@ uv run towncrier create -c "Add hourly variant of the ETT dataset." 42.added.md
 uv run towncrier create -c "Fix NPZ cache invalidation on scaler change." +cache.fixed.md
 ```
 
+If a fragment already exists for your PR number, CI leaves it untouched — your
+hand-written one wins.
+
 The body is a single sentence written for end users. Preview the assembled notes
-with `uv run towncrier build --draft --version <next>`. CI runs
-`towncrier check` on PRs into `dev`; add the `skip-changelog` label for PRs with no
-user-facing change (chores, refactors, internal docs). See `changelog.d/README.md`
+with `uv run towncrier build --draft --version <next>`. CI also runs
+`towncrier check` on PRs into `dev` as a safety net. See `changelog.d/README.md`
 for details.
 
 ## Adding New Datasets
