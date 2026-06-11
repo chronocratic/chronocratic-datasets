@@ -1,0 +1,71 @@
+name: Auto changelog fragment
+
+# Creates a towncrier fragment for any PR targeting `dev`.
+# Skipped for fork PRs (no push access) and PRs labelled `skip-changelog`.
+#
+# Label convention for fragment type (defaults to `changed`):
+#   changelog:added | changelog:fixed | changelog:changed
+#   changelog:removed | changelog:deprecated | changelog:security
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, edited, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: write
+
+jobs:
+  fragment:
+    name: Create towncrier fragment
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-changelog')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if fragment already exists
+        id: check
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if compgen -G "changelog.d/${PR}.*.md" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve fragment type from labels
+        if: steps.check.outputs.exists == 'false'
+        id: type
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          TYPE="changed"
+          if   echo "$LABELS" | grep -q '"changelog:added"';      then TYPE="added"
+          elif echo "$LABELS" | grep -q '"changelog:fixed"';      then TYPE="fixed"
+          elif echo "$LABELS" | grep -q '"changelog:removed"';    then TYPE="removed"
+          elif echo "$LABELS" | grep -q '"changelog:deprecated"'; then TYPE="deprecated"
+          elif echo "$LABELS" | grep -q '"changelog:security"';   then TYPE="security"
+          fi
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+
+      - name: Create and commit fragment
+        if: steps.check.outputs.exists == 'false'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FRAGMENT_TYPE: ${{ steps.type.outputs.type }}
+        run: |
+          FRAGMENT="changelog.d/${PR_NUMBER}.${FRAGMENT_TYPE}.md"
+          printf '%s.\n' "${PR_TITLE}" > "${FRAGMENT}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${FRAGMENT}"
+          git commit -m "ci: add towncrier fragment for PR #${PR_NUMBER}"
+          git push
