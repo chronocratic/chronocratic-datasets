@@ -9,6 +9,18 @@ Entries are managed with [towncrier](https://towncrier.readthedocs.io/); see
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a3 (2026-06-11)
+
+### Changed
+
+- Renamed `WeatherModule` to `WeatherDataModule` and `ElectricityLoadModule` to `ElectricityLoadDataModule` for naming consistency. ([#34](https://github.com/chronocratic/chronocratic-datasets/issues/34))
+- Auto-create towncrier fragment on feature→dev PRs. ([#36](https://github.com/chronocratic/chronocratic-datasets/issues/36))
+
+### Fixed
+
+- Use `copy=True` in `DataFrame.to_numpy()` to avoid a non-writable tensor warning from PyTorch. ([#34](https://github.com/chronocratic/chronocratic-datasets/issues/34))
+
+
 ## v0.1.0a1 (2026-06-10) — First Alpha Release
 
 The first pre-release of chronocratic-datasets. This alpha introduces the complete set of time series datasets, a clean and type-safe API, and full PyTorch Lightning integration.
