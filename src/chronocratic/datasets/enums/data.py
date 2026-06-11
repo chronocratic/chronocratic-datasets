@@ -10,9 +10,9 @@ class TimeSeriesDatasetMode(StrEnum):
         INPUT_OUTPUT: Returns separate input and output tensors for supervised learning.
     """
 
-    SAMPLE_ONLY = 'sample_only'
-    SAMPLE_LABEL = 'sample_label'
-    INPUT_OUTPUT = 'input_output'
+    SAMPLE_ONLY = "sample_only"
+    SAMPLE_LABEL = "sample_label"
+    INPUT_OUTPUT = "input_output"
 
 
 class ClassificationLoaderMode(StrEnum):
@@ -23,8 +23,8 @@ class ClassificationLoaderMode(StrEnum):
         SAMPLE_LABEL: Returns the input data and its corresponding label.
     """
 
-    SAMPLE_ONLY = 'sample_only'
-    SAMPLE_LABEL = 'sample_label'
+    SAMPLE_ONLY = "sample_only"
+    SAMPLE_LABEL = "sample_label"
 
 
 class ForecastingLoaderMode(StrEnum):
@@ -36,9 +36,9 @@ class ForecastingLoaderMode(StrEnum):
         INPUT_ONLY: Returns only the input portion of the series.
     """
 
-    RAW_SERIES = 'raw_series'
-    INPUT_TARGET = 'input_target'
-    INPUT_ONLY = 'input_only'
+    RAW_SERIES = "raw_series"
+    INPUT_TARGET = "input_target"
+    INPUT_ONLY = "input_only"
 
 
 class ClassificationSplitMode(StrEnum):
@@ -49,8 +49,8 @@ class ClassificationSplitMode(StrEnum):
         MANUAL: Allows manual specification of train/test split ratios.
     """
 
-    AS_DEFINED = 'as_defined'
-    MANUAL = 'manual'
+    AS_DEFINED = "as_defined"
+    MANUAL = "manual"
 
 
 class ScalingMethod(StrEnum):
@@ -62,9 +62,9 @@ class ScalingMethod(StrEnum):
         STANDARD: Standardizes data to zero mean and unit variance.
     """
 
-    NONE = 'none'
-    MINMAX = 'minmax'
-    STANDARD = 'standard'
+    NONE = "none"
+    MINMAX = "minmax"
+    STANDARD = "standard"
 
 
 class ForecastingMode(StrEnum):
@@ -75,8 +75,8 @@ class ForecastingMode(StrEnum):
         MULTIVARIATE: Uses all available variables per sample.
     """
 
-    UNIVARIATE = 'univariate'
-    MULTIVARIATE = 'multivariate'
+    UNIVARIATE = "univariate"
+    MULTIVARIATE = "multivariate"
 
 
 class DataForm(StrEnum):
@@ -88,9 +88,9 @@ class DataForm(StrEnum):
         MULTI_FILES: List of 1-D arrays from multiple files.
     """
 
-    REGULAR = 'regular'
-    NESTED = 'nested'
-    MULTI_FILES = 'multi_files'
+    REGULAR = "regular"
+    NESTED = "nested"
+    MULTI_FILES = "multi_files"
 
 
 class DataPartition(StrEnum):
@@ -102,6 +102,6 @@ class DataPartition(StrEnum):
         TEST: Test data partition.
     """
 
-    TRAIN = 'train'
-    VAL = 'val'
-    TEST = 'test'
+    TRAIN = "train"
+    VAL = "val"
+    TEST = "test"

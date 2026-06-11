@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from torch.utils.data import DataLoader
 
 
-__all__ = ['BaseClassificationTimeSeriesDataModule']
+__all__ = ["BaseClassificationTimeSeriesDataModule"]
 
 
 class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
@@ -133,7 +133,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             if s is not None
         ]
         if not splits:
-            msg = 'No data loaded. Call prepare_data() and setup() first.'
+            msg = "No data loaded. Call prepare_data() and setup() first."
             raise RuntimeError(msg)
         return pd.concat(splits, axis=0)
 
@@ -156,7 +156,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         """
         if self._num_features is not None:
             return self._num_features, self._seq_len
-        msg = 'prepare_dimensions() requires prepare_data() to have run first'
+        msg = "prepare_dimensions() requires prepare_data() to have run first"
         raise RuntimeError(msg)
 
     def setup(self, stage: str | None = None) -> None:
@@ -174,8 +174,8 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             ValueError: If stage is not one of
                 ``{'fit', 'validate', 'test', 'predict', None}``.
         """
-        if stage not in ('fit', 'validate', 'test', 'predict', None):
-            msg = f'Unknown stage: {stage!r}'
+        if stage not in ("fit", "validate", "test", "predict", None):
+            msg = f"Unknown stage: {stage!r}"
             raise ValueError(msg)
         self._load_cached_data()
         super().setup(stage=stage)

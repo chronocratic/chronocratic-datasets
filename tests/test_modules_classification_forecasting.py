@@ -58,14 +58,14 @@ class TestBaseClassificationTimeSeriesDataModule:
         import inspect
 
         sig = inspect.signature(module_class.__init__)
-        assert 'target_column_name' in sig.parameters
+        assert "target_column_name" in sig.parameters
 
     def test_constructor_accepts_splitting_strategy(self, module_class: type) -> None:
         """Classification base constructor accepts splitting_strategy enum."""
         import inspect
 
         sig = inspect.signature(module_class.__init__)
-        assert 'splitting_strategy' in sig.parameters
+        assert "splitting_strategy" in sig.parameters
 
     def test_constructor_accepts_data_form(self, module_class: type) -> None:
         """Classification base constructor accepts data_form (even if set by subclass)."""
@@ -75,7 +75,7 @@ class TestBaseClassificationTimeSeriesDataModule:
         # data_form is inherited from base; classification base may or may not
         # re-expose it, but the parent signature should include it.
         base_sig = inspect.signature(BaseTimeSeriesDataModule.__init__)
-        assert 'data_form' in base_sig.parameters
+        assert "data_form" in base_sig.parameters
 
     def test_exposes_num_classes_property(self) -> None:
         """Classification base exposes num_classes property."""
@@ -83,9 +83,9 @@ class TestBaseClassificationTimeSeriesDataModule:
             BaseClassificationTimeSeriesDataModule,
         )
 
-        assert hasattr(BaseClassificationTimeSeriesDataModule, 'num_classes')
+        assert hasattr(BaseClassificationTimeSeriesDataModule, "num_classes")
         assert isinstance(
-            BaseClassificationTimeSeriesDataModule.__dict__.get('num_classes'), property
+            BaseClassificationTimeSeriesDataModule.__dict__.get("num_classes"), property
         )
 
     def test_has_separate_target_feature_partial(self) -> None:
@@ -99,8 +99,8 @@ class TestBaseClassificationTimeSeriesDataModule:
         )
 
         source = inspect.getsource(BaseClassificationTimeSeriesDataModule.__init__)
-        assert '_separate_target_feature' in source
-        assert 'partial' in source
+        assert "_separate_target_feature" in source
+        assert "partial" in source
 
 
 class TestBaseForecastingTimeSeriesDataModule:
@@ -125,24 +125,24 @@ class TestBaseForecastingTimeSeriesDataModule:
         import inspect
 
         sig = inspect.signature(module_class.__init__)
-        assert 'mode' in sig.parameters
+        assert "mode" in sig.parameters
 
     def test_constructor_accepts_seq_len(self, module_class: type) -> None:
         """Forecasting base constructor accepts seq_len (int)."""
         import inspect
 
         sig = inspect.signature(module_class.__init__)
-        assert 'seq_len' in sig.parameters
+        assert "seq_len" in sig.parameters
 
     def test_has_abstract_set_data_slices(self, module_class: type) -> None:
         """Forecasting base _set_data_slices is abstract."""
-        assert hasattr(module_class, '_set_data_slices')
-        assert getattr(module_class._set_data_slices, '__isabstractmethod__', False)
+        assert hasattr(module_class, "_set_data_slices")
+        assert getattr(module_class._set_data_slices, "__isabstractmethod__", False)
 
     def test_has_abstract_transform_data(self, module_class: type) -> None:
         """Forecasting base has abstract _transform_data method."""
-        assert hasattr(module_class, '_transform_data')
-        assert getattr(module_class._transform_data, '__isabstractmethod__', False)
+        assert hasattr(module_class, "_transform_data")
+        assert getattr(module_class._transform_data, "__isabstractmethod__", False)
 
     def test_prepare_data_scaler_minmax(self, concrete_forecasting_class: type) -> None:
         """_prepare_data_scaler returns MinMaxScaler for ScalingMethod.MINMAX."""
@@ -181,7 +181,7 @@ class TestBaseForecastingTimeSeriesDataModule:
     def test_prepare_data_scaler_invalid_raises(self, concrete_forecasting_class: type) -> None:
         """__init__ raises ValueError for scale_data=True with ScalingMethod.NONE."""
         with pytest.raises(
-            ValueError, match=r'scale_data=True is incompatible with ScalingMethod\.NONE'
+            ValueError, match=r"scale_data=True is incompatible with ScalingMethod\.NONE"
         ):
             concrete_forecasting_class(
                 batch_size=32,
@@ -216,7 +216,7 @@ class TestPrepareDimensions:
             shuffle=True,
             scale_data=False,
         )
-        assert hasattr(module, 'prepare_dimensions')
+        assert hasattr(module, "prepare_dimensions")
         result = module.prepare_dimensions()
         assert isinstance(result, tuple)
         assert len(result) == 2
@@ -244,16 +244,16 @@ class TestPrepareDimensions:
                 pass
 
         module = ConcreteClassification(
-            dataset_folder_path=Path('/nonexistent'),
+            dataset_folder_path=Path("/nonexistent"),
             batch_size=32,
             valid_size=0.2,
             test_size=0.2,
             shuffle=False,
             scale_data=False,
-            target_column_name='label',
+            target_column_name="label",
         )
         # _train_data_samples is None — prepare_data was never called
-        with pytest.raises(RuntimeError, match=r'prepare_dimensions.*prepare_data'):
+        with pytest.raises(RuntimeError, match=r"prepare_dimensions.*prepare_data"):
             module.prepare_dimensions()
 
     def test_forecasting_pre_setup_with_dataframe(self, concrete_forecasting_class: type) -> None:
@@ -268,7 +268,7 @@ class TestPrepareDimensions:
             mode=ForecastingMode.UNIVARIATE,
         )
         # Inject raw data and typed time index
-        dates = pd.date_range('2020-01-01', periods=100, freq='h')
+        dates = pd.date_range("2020-01-01", periods=100, freq="h")
         module._full_data_raw = (
             np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32)
         )
@@ -310,7 +310,7 @@ class TestPrepareDimensions:
         # Simulate post-setup: _num_features is already populated
         module._num_features = 42
         # Inject typed attributes that would compute a different value
-        dates = pd.date_range('2020-01-01', periods=100, freq='h')
+        dates = pd.date_range("2020-01-01", periods=100, freq="h")
         module._full_data_raw = (
             np.random.default_rng(42).standard_normal((100, 8)).astype(np.float32)
         )
@@ -338,9 +338,9 @@ class TestForecastingTypedAttrs:
             num_workers=0,
             mode=ForecastingMode.UNIVARIATE,
         )
-        assert hasattr(mod, '_full_data_raw')
-        assert hasattr(mod, '_time_index')
-        assert hasattr(mod, '_full_data_scaled')
+        assert hasattr(mod, "_full_data_raw")
+        assert hasattr(mod, "_time_index")
+        assert hasattr(mod, "_full_data_scaled")
         assert mod._full_data_raw is None
         assert mod._time_index is None
         assert mod._full_data_scaled is None
@@ -381,7 +381,7 @@ class TestForecastingTypedAttrs:
             num_workers=0,
             mode=ForecastingMode.UNIVARIATE,
         )
-        dates = pd.date_range('2020-01-01', periods=100, freq='h')
+        dates = pd.date_range("2020-01-01", periods=100, freq="h")
         df = pd.DataFrame(
             np.random.default_rng(42).standard_normal((100, 5)).astype(np.float32), index=dates
         )
@@ -398,9 +398,9 @@ class TestForecastingTypedAttrs:
             BaseForecastingTimeSeriesDataModule,
         )
 
-        assert hasattr(BaseForecastingTimeSeriesDataModule, '_resolve_cache_dir')
-        assert hasattr(BaseForecastingTimeSeriesDataModule, '_save_scaler_to_cache')
-        assert hasattr(BaseForecastingTimeSeriesDataModule, '_load_scaler_from_cache')
+        assert hasattr(BaseForecastingTimeSeriesDataModule, "_resolve_cache_dir")
+        assert hasattr(BaseForecastingTimeSeriesDataModule, "_save_scaler_to_cache")
+        assert hasattr(BaseForecastingTimeSeriesDataModule, "_load_scaler_from_cache")
 
     def test_resolve_cache_dir_returns_path(self, concrete_forecasting_class: type) -> None:
         """_resolve_cache_dir returns a Path object."""
@@ -416,10 +416,10 @@ class TestForecastingTypedAttrs:
             num_workers=0,
             mode=ForecastingMode.UNIVARIATE,
         )
-        mod._dataset_name = 'TestDataset'
+        mod._dataset_name = "TestDataset"
         result = mod._resolve_cache_dir()
         assert isinstance(result, Path)
-        assert 'TestDataset' in str(result)
+        assert "TestDataset" in str(result)
 
     def test_finalize_prepare_data_is_noop(self) -> None:
         """_finalize_prepare_data does not set slices for forecasting."""

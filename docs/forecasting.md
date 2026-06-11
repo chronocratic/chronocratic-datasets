@@ -16,9 +16,9 @@ The Weather dataset contains 22 meteorological features recorded hourly over 7 y
 ```python
 from pathlib import Path
 
-from chronocratic.datasets import ForecastingMode, WeatherModule
+from chronocratic.datasets import ForecastingMode, WeatherDataModule
 
-module = WeatherModule(
+module = WeatherDataModule(
     dataset_file_path=Path("data/weather.csv"),
     mode=ForecastingMode.MULTIVARIATE,
     seq_len=24,
@@ -35,7 +35,7 @@ train_loader = module.train_dataloader()
 In **univariate mode**, only the last column (`WetBulbCelsius`) is retained as the target
 variable. In **multivariate mode**, all 22 features are used.
 
-See the {py:class}`~chronocratic.datasets.modules.WeatherModule` API reference for all
+See the {py:class}`~chronocratic.datasets.modules.WeatherDataModule` API reference for all
 constructor parameters.
 
 ## ETT Data Module
@@ -82,9 +82,9 @@ It uses fixed 60/20/20 temporal splits.
 ```python
 from pathlib import Path
 
-from chronocratic.datasets import ElectricityLoadModule, ForecastingMode
+from chronocratic.datasets import ElectricityLoadDataModule, ForecastingMode
 
-module = ElectricityLoadModule(
+module = ElectricityLoadDataModule(
     dataset_file_path=Path("data/electricity.csv"),
     mode=ForecastingMode.MULTIVARIATE,
     seq_len=96,
@@ -99,7 +99,7 @@ module.setup()
 
 In **univariate mode**, only customer `MT_001` is retained.
 
-See the {py:class}`~chronocratic.datasets.modules.ElectricityLoadModule` API reference
+See the {py:class}`~chronocratic.datasets.modules.ElectricityLoadDataModule` API reference
 for all constructor parameters.
 
 ## Dataset Classes

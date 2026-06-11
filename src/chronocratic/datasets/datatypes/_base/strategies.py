@@ -13,12 +13,12 @@ import numpy as np
 from chronocratic.datasets.utils import get_num_samples_from_ts
 
 __all__ = [
-    'ClassificationStrategyMultipleFiles',
-    'ClassificationStrategySingleFile',
-    'ForecastingStrategySingleFile',
-    'SequenceHandlingStrategy',
-    'SequenceHandlingStrategyMultipleFiles',
-    'SequenceHandlingStrategySingleFile',
+    "ClassificationStrategyMultipleFiles",
+    "ClassificationStrategySingleFile",
+    "ForecastingStrategySingleFile",
+    "SequenceHandlingStrategy",
+    "SequenceHandlingStrategyMultipleFiles",
+    "SequenceHandlingStrategySingleFile",
 ]
 
 
@@ -122,7 +122,7 @@ class ForecastingStrategySingleFile(SequenceHandlingStrategySingleFile):
         self, data: np.ndarray | list[np.ndarray], seq_len: int, step: int
     ) -> int:
         """Return number of forecasting windows."""
-        arr = cast('np.ndarray', data) if not isinstance(data, list) else data[0]
+        arr = cast("np.ndarray", data) if not isinstance(data, list) else data[0]
         num_samples_ts = get_num_samples_from_ts(arr)
         possible_steps = list(
             range(num_samples_ts - seq_len - self._forecast_horizon + 1, -1, -step)
@@ -141,7 +141,7 @@ class ForecastingStrategySingleFile(SequenceHandlingStrategySingleFile):
     ) -> np.ndarray:
         """Return forecast target segment after the input window."""
         _ = labels
-        arr = cast('np.ndarray', data) if not isinstance(data, list) else data[0]
+        arr = cast("np.ndarray", data) if not isinstance(data, list) else data[0]
         return arr[n + seq_len : n + seq_len + self._forecast_horizon]
 
 
@@ -169,7 +169,7 @@ class ClassificationStrategySingleFile(SequenceHandlingStrategySingleFile):
         _ = data
         if labels is None:
             return None
-        arr = cast('np.ndarray', labels) if not isinstance(labels, list) else labels[0]
+        arr = cast("np.ndarray", labels) if not isinstance(labels, list) else labels[0]
         return arr[n : n + seq_len]
 
 
@@ -212,7 +212,7 @@ class ClassificationStrategyMultipleFiles(SequenceHandlingStrategyMultipleFiles)
         _ = data
         if labels is None:
             return None
-        current_file: int = cast('int', _kwargs.get('current_file', 0))
+        current_file: int = cast("int", _kwargs.get("current_file", 0))
         if isinstance(labels, list):
             return labels[current_file][n : n + seq_len]
         return labels[n : n + seq_len]

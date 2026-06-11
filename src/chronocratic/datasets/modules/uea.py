@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
     from torch.utils.data import DataLoader
 
-__all__ = ['UEAClassificationDataModule']
+__all__ = ["UEAClassificationDataModule"]
 
 logger = logging.getLogger(__name__)
 
@@ -112,10 +112,10 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._cache_key = build_cache_key(
             dataset_name=dataset_folder_path.name,
             params={
-                'splitting_strategy': splitting_strategy.value,
-                'test_size': test_size,
-                'valid_size': valid_size,
-                'data_scaling_method': data_scaling_method.value,
+                "splitting_strategy": splitting_strategy.value,
+                "test_size": test_size,
+                "valid_size": valid_size,
+                "data_scaling_method": data_scaling_method.value,
             },
         )
 
@@ -160,13 +160,13 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             for sample_point in sample:
                 point_list = sample_point.tolist()
                 point = [
-                    (float(d.decode('utf-8')) if isinstance(d, bytes) else float(d))
+                    (float(d.decode("utf-8")) if isinstance(d, bytes) else float(d))
                     for d in point_list
                 ]
                 sample_list.append(point)
             processed_data.append(np.array(sample_list))
 
-            label_str = label.decode('utf-8') if isinstance(label, bytes) else label
+            label_str = label.decode("utf-8") if isinstance(label, bytes) else label
             labels.append(label_str)
 
         encoder = LabelEncoder()
@@ -189,12 +189,12 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         """
         # Validate folder exists
         if not self.dataset_folder_path.exists():
-            msg = f'Dataset folder not found: {self.dataset_folder_path}'
+            msg = f"Dataset folder not found: {self.dataset_folder_path}"
             raise FileNotFoundError(msg)
 
         # Construct ARFF paths
-        arff_train = self.dataset_folder_path / f'{self._dataset_name}_TRAIN.arff'
-        arff_test = self.dataset_folder_path / f'{self._dataset_name}_TEST.arff'
+        arff_train = self.dataset_folder_path / f"{self._dataset_name}_TRAIN.arff"
+        arff_test = self.dataset_folder_path / f"{self._dataset_name}_TEST.arff"
 
         # Read and process ARFF files via scipy
         train_data = self._read_arff_data_file(arff_train)
@@ -234,8 +234,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             dropped_count = len(self._train_data_samples) - len(filtered_samples)
             if dropped_count > 0:
                 logger.warning(
-                    'Dropped %d samples from singleton classes in dataset %s. '
-                    'These classes will not be present in training data.',
+                    "Dropped %d samples from singleton classes in dataset %s. "
+                    "These classes will not be present in training data.",
                     dropped_count,
                     self._dataset_name,
                 )
@@ -255,9 +255,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                 )
             except ValueError as e:
                 pattern = (
-                    r'The test_size = \d+ should be'
-                    r' greater or equal to the'
-                    r' number of classes = \d+'
+                    r"The test_size = \d+ should be"
+                    r" greater or equal to the"
+                    r" number of classes = \d+"
                 )
                 if re.match(pattern, str(e)):
                     num_classes = len(set(filtered_labels))
@@ -274,17 +274,17 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                         random_state=42,
                     )
                     logger.warning(
-                        'Validation size adjusted to %d samples to cover all classes', num_classes
+                        "Validation size adjusted to %d samples to cover all classes", num_classes
                     )
 
         # Variable-length processing
         self._process_data_with_varying_sequence_lengths()
 
         # Convert labels to pd.Series with category dtype
-        self._train_data_labels = pd.Series(self._train_data_labels, dtype='category')
-        self._test_data_labels = pd.Series(self._test_data_labels, dtype='category')
+        self._train_data_labels = pd.Series(self._train_data_labels, dtype="category")
+        self._test_data_labels = pd.Series(self._test_data_labels, dtype="category")
         if self.valid_size > 0.0 and self._valid_data_labels is not None:
-            self._valid_data_labels = pd.Series(self._valid_data_labels, dtype='category')
+            self._valid_data_labels = pd.Series(self._valid_data_labels, dtype="category")
 
         # Compute module state
         self._num_classes = len(self._train_data_labels.unique())
@@ -292,7 +292,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
 
         # Write cache
         cache_dir = self._get_cache_dir()
-        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_path = cache_dir / f"{self._cache_key}.npz"
 
         valid_samples_arr = (
             self._valid_data_samples
@@ -313,15 +313,15 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         )
 
         atomic_save_metadata(
-            path=cache_dir / f'{self._cache_key}_metadata.json',
+            path=cache_dir / f"{self._cache_key}_metadata.json",
             data={
-                'version': CACHE_SCHEMA_VERSION,
-                'dataset_name': self._dataset_name,
-                'n_features': self._num_features,
-                'seq_len': self._seq_len,
-                'has_datetime_index': False,
-                'data_scaling_method': self.data_scaling_method.value,
-                'data_scaling_range': self.data_scaling_range,
+                "version": CACHE_SCHEMA_VERSION,
+                "dataset_name": self._dataset_name,
+                "n_features": self._num_features,
+                "seq_len": self._seq_len,
+                "has_datetime_index": False,
+                "data_scaling_method": self.data_scaling_method.value,
+                "data_scaling_range": self.data_scaling_range,
             },
         )
 
@@ -331,18 +331,18 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             return
 
         cache_dir = self._get_cache_dir()
-        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_path = cache_dir / f"{self._cache_key}.npz"
         loaded = np.load(str(cache_path))
 
-        self._train_data_samples = loaded['train_samples']
-        self._train_data_labels = pd.Series(loaded['train_labels'], dtype='category')
-        self._test_data_samples = loaded['test_samples']
-        self._test_data_labels = pd.Series(loaded['test_labels'], dtype='category')
+        self._train_data_samples = loaded["train_samples"]
+        self._train_data_labels = pd.Series(loaded["train_labels"], dtype="category")
+        self._test_data_samples = loaded["test_samples"]
+        self._test_data_labels = pd.Series(loaded["test_labels"], dtype="category")
 
-        valid_samples = loaded['valid_samples']
+        valid_samples = loaded["valid_samples"]
         if valid_samples.size > 0:
             self._valid_data_samples = valid_samples
-            self._valid_data_labels = pd.Series(loaded['valid_labels'], dtype='category')
+            self._valid_data_labels = pd.Series(loaded["valid_labels"], dtype="category")
         else:
             self._valid_data_samples = None
             self._valid_data_labels = None

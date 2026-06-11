@@ -30,15 +30,15 @@ def synthetic_uea_folder(tmp_path: Path) -> Path:
     ARFF content is mocked in tests that exercise prepare_data()
     since scipy struggles with nested ARFF in test fixtures.
     """
-    dataset_name = 'synthetic_uea'
+    dataset_name = "synthetic_uea"
     folder = tmp_path / dataset_name
     folder.mkdir(parents=True, exist_ok=True)
 
     # Placeholders — real content injected via mocks in prepare_data tests
-    train_arff = folder / f'{dataset_name}_TRAIN.arff'
-    train_arff.write_text('@relation placeholder\n@data\n')
-    test_arff = folder / f'{dataset_name}_TEST.arff'
-    test_arff.write_text('@relation placeholder\n@data\n')
+    train_arff = folder / f"{dataset_name}_TRAIN.arff"
+    train_arff.write_text("@relation placeholder\n@data\n")
+    test_arff = folder / f"{dataset_name}_TEST.arff"
+    test_arff.write_text("@relation placeholder\n@data\n")
 
     return folder
 
@@ -56,8 +56,8 @@ def _make_mock_train_data() -> np.ndarray:
         np.array([[19.0, 20.0], [21.0, 22.0], [23.0, 24.0]]),
         np.array([[25.0, 26.0], [27.0, 28.0], [29.0, 30.0]]),
     ]
-    labels = [b'0', b'1', b'0', b'1', b'0']
-    data = np.array(list(zip(samples, labels, strict=False)), dtype=[('f0', 'O'), ('f1', 'O')])
+    labels = [b"0", b"1", b"0", b"1", b"0"]
+    data = np.array(list(zip(samples, labels, strict=False)), dtype=[("f0", "O"), ("f1", "O")])
     return data
 
 
@@ -71,8 +71,8 @@ def _make_mock_test_data() -> np.ndarray:
         np.array([[31.0, 32.0], [33.0, 34.0], [35.0, 36.0]]),
         np.array([[37.0, 38.0], [39.0, 40.0], [41.0, 42.0]]),
     ]
-    labels = [b'0', b'1']
-    data = np.array(list(zip(samples, labels, strict=False)), dtype=[('f0', 'O'), ('f1', 'O')])
+    labels = [b"0", b"1"]
+    data = np.array(list(zip(samples, labels, strict=False)), dtype=[("f0", "O"), ("f1", "O")])
     return data
 
 
@@ -91,7 +91,7 @@ class TestUEAClassificationDataModuleConstructor:
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder,
-            target_column_name='class',
+            target_column_name="class",
             batch_size=16,
             valid_size=0.2,
             shuffle=True,
@@ -115,7 +115,7 @@ class TestUEAClassificationDataModuleConstructor:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class"
         )
         assert module._data_form == DataForm.NESTED
 
@@ -128,13 +128,13 @@ class TestUEAProcessStackedData:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class"
         )
         # Build mock nested data that scipy.loadarff would return
         # Structure: each row is (sample_array, label)
         sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
         sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
-        mock_data = np.array([(sample1, b'0'), (sample2, b'1')], dtype=[('f0', 'O'), ('f1', 'O')])
+        mock_data = np.array([(sample1, b"0"), (sample2, b"1")], dtype=[("f0", "O"), ("f1", "O")])
 
         samples, labels = module._process_stacked_data(mock_data)
 
@@ -148,11 +148,11 @@ class TestUEAProcessStackedData:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class"
         )
         sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
         sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
-        mock_data = np.array([(sample1, b'A'), (sample2, b'B')], dtype=[('f0', 'O'), ('f1', 'O')])
+        mock_data = np.array([(sample1, b"A"), (sample2, b"B")], dtype=[("f0", "O"), ("f1", "O")])
 
         _samples, labels = module._process_stacked_data(mock_data)
 
@@ -168,13 +168,13 @@ class TestUEAPrepareData:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=Path('/nonexistent/path'), target_column_name='class'
+            dataset_folder_path=Path("/nonexistent/path"), target_column_name="class"
         )
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
     @patch(
-        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_prepare_data_loads_data(self, mock_read, synthetic_uea_folder: Path) -> None:
@@ -182,12 +182,12 @@ class TestUEAPrepareData:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         with patch(
-            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
             side_effect=[_make_mock_train_data(), _make_mock_test_data()],
         ):
             module = UEAClassificationDataModule(
                 dataset_folder_path=synthetic_uea_folder,
-                target_column_name='class',
+                target_column_name="class",
                 scale_data=False,
             )
             module.prepare_data()
@@ -201,14 +201,14 @@ class TestUEAPrepareData:
             assert module._num_features is not None
             # Labels should be pandas Series with category dtype
             assert isinstance(module._train_data_labels, pd.Series)
-            assert module._train_data_labels.dtype.name == 'category'
+            assert module._train_data_labels.dtype.name == "category"
 
 
 class TestUEADataLoaders:
     """Tests for dataloader methods."""
 
     @patch(
-        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_train_dataloader_returns_dataloader(
@@ -218,22 +218,22 @@ class TestUEADataLoaders:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         with patch(
-            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
             side_effect=[_make_mock_train_data(), _make_mock_test_data()],
         ):
             module = UEAClassificationDataModule(
                 dataset_folder_path=synthetic_uea_folder,
-                target_column_name='class',
+                target_column_name="class",
                 scale_data=False,
             )
             module.prepare_data()
-            module.setup('fit')
+            module.setup("fit")
 
             loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert isinstance(loader, DataLoader)
 
     @patch(
-        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_val_dataloader_returns_dataloader_or_none(
@@ -243,12 +243,12 @@ class TestUEADataLoaders:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         with patch(
-            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
             side_effect=[_make_mock_train_data(), _make_mock_test_data()],
         ):
             module = UEAClassificationDataModule(
                 dataset_folder_path=synthetic_uea_folder,
-                target_column_name='class',
+                target_column_name="class",
                 valid_size=0.0,
                 scale_data=False,
             )
@@ -257,7 +257,7 @@ class TestUEADataLoaders:
             assert result is None
 
     @patch(
-        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     )
     def test_test_dataloader_returns_dataloader(
@@ -267,16 +267,16 @@ class TestUEADataLoaders:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         with patch(
-            'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+            "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
             side_effect=[_make_mock_train_data(), _make_mock_test_data()],
         ):
             module = UEAClassificationDataModule(
                 dataset_folder_path=synthetic_uea_folder,
-                target_column_name='class',
+                target_column_name="class",
                 scale_data=False,
             )
             module.prepare_data()
-            module.setup('fit')
+            module.setup("fit")
 
             loader = module.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert isinstance(loader, DataLoader)
@@ -290,15 +290,15 @@ class TestUEAUsesScipyLoadarff:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class", scale_data=False
         )
 
-        with patch('scipy.io.arff.loadarff') as mock_load:
+        with patch("scipy.io.arff.loadarff") as mock_load:
             # Return mock data that _process_stacked_data can handle
             sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
             sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
             train_data = np.array(
-                [(sample1, b'0'), (sample2, b'1')], dtype=[('f0', 'O'), ('f1', 'O')]
+                [(sample1, b"0"), (sample2, b"1")], dtype=[("f0", "O"), ("f1", "O")]
             )
             mock_load.return_value = (train_data, None)
 
@@ -310,20 +310,20 @@ class TestUEAUsesScipyLoadarff:
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class'
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class"
         )
         # Build mock data with string labels
         sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
         sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
         mock_data = np.array(
-            [(sample1, b'classA'), (sample2, b'classB')], dtype=[('f0', 'O'), ('f1', 'O')]
+            [(sample1, b"classA"), (sample2, b"classB")], dtype=[("f0", "O"), ("f1", "O")]
         )
 
         _, labels = module._process_stacked_data(mock_data)
 
         # LabelEncoder maps strings to integers
         encoder = LabelEncoder()
-        expected = encoder.fit_transform(['classA', 'classB'])
+        expected = encoder.fit_transform(["classA", "classB"])
         assert list(labels) == list(expected)
 
 
@@ -338,17 +338,17 @@ def test_setup_idempotent(synthetic_uea_folder: Path) -> None:
     from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
     with patch(
-        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     ):
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class", scale_data=False
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         snapshot_train = module._train_data_samples.copy()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         np.testing.assert_array_equal(snapshot_train, module._train_data_samples)
 
@@ -363,11 +363,11 @@ def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
     from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
     with patch(
-        'chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file',
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
         side_effect=[_make_mock_train_data(), _make_mock_test_data()],
     ):
         module = UEAClassificationDataModule(
-            dataset_folder_path=synthetic_uea_folder, target_column_name='class', scale_data=False
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class", scale_data=False
         )
         module.prepare_data()
 
@@ -386,7 +386,7 @@ def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
         module._valid_data_labels = None
 
         # setup() should read from cache
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # Verify 3-D array preservation through cache round-trip
         np.testing.assert_array_equal(module._train_data_samples, orig_train)

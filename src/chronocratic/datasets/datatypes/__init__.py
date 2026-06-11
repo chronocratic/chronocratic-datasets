@@ -14,14 +14,14 @@ from chronocratic.datasets.datatypes.uea import UEAClassificationMultivariateDat
 from chronocratic.datasets.datatypes.weather import WeatherDataset
 
 __all__ = [
-    'ETTDataset',
-    'ElectricityDataset',
-    'FixedTimeSeriesDatasetMultivariate',
-    'FixedTimeSeriesDatasetUnivariate',
-    'FlexibleTimeSeriesDatasetSingleFile',
-    'FlexibleTimeSeriesDatasetSingleFileMultipleSeries',
-    'TimeSeriesDataset',
-    'UCRClassificationUnivariateDataset',
-    'UEAClassificationMultivariateDataset',
-    'WeatherDataset',
+    "ETTDataset",
+    "ElectricityDataset",
+    "FixedTimeSeriesDatasetMultivariate",
+    "FixedTimeSeriesDatasetUnivariate",
+    "FlexibleTimeSeriesDatasetSingleFile",
+    "FlexibleTimeSeriesDatasetSingleFileMultipleSeries",
+    "TimeSeriesDataset",
+    "UCRClassificationUnivariateDataset",
+    "UEAClassificationMultivariateDataset",
+    "WeatherDataset",
 ]

@@ -28,10 +28,10 @@ if TYPE_CHECKING:
     from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
 __all__ = [
-    'FlexibleTimeSeriesDataset',
-    'FlexibleTimeSeriesDatasetMultipleFiles',
-    'FlexibleTimeSeriesDatasetSingleFile',
-    'FlexibleTimeSeriesDatasetSingleFileMultipleSeries',
+    "FlexibleTimeSeriesDataset",
+    "FlexibleTimeSeriesDatasetMultipleFiles",
+    "FlexibleTimeSeriesDatasetSingleFile",
+    "FlexibleTimeSeriesDatasetSingleFileMultipleSeries",
 ]
 
 _EXPECTED_DIM = 3
@@ -143,7 +143,7 @@ class FlexibleTimeSeriesDatasetSingleFile(FlexibleTimeSeriesDataset):
         if idx < 0:
             idx = len(self) + idx
         if idx < 0 or idx >= len(self):
-            msg = 'Index out of range'
+            msg = "Index out of range"
             raise IndexError(msg)
         self._n = idx
 
@@ -215,7 +215,7 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
         if idx < 0:
             idx = len(self) + idx
         if idx < 0 or idx >= len(self):
-            msg = 'Index out of range'
+            msg = "Index out of range"
             raise IndexError(msg)
         file_num = bisect(self._accumulated_num_sequences_per_file, idx)
         self._current_file = file_num
@@ -271,8 +271,8 @@ class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDatase
     ) -> None:
         if data.ndim != _EXPECTED_DIM:
             msg = (
-                f'Expected 3D array (num_series, T, features), '
-                f'got {data.ndim}D with shape {data.shape}'
+                f"Expected 3D array (num_series, T, features), "
+                f"got {data.ndim}D with shape {data.shape}"
             )
             raise ValueError(msg)
 
@@ -307,7 +307,7 @@ class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDatase
         if idx < 0:
             idx = len(self) + idx
         if idx < 0 or idx >= len(self):
-            msg = 'Index out of range'
+            msg = "Index out of range"
             raise IndexError(msg)
         series_num = bisect(self._accumulated_sequences, idx)
         self._current_series = series_num

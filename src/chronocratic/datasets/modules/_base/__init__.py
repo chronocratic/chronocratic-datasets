@@ -7,7 +7,7 @@ from chronocratic.datasets.modules._base.classification import (
 from chronocratic.datasets.modules._base.forecasting import BaseForecastingTimeSeriesDataModule
 
 __all__ = [
-    'BaseClassificationTimeSeriesDataModule',
-    'BaseForecastingTimeSeriesDataModule',
-    'BaseTimeSeriesDataModule',
+    "BaseClassificationTimeSeriesDataModule",
+    "BaseForecastingTimeSeriesDataModule",
+    "BaseTimeSeriesDataModule",
 ]

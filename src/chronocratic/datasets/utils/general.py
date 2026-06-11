@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data.dataloader import default_collate
 
-__all__ = ['custom_collate_fn', 'process_data_with_varying_sequence_lengths_single']
+__all__ = ["custom_collate_fn", "process_data_with_varying_sequence_lengths_single"]
 
 
 def custom_collate_fn(batch: list[Any], *, desired_batch_size: int) -> Any:

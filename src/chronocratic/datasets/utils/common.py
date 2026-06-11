@@ -11,10 +11,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 __all__ = [
-    'compose',
-    'flatten_list_of_np_arrays',
-    'get_num_samples_from_ts',
-    'separate_target_feature_from_df',
+    "compose",
+    "flatten_list_of_np_arrays",
+    "get_num_samples_from_ts",
+    "separate_target_feature_from_df",
 ]
 
 
@@ -98,7 +98,7 @@ def separate_target_feature_from_df(
     if target_feature_name not in df.columns:
         msg = (
             f"Target feature '{target_feature_name}' not found in DataFrame columns. "
-            f'Available columns: {list(df.columns)}'
+            f"Available columns: {list(df.columns)}"
         )
         raise KeyError(msg)
     target_feature = df[target_feature_name]

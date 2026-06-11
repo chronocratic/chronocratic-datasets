@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-__all__ = ['process_df_according_to_dtypes', 'read_arff_as_df']
+__all__ = ["process_df_according_to_dtypes", "read_arff_as_df"]
 
 
 def read_arff_as_df(arff_file_path: Path | str) -> tuple[pd.DataFrame, Any]:

@@ -26,7 +26,7 @@ from chronocratic.datasets.utils.cache import load_metadata, resolve_cache_dir
 from chronocratic.datasets.utils.general import custom_collate_fn
 from chronocratic.datasets.utils.scaling import create_data_scaler
 
-__all__ = ['BaseTimeSeriesDataModule']
+__all__ = ["BaseTimeSeriesDataModule"]
 
 
 class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
@@ -118,7 +118,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Returns:
             Absolute path to the cache directory.
         """
-        name = self._dataset_name or 'default'
+        name = self._dataset_name or "default"
         return resolve_cache_dir(cache_dir=self._cache_dir, dataset_name=name)
 
     # ------------------------------------------------------------------
@@ -161,7 +161,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         samples = (self._train_data_samples, self._test_data_samples, self._valid_data_samples)
         filtered = [s for s in samples if s is not None]
         if not filtered:
-            msg = 'No data loaded. Call prepare_data() and setup() first.'
+            msg = "No data loaded. Call prepare_data() and setup() first."
             raise RuntimeError(msg)
         if isinstance(self._train_data_samples, pd.DataFrame):
             return pd.concat(
@@ -225,18 +225,18 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         if self._num_features is not None:
             return self._num_features, self._seq_len
         if self._cache_key is not None:
-            meta_path = self._get_cache_dir() / f'{self._cache_key}_metadata.json'
+            meta_path = self._get_cache_dir() / f"{self._cache_key}_metadata.json"
             try:
                 meta = load_metadata(meta_path)
             except FileNotFoundError:
                 msg = (
-                    f'Cache metadata not found: {meta_path}. '
-                    f'Call prepare_data() first or delete stale cache.'
+                    f"Cache metadata not found: {meta_path}. "
+                    f"Call prepare_data() first or delete stale cache."
                 )
                 raise FileNotFoundError(msg) from None
             else:
-                n_features = meta['n_features']
-                seq_len = meta['seq_len']
+                n_features = meta["n_features"]
+                seq_len = meta["seq_len"]
                 self._num_features = n_features
                 return n_features, seq_len
         return self._compute_dimensions()
@@ -300,19 +300,19 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             ValueError: If stage is not one of
                 ``{'fit', 'validate', 'test', 'predict', None}``.
         """
-        if stage not in ('fit', 'validate', 'test', 'predict', None):
-            msg = f'Unknown stage: {stage!r}'
+        if stage not in ("fit", "validate", "test", "predict", None):
+            msg = f"Unknown stage: {stage!r}"
             raise ValueError(msg)
         if stage in self._setup_completed_stages:
             return
         # fit and None are equivalent — both scale all three splits
-        if stage in ('fit', None) and (
-            'fit' in self._setup_completed_stages or None in self._setup_completed_stages
+        if stage in ("fit", None) and (
+            "fit" in self._setup_completed_stages or None in self._setup_completed_stages
         ):
             return
 
         # validate: no data mutation
-        if stage == 'validate':
+        if stage == "validate":
             self._setup_completed_stages.add(stage)
             return
 
@@ -325,13 +325,13 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
                 data_form=self._data_form,
             )
 
-        if stage in ('fit', None):
+        if stage in ("fit", None):
             (self._train_data_samples, self._valid_data_samples, self._test_data_samples) = (
                 self._scaler_cache(
                     self._train_data_samples, self._valid_data_samples, self._test_data_samples
                 )
             )
-        elif stage in ('test', 'predict'):
+        elif stage in ("test", "predict"):
             _, _, self._test_data_samples = self._scaler_cache(
                 self._train_data_samples, self._valid_data_samples, self._test_data_samples
             )
@@ -416,16 +416,16 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         if shuffle is None:
             shuffle = self.shuffle
         dataloader_args: dict[str, object] = {
-            'dataset': dataset_object,
-            'batch_size': self.batch_size,
-            'num_workers': self.num_workers,
-            'shuffle': shuffle,
+            "dataset": dataset_object,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "shuffle": shuffle,
             **(extra_args or {}),
         }
         if self.num_workers > 0:
-            dataloader_args['persistent_workers'] = True
+            dataloader_args["persistent_workers"] = True
         if strict_batch_size:
-            dataloader_args['collate_fn'] = self._get_custom_collate_fn()
+            dataloader_args["collate_fn"] = self._get_custom_collate_fn()
         return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
     def _process_test_dataloader(
@@ -450,16 +450,16 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             Configured DataLoader for testing.
         """
         dataloader_args: dict[str, object] = {
-            'dataset': dataset_object,
-            'batch_size': self.batch_size,
-            'num_workers': self.num_workers,
-            'shuffle': False,
+            "dataset": dataset_object,
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "shuffle": False,
             **(extra_args or {}),
         }
         if self.num_workers > 0:
-            dataloader_args['persistent_workers'] = True
+            dataloader_args["persistent_workers"] = True
         if strict_batch_size:
-            dataloader_args['collate_fn'] = self._get_custom_collate_fn()
+            dataloader_args["collate_fn"] = self._get_custom_collate_fn()
         return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
     def _process_valid_dataloader(

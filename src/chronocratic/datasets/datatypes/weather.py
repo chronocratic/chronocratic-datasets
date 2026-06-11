@@ -20,7 +20,7 @@ from chronocratic.datasets.datatypes._base.flexible import FlexibleTimeSeriesDat
 from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
 from chronocratic.datasets.utils.transformations import convert_numpy_to_tensor
 
-__all__ = ['WeatherDataset']
+__all__ = ["WeatherDataset"]
 
 
 class WeatherDataset(FlexibleTimeSeriesDatasetSingleFile):
@@ -53,7 +53,7 @@ class WeatherDataset(FlexibleTimeSeriesDatasetSingleFile):
         transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
     ) -> None:
         if forecast_horizon <= 0:
-            msg = f'forecast_horizon must be positive, got {forecast_horizon}'
+            msg = f"forecast_horizon must be positive, got {forecast_horizon}"
             raise ValueError(msg)
 
         # Always use ForecastingStrategySingleFile for window counting.

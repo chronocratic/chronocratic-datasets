@@ -16,14 +16,14 @@ import torch
 CACHE_SCHEMA_VERSION: int = 1
 
 __all__ = [
-    'CACHE_SCHEMA_VERSION',
-    'atomic_save_metadata',
-    'atomic_save_npz',
-    'build_cache_key',
-    'load_metadata',
-    'load_scaler',
-    'resolve_cache_dir',
-    'save_scaler',
+    "CACHE_SCHEMA_VERSION",
+    "atomic_save_metadata",
+    "atomic_save_npz",
+    "build_cache_key",
+    "load_metadata",
+    "load_scaler",
+    "resolve_cache_dir",
+    "save_scaler",
 ]
 
 
@@ -47,9 +47,9 @@ def build_cache_key(*, dataset_name: str, params: dict[str, Any]) -> str:
 
     suffix_parts = [hash_prefix, dataset_name]
     for key, value in sorted(params.items()):
-        suffix_parts.append(f'{key}={value}')
+        suffix_parts.append(f"{key}={value}")
 
-    return '_'.join(suffix_parts) + '.cache'
+    return "_".join(suffix_parts) + ".cache"
 
 
 def resolve_cache_dir(*, cache_dir: Path | None, dataset_name: str) -> Path:
@@ -70,7 +70,7 @@ def resolve_cache_dir(*, cache_dir: Path | None, dataset_name: str) -> Path:
     """
     if cache_dir is not None:
         return cache_dir.expanduser().resolve()
-    return Path.home().resolve() / '.cache' / 'tsdatasets' / dataset_name
+    return Path.home().resolve() / ".cache" / "tsdatasets" / dataset_name
 
 
 def atomic_save_npz(path: Path, **arrays: np.ndarray) -> None:
@@ -88,9 +88,9 @@ def atomic_save_npz(path: Path, **arrays: np.ndarray) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     # np.savez_compressed appends .npz to the given path, so we
     # write to a stem-named temp file and rename the resulting .npz.
-    tmp_stem = path.with_name(path.stem + '_tmp')
+    tmp_stem = path.with_name(path.stem + "_tmp")
     np.savez_compressed(str(tmp_stem), **arrays)
-    actual_tmp = Path(str(tmp_stem) + '.npz')
+    actual_tmp = Path(str(tmp_stem) + ".npz")
     actual_tmp.replace(path)
 
 
@@ -105,8 +105,8 @@ def atomic_save_metadata(path: Path, data: dict[str, Any]) -> None:
         data: Metadata dictionary to persist.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + '.tmp')
-    with tmp.open('w') as f:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w") as f:
         json.dump(data, f, indent=2)
     tmp.replace(path)
 
@@ -130,18 +130,18 @@ def load_metadata(path: Path) -> dict[str, Any]:
             :data:`CACHE_SCHEMA_VERSION`.
     """
     if not path.exists():
-        msg = f'Metadata not found: {path}'
+        msg = f"Metadata not found: {path}"
         raise FileNotFoundError(msg)
 
     with path.open() as f:
         data = json.load(f)
 
-    actual = data.get('version')
+    actual = data.get("version")
     if actual != CACHE_SCHEMA_VERSION:
         msg = (
-            f'Cache version {actual} does not match expected version '
-            f'{CACHE_SCHEMA_VERSION}. Delete cache dir and re-run '
-            f'prepare_data().'
+            f"Cache version {actual} does not match expected version "
+            f"{CACHE_SCHEMA_VERSION}. Delete cache dir and re-run "
+            f"prepare_data()."
         )
         raise ValueError(msg)
 
@@ -166,7 +166,7 @@ def save_scaler(scaler: Any, path: Path) -> None:
     except OSError:
         # Cache directory not writable (e.g., test with nonexistent path).
         return
-    tmp = path.with_suffix(path.suffix + '.tmp')
+    tmp = path.with_suffix(path.suffix + ".tmp")
     torch.save(scaler, str(tmp), pickle_protocol=5)
     try:
         tmp.replace(path)

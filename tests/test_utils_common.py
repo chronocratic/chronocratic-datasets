@@ -16,17 +16,17 @@ from chronocratic.datasets.utils.common import flatten_list_of_np_arrays
 
 def test_dataform_regular_value() -> None:
     """DataForm.REGULAR equals 'regular' string."""
-    assert DataForm.REGULAR == 'regular'
+    assert DataForm.REGULAR == "regular"
 
 
 def test_dataform_nested_value() -> None:
     """DataForm.NESTED equals 'nested' string."""
-    assert DataForm.NESTED == 'nested'
+    assert DataForm.NESTED == "nested"
 
 
 def test_dataform_multi_files_value() -> None:
     """DataForm.MULTI_FILES equals 'multi_files' string."""
-    assert DataForm.MULTI_FILES == 'multi_files'
+    assert DataForm.MULTI_FILES == "multi_files"
 
 
 def test_dataform_is_strenum() -> None:

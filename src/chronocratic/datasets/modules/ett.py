@@ -35,10 +35,10 @@ from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 if TYPE_CHECKING:
     from pathlib import Path
 
-__all__ = ['ETTDataModule']
+__all__ = ["ETTDataModule"]
 
 # Valid ETT variants
-VALID_ETT_VARIANTS = frozenset({'ETTh1', 'ETTh2', 'ETTm1', 'ETTm2'})
+VALID_ETT_VARIANTS = frozenset({"ETTh1", "ETTh2", "ETTm1", "ETTm2"})
 
 
 class ETTDataModule(BaseForecastingTimeSeriesDataModule):
@@ -104,7 +104,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
     ) -> None:
         # Validate variant
         if variant not in VALID_ETT_VARIANTS:
-            msg = f'Unknown ETT variant: {variant!r}. Must be one of {sorted(VALID_ETT_VARIANTS)}'
+            msg = f"Unknown ETT variant: {variant!r}. Must be one of {sorted(VALID_ETT_VARIANTS)}"
             raise ValueError(msg)
         super().__init__(
             batch_size=batch_size,
@@ -126,10 +126,10 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         self._cache_key = build_cache_key(
             dataset_name=variant,
             params={
-                'seq_len': seq_len,
-                'mode': mode.value,
-                'data_scaling_method': data_scaling_method.value,
-                'data_scaling_range': list(data_scaling_range),
+                "seq_len": seq_len,
+                "mode": mode.value,
+                "data_scaling_method": data_scaling_method.value,
+                "data_scaling_range": list(data_scaling_range),
             },
         )
 
@@ -143,7 +143,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         ETTh1/ETTh2: 16/4/4 month split at hourly resolution.
         ETTm1/ETTm2: 16/4/4 month split at 15-min resolution (4x multiplier).
         """
-        if self.variant in {'ETTh1', 'ETTh2'}:
+        if self.variant in {"ETTh1", "ETTh2"}:
             self._train_slice = slice(None, 12 * 30 * 24)
             self._valid_slice = slice(12 * 30 * 24, 16 * 30 * 24)
             self._test_slice = slice(16 * 30 * 24, 20 * 30 * 24)
@@ -158,7 +158,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         Expands the first dimension of the already-scaled data array.
         """
         if self._full_data_scaled is None:
-            msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
+            msg = "_transform_data requires _full_data_scaled. Ensure scaling completed."
             raise RuntimeError(msg)
         self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=0)
 
@@ -183,7 +183,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         from chronocratic.datasets.datatypes.ett import ETTDataset
 
         if self._seq_len is None:
-            msg = 'seq_len is not set. Ensure the datamodule was initialized with a seq_len value.'
+            msg = "seq_len is not set. Ensure the datamodule was initialized with a seq_len value."
             raise RuntimeError(msg)
         squeezed = data.squeeze(axis=0)  # (1, T, F) -> (T, F)
         return ETTDataset(
@@ -209,20 +209,20 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             FileNotFoundError: If the CSV file does not exist.
         """
         if not self.dataset_file_path.exists():
-            msg = f'Dataset file not found: {self.dataset_file_path}'
+            msg = f"Dataset file not found: {self.dataset_file_path}"
             raise FileNotFoundError(msg)
 
-        df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col='date')
+        df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col="date")
 
         if self._mode == ForecastingMode.UNIVARIATE:
-            df = df[['OT']]
+            df = df[["OT"]]
 
         # Convert to numpy and persist to cache
         data = df.to_numpy().astype(np.float32)
         index_ns = df.index.astype(np.int64).to_numpy()
 
         cache_dir = self._resolve_cache_dir()
-        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_path = cache_dir / f"{self._cache_key}.npz"
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         atomic_save_npz(cache_path, data=data, index=index_ns)
@@ -236,25 +236,25 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         assert self._valid_slice is not None
         assert self._test_slice is not None
         splits = {
-            'train': [self._train_slice.start, self._train_slice.stop],
-            'valid': [self._valid_slice.start, self._valid_slice.stop],
-            'test': [self._test_slice.start, self._test_slice.stop],
+            "train": [self._train_slice.start, self._train_slice.stop],
+            "valid": [self._valid_slice.start, self._valid_slice.stop],
+            "test": [self._test_slice.start, self._test_slice.stop],
         }
         # n_features includes time features only when scaling is enabled
         n_features = data.shape[1]
         if self.scale_data and self._time_index is not None:
             n_features += TIME_FEATURE_COUNT
         metadata = {
-            'version': CACHE_SCHEMA_VERSION,
-            'dataset_name': self.variant,
-            'n_features': n_features,
-            'seq_len': self._seq_len,
-            'splits': splits,
-            'has_datetime_index': True,
-            'data_scaling_method': self.data_scaling_method.value,
-            'data_scaling_range': list(self.data_scaling_range),
+            "version": CACHE_SCHEMA_VERSION,
+            "dataset_name": self.variant,
+            "n_features": n_features,
+            "seq_len": self._seq_len,
+            "splits": splits,
+            "has_datetime_index": True,
+            "data_scaling_method": self.data_scaling_method.value,
+            "data_scaling_range": list(self.data_scaling_range),
         }
-        atomic_save_metadata(cache_dir / f'{self._cache_key}_metadata.json', metadata)
+        atomic_save_metadata(cache_dir / f"{self._cache_key}_metadata.json", metadata)
 
     # ------------------------------------------------------------------
     # Dataloaders
