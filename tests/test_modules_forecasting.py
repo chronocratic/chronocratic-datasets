@@ -148,15 +148,15 @@ class TestElectricityLoadModuleConstructor:
 
     def test_import_electricity_module(self) -> None:
         """ElectricityLoadModule can be imported from electricity module."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        assert ElectricityLoadModule is not None
+        assert ElectricityLoadDataModule is not None
 
     def test_constructor_params(self, electricity_csv_file: Path) -> None:
         """Constructor accepts standard forecasting params."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=electricity_csv_file,
             seq_len=64,
             mode=ForecastingMode.MULTIVARIATE,
@@ -174,17 +174,17 @@ class TestElectricityLoadPrepareData:
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing file."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(dataset_file_path=Path('/nonexistent/electricity.csv'))
+        module = ElectricityLoadDataModule(dataset_file_path=Path('/nonexistent/electricity.csv'))
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
     def test_dataset_name_is_electricity_load(self, electricity_csv_file: Path) -> None:
         """_dataset_name is set to 'ElectricityLoad'."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
+        module = ElectricityLoadDataModule(dataset_file_path=electricity_csv_file)
         module.prepare_data()
         assert module._dataset_name == 'ElectricityLoad'
 
@@ -198,9 +198,9 @@ class TestElectricityLoadTransform:
         Operates on _full_data_scaled (the already-scaled data array),
         transposing from (samples, features) to (features, samples, 1).
         """
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
+        module = ElectricityLoadDataModule(dataset_file_path=electricity_csv_file)
         # Set synthetic scaled data: (3 samples, 2 features)
         module._full_data_scaled = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32)
         module._transform_data()
@@ -324,9 +324,9 @@ class TestForecastingSlices:
 
     def test_electricity_fractional_split(self, electricity_csv_file: Path) -> None:
         """Electricity uses 60/20/20 fractional split."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(dataset_file_path=electricity_csv_file)
+        module = ElectricityLoadDataModule(dataset_file_path=electricity_csv_file)
         module._full_data_raw = np.array(list(range(100))).reshape(-1, 1)
         module._set_data_slices()
 
@@ -934,10 +934,10 @@ class TestElectricityCacheIntegration:
 
     def test_prepare_data_writes_npz(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: prepare_data() writes .npz file to cache directory."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv, seq_len=96, batch_size=16, mode=ForecastingMode.UNIVARIATE
         )
         module._cache_dir = cache_dir
@@ -956,10 +956,10 @@ class TestElectricityCacheIntegration:
         """Electricity: prepare_data() writes metadata.json with version=1."""
         import json
 
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv, seq_len=96, batch_size=16, mode=ForecastingMode.UNIVARIATE
         )
         module._cache_dir = cache_dir
@@ -984,10 +984,10 @@ class TestElectricityCacheIntegration:
 
     def test_setup_reads_cache_and_sets_raw(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: setup('fit') reads .npz from cache and sets _full_data_raw."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv,
             seq_len=96,
             batch_size=16,
@@ -1011,10 +1011,10 @@ class TestElectricityCacheIntegration:
 
     def test_transform_data_produces_correct_shape(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: transform produces (features, samples, 1) shape."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv,
             seq_len=96,
             batch_size=16,
@@ -1291,7 +1291,7 @@ class TestElectricityBugFixes:
         Instantiate ElectricityLoadModule, call prepare_data().
         Assert no IndexError is raised and cache files are written.
         """
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         csv_file = tmp_path / 'small_electricity.csv'
         dates = pd.date_range('2012-01-01', periods=100, freq='h')
@@ -1303,7 +1303,9 @@ class TestElectricityBugFixes:
         df.to_csv(csv_file, sep=';', decimal=',')
 
         cache_dir = tmp_path / 'cache'
-        module = ElectricityLoadModule(dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE)
+        module = ElectricityLoadDataModule(
+            dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE
+        )
         module._cache_dir = cache_dir
         # Should NOT raise IndexError
         module.prepare_data()
@@ -1335,9 +1337,9 @@ class TestElectricityModuleIntegration:
         time feature extraction, transpose + expand_dims transform, and
         60/20/20 fractional train/valid/test splitting.
         """
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=electricity_csv_file,
             seq_len=96,
             batch_size=16,
@@ -1363,9 +1365,9 @@ class TestElectricityModuleIntegration:
         (axis=-1) adding dimension 1, then time features appended
         to that dimension.
         """
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=electricity_csv_file,
             seq_len=96,
             batch_size=16,
@@ -1447,9 +1449,9 @@ class TestSetupIdempotency:
 
     def test_electricity_setup_fit_twice_no_double_scale(self) -> None:
         """Electricity: setup('fit') called twice produces identical train samples."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
             seq_len=96,
             batch_size=16,
@@ -1527,9 +1529,9 @@ class TestPrepareDataIdempotency:
 
     def test_electricity_prepare_data_runs_io_once(self, electricity_csv_file: Path) -> None:
         """Electricity: prepare_data() twice → pd.read_csv called once."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=electricity_csv_file,
             seq_len=96,
             batch_size=16,
@@ -1601,9 +1603,9 @@ class TestFinalizePrepareData:
 
     def test_electricity_slices_set_after_setup(self, electricity_csv_file: Path) -> None:
         """Electricity: slices are populated by setup() after cache read."""
-        from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadModule(
+        module = ElectricityLoadDataModule(
             dataset_file_path=electricity_csv_file,
             seq_len=96,
             batch_size=16,

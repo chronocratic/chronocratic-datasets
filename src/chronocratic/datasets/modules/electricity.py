@@ -34,10 +34,10 @@ from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 if TYPE_CHECKING:
     from pathlib import Path
 
-__all__ = ['ElectricityLoadModule']
+__all__ = ['ElectricityLoadDataModule']
 
 
-class ElectricityLoadModule(BaseForecastingTimeSeriesDataModule):
+class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
     """LightningDataModule for electricity load forecasting.
 
     Reads semicolon-delimited CSV with comma decimals, resamples to

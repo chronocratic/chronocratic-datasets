@@ -40,7 +40,7 @@ from chronocratic.datasets.modules import (
     BaseClassificationTimeSeriesDataModule,
     BaseForecastingTimeSeriesDataModule,
     BaseTimeSeriesDataModule,
-    ElectricityLoadModule,
+    ElectricityLoadDataModule,
     ETTDataModule,
     UCRClassificationDataModule,
     UEAClassificationDataModule,

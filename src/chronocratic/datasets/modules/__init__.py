@@ -5,7 +5,7 @@ from chronocratic.datasets.modules._base import (
     BaseForecastingTimeSeriesDataModule,
     BaseTimeSeriesDataModule,
 )
-from chronocratic.datasets.modules.electricity import ElectricityLoadModule
+from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 from chronocratic.datasets.modules.ett import ETTDataModule
 from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 from chronocratic.datasets.modules.uea import UEAClassificationDataModule
