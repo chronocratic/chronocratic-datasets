@@ -84,6 +84,31 @@ uv run sphinx-build -b html docs/ docs/_build/
 - Use `{doc}` for cross-references between pages
 - Update `docs/index.md` to add new pages to the TOC
 
+## Changelog
+
+User-facing changes are recorded with [towncrier](https://towncrier.readthedocs.io/).
+Instead of editing `CHANGELOG.md` directly (which causes merge conflicts), each PR
+adds a small **news fragment** to `changelog.d/`. They are assembled into
+`CHANGELOG.md` at release time.
+
+Every PR with a user-visible change must add a fragment. Filename format is
+`<issue-or-pr>.<type>.md`, where `<type>` is one of `added`, `changed`,
+`deprecated`, `removed`, `fixed`, or `security`:
+
+```bash
+# tied to issue/PR #42
+uv run towncrier create -c "Add hourly variant of the ETT dataset." 42.added.md
+
+# no issue number — prefix with '+'
+uv run towncrier create -c "Fix NPZ cache invalidation on scaler change." +cache.fixed.md
+```
+
+The body is a single sentence written for end users. Preview the assembled notes
+with `uv run towncrier build --draft --version <next>`. CI runs
+`towncrier check` on PRs into `dev`; add the `skip-changelog` label for PRs with no
+user-facing change (chores, refactors, internal docs). See `changelog.d/README.md`
+for details.
+
 ## Adding New Datasets
 
 To add a new dataset:
@@ -141,6 +166,16 @@ Rebase your feature branch onto `dev` before opening a PR — or immediately aft
 PRs from `dev` into `main` are **restricted to maintainers** and must be **fast-forward merged**. No squash, no merge commit. Fast-forward means every commit on `main` was already reviewed and integrated into `dev`; the act of merging to `main` is a release assertion, not a code change.
 
 Because `dev` squash-merges feature work and `main` fast-forwards from `dev`, both branches stay linear. `git log --oneline main` reads as a chronological changelog. `git bisect` works without navigating merge diamonds.
+
+To cut a release, assemble the accumulated news fragments **on `dev`** before fast-forwarding to `main`:
+
+```bash
+git checkout dev && git pull
+uv run towncrier build --version 0.1.0a2   # writes CHANGELOG.md, removes fragments
+git commit -am "chore(release): v0.1.0a2"
+```
+
+Fast-forward `dev` into `main`, then create the release/tag (GitHub UI or CLI). Publishing the GitHub release triggers the PyPI upload and syncs the release notes from the matching `CHANGELOG.md` section automatically.
 
 ### Commit Messages
 
