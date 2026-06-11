@@ -25,9 +25,9 @@ MIN_DIM_FOR_SEQ_LEN: int = 2
 """Minimum array dimensions required to derive sequence length."""
 
 __all__ = [
-    'FixedTimeSeriesDataset',
-    'FixedTimeSeriesDatasetMultivariate',
-    'FixedTimeSeriesDatasetUnivariate',
+    "FixedTimeSeriesDataset",
+    "FixedTimeSeriesDatasetMultivariate",
+    "FixedTimeSeriesDatasetUnivariate",
 ]
 
 
@@ -61,14 +61,14 @@ class FixedTimeSeriesDataset(TimeSeriesDataset, ABC):
     ) -> None:
         # Type-check data
         if not isinstance(data, (np.ndarray, pd.DataFrame)):
-            msg = f'data must be np.ndarray or pd.DataFrame, got {type(data).__name__}'
+            msg = f"data must be np.ndarray or pd.DataFrame, got {type(data).__name__}"
             raise TypeError(msg)
         # Validate minimum dimensions for seq_len
         if isinstance(data, np.ndarray) and data.ndim < MIN_DIM_FOR_SEQ_LEN:
-            msg = f'data must have at least 2 dimensions for seq_len, got {data.ndim}D'
+            msg = f"data must have at least 2 dimensions for seq_len, got {data.ndim}D"
             raise ValueError(msg)
         if isinstance(data, pd.DataFrame) and data.shape[1] < 1:
-            msg = 'data DataFrame must have at least 1 column for seq_len'
+            msg = "data DataFrame must have at least 1 column for seq_len"
             raise ValueError(msg)
         super().__init__(
             data=data,

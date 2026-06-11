@@ -29,7 +29,7 @@ def _get_free_port() -> int:
     port.
     """
     with socket.socket() as s:
-        s.bind(('localhost', 0))
+        s.bind(("localhost", 0))
         return s.getsockname()[1]
 
 
@@ -50,9 +50,9 @@ def _ddp_forecasting_worker(
     """
     from chronocratic.datasets.modules.weather import WeatherDataModule
 
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = str(port)
-    dist.init_process_group('gloo', rank=rank, world_size=world_size)
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = str(port)
+    dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
     try:
         # Rank 0: prepare_data() writes cache
@@ -71,13 +71,13 @@ def _ddp_forecasting_worker(
             mode=ForecastingMode.UNIVARIATE,
             scale_data=True,
         )
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # Verify _full_data_raw is populated from cache
-        assert module._full_data_raw is not None, f'Rank {rank}: _full_data_raw is None after setup'
+        assert module._full_data_raw is not None, f"Rank {rank}: _full_data_raw is None after setup"
 
         # Write rank results for post-spawn verification
-        result_path = Path(results_dir) / f'rank_{rank}.npz'
+        result_path = Path(results_dir) / f"rank_{rank}.npz"
         np.savez(
             str(result_path),
             raw_shape=np.array(module._full_data_raw.shape),
@@ -106,16 +106,16 @@ def _ddp_classification_worker(
     """
     from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = str(port)
-    dist.init_process_group('gloo', rank=rank, world_size=world_size)
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = str(port)
+    dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
     try:
         # Rank 0: prepare_data() writes cache
         if rank == 0:
             module = UCRClassificationDataModule(
                 dataset_folder_path=Path(dataset_dir),
-                target_column_name='class',
+                target_column_name="class",
                 valid_size=0.1,
                 scale_data=False,
             )
@@ -126,22 +126,22 @@ def _ddp_classification_worker(
         # All ranks: fresh module instance, setup reads from cache
         module = UCRClassificationDataModule(
             dataset_folder_path=Path(dataset_dir),
-            target_column_name='class',
+            target_column_name="class",
             valid_size=0.1,
             scale_data=False,
         )
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # Verify cached data is populated
         assert module._train_data_samples is not None, (
-            f'Rank {rank}: _train_data_samples is None after setup'
+            f"Rank {rank}: _train_data_samples is None after setup"
         )
         assert module._train_data_labels is not None, (
-            f'Rank {rank}: _train_data_labels is None after setup'
+            f"Rank {rank}: _train_data_labels is None after setup"
         )
 
         # Write rank results for post-spawn verification
-        result_path = Path(results_dir) / f'rank_{rank}.npz'
+        result_path = Path(results_dir) / f"rank_{rank}.npz"
         np.savez(
             str(result_path),
             train_shape=module._train_data_samples.to_numpy().shape,
@@ -170,21 +170,21 @@ class TestDDPSmokeTests:
         making it suitable for small synthetic datasets.
         """
         # Create synthetic CSV matching Weather schema
-        csv_file = tmp_path / 'weather.csv'
-        dates = pd.date_range('2006-01-01', periods=200, freq='h')
+        csv_file = tmp_path / "weather.csv"
+        dates = pd.date_range("2006-01-01", periods=200, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
             {
-                'date': dates,
-                'wbng': rng.standard_normal(200),
-                'wbhh': rng.standard_normal(200),
-                'wbat': rng.standard_normal(200),
-                'sbfg': rng.standard_normal(200),
+                "date": dates,
+                "wbng": rng.standard_normal(200),
+                "wbhh": rng.standard_normal(200),
+                "wbat": rng.standard_normal(200),
+                "sbfg": rng.standard_normal(200),
             }
         )
         df.to_csv(csv_file, index=False)
 
-        results_dir = tmp_path / 'results'
+        results_dir = tmp_path / "results"
         results_dir.mkdir()
 
         port = _get_free_port()
@@ -192,23 +192,23 @@ class TestDDPSmokeTests:
             _ddp_forecasting_worker,
             args=(2, str(results_dir), str(csv_file), port),
             nprocs=2,
-            start_method='spawn',
+            start_method="spawn",
         )
 
         # Verify both ranks wrote identical shapes
-        rank0 = np.load(str(results_dir / 'rank_0.npz'))
-        rank1 = np.load(str(results_dir / 'rank_1.npz'))
+        rank0 = np.load(str(results_dir / "rank_0.npz"))
+        rank1 = np.load(str(results_dir / "rank_1.npz"))
 
-        assert tuple(rank0['raw_shape']) == tuple(rank1['raw_shape']), (
-            f'Raw shape mismatch: rank0={tuple(rank0["raw_shape"])}, '
-            f'rank1={tuple(rank1["raw_shape"])}'
+        assert tuple(rank0["raw_shape"]) == tuple(rank1["raw_shape"]), (
+            f"Raw shape mismatch: rank0={tuple(rank0['raw_shape'])}, "
+            f"rank1={tuple(rank1['raw_shape'])}"
         )
-        assert str(rank0['raw_dtype']) == str(rank1['raw_dtype']), (
-            f'Raw dtype mismatch: rank0={rank0["raw_dtype"]}, rank1={rank1["raw_dtype"]}'
+        assert str(rank0["raw_dtype"]) == str(rank1["raw_dtype"]), (
+            f"Raw dtype mismatch: rank0={rank0['raw_dtype']}, rank1={rank1['raw_dtype']}"
         )
-        assert tuple(rank0['train_shape']) == tuple(rank1['train_shape']), (
-            f'Train shape mismatch: rank0={tuple(rank0["train_shape"])}, '
-            f'rank1={tuple(rank1["train_shape"])}'
+        assert tuple(rank0["train_shape"]) == tuple(rank1["train_shape"]), (
+            f"Train shape mismatch: rank0={tuple(rank0['train_shape'])}, "
+            f"rank1={tuple(rank1['train_shape'])}"
         )
 
     def test_ddp_classification_cache_round_trip(self, tmp_path: Path) -> None:
@@ -243,12 +243,12 @@ class TestDDPSmokeTests:
 0.4,0.5,0.6,1
 0.7,0.8,0.9,0
 """
-        dataset_dir = tmp_path / 'synthetic'
+        dataset_dir = tmp_path / "synthetic"
         dataset_dir.mkdir()
-        (dataset_dir / 'synthetic_TRAIN.arff').write_text(arff_content)
-        (dataset_dir / 'synthetic_TEST.arff').write_text(arff_content)
+        (dataset_dir / "synthetic_TRAIN.arff").write_text(arff_content)
+        (dataset_dir / "synthetic_TEST.arff").write_text(arff_content)
 
-        results_dir = tmp_path / 'results'
+        results_dir = tmp_path / "results"
         results_dir.mkdir()
 
         port = _get_free_port()
@@ -256,20 +256,20 @@ class TestDDPSmokeTests:
             _ddp_classification_worker,
             args=(2, str(results_dir), str(dataset_dir), port),
             nprocs=2,
-            start_method='spawn',
+            start_method="spawn",
         )
 
         # Verify both ranks wrote identical shapes
-        rank0 = np.load(str(results_dir / 'rank_0.npz'))
-        rank1 = np.load(str(results_dir / 'rank_1.npz'))
+        rank0 = np.load(str(results_dir / "rank_0.npz"))
+        rank1 = np.load(str(results_dir / "rank_1.npz"))
 
-        assert tuple(rank0['train_shape']) == tuple(rank1['train_shape']), (
-            f'Train shape mismatch: rank0={tuple(rank0["train_shape"])}, '
-            f'rank1={tuple(rank1["train_shape"])}'
+        assert tuple(rank0["train_shape"]) == tuple(rank1["train_shape"]), (
+            f"Train shape mismatch: rank0={tuple(rank0['train_shape'])}, "
+            f"rank1={tuple(rank1['train_shape'])}"
         )
-        assert tuple(rank0['test_shape']) == tuple(rank1['test_shape']), (
-            f'Test shape mismatch: rank0={tuple(rank0["test_shape"])}, '
-            f'rank1={tuple(rank1["test_shape"])}'
+        assert tuple(rank0["test_shape"]) == tuple(rank1["test_shape"]), (
+            f"Test shape mismatch: rank0={tuple(rank0['test_shape'])}, "
+            f"rank1={tuple(rank1['test_shape'])}"
         )
 
 
@@ -289,18 +289,18 @@ class TestIsinstanceBranchElimination:
         isinstance(_full_data, ...). These were eliminated in phase 7
         by splitting _full_data into typed attributes.
         """
-        modules_dir = Path(__file__).parents[1] / 'src' / 'chronocratic' / 'datasets' / 'modules'
+        modules_dir = Path(__file__).parents[1] / "src" / "chronocratic" / "datasets" / "modules"
         matches = []
-        for py_file in modules_dir.rglob('*.py'):
+        for py_file in modules_dir.rglob("*.py"):
             for lineno, line in enumerate(py_file.read_text().splitlines(), 1):
                 stripped = line.strip()
-                if stripped.startswith('#'):
+                if stripped.startswith("#"):
                     continue
-                if 'isinstance' in stripped and 'self._full_data' in stripped:
-                    matches.append(f'{py_file.relative_to(modules_dir)}:{lineno}: {stripped}')
+                if "isinstance" in stripped and "self._full_data" in stripped:
+                    matches.append(f"{py_file.relative_to(modules_dir)}:{lineno}: {stripped}")
         assert not matches, (
-            'Found isinstance(self._full_data) branches that should be eliminated:\n'
-            + '\n'.join(matches)
+            "Found isinstance(self._full_data) branches that should be eliminated:\n"
+            + "\n".join(matches)
         )
 
 
@@ -327,23 +327,23 @@ class TestSetupIdempotentWithCache:
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         # Create synthetic CSV
-        csv_file = tmp_path / 'ett.csv'
-        dates = pd.date_range('2016-01-01', periods=200, freq='h')
+        csv_file = tmp_path / "ett.csv"
+        dates = pd.date_range("2016-01-01", periods=200, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
             {
-                'date': dates,
-                'HUFL': rng.standard_normal(200),
-                'HT': rng.standard_normal(200),
-                'OT': rng.standard_normal(200),
-                'Wsp': rng.standard_normal(200),
+                "date": dates,
+                "HUFL": rng.standard_normal(200),
+                "HT": rng.standard_normal(200),
+                "OT": rng.standard_normal(200),
+                "Wsp": rng.standard_normal(200),
             }
         )
         df.to_csv(csv_file, index=False)
 
         module = ETTDataModule(
             dataset_file_path=csv_file,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -352,7 +352,7 @@ class TestSetupIdempotentWithCache:
 
         # First pass: write cache, read it, process data
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # Snapshot results
         snapshot_train = module._train_data_samples.copy()
@@ -371,27 +371,27 @@ class TestSetupIdempotentWithCache:
         module._ts_feature_scaler_cache = None
 
         # Second pass: re-read from cache
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # Verify _full_data_raw is identical (immutable cache read)
         np.testing.assert_array_equal(
             snapshot_raw,
             module._full_data_raw,
-            err_msg='_full_data_raw changed after cache re-read',
+            err_msg="_full_data_raw changed after cache re-read",
         )
         # Verify data samples are identical
         np.testing.assert_array_equal(
             snapshot_train,
             module._train_data_samples,
-            err_msg='_train_data_samples changed after cache re-read',
+            err_msg="_train_data_samples changed after cache re-read",
         )
         np.testing.assert_array_equal(
             snapshot_valid,
             module._valid_data_samples,
-            err_msg='_valid_data_samples changed after cache re-read',
+            err_msg="_valid_data_samples changed after cache re-read",
         )
         np.testing.assert_array_equal(
             snapshot_test,
             module._test_data_samples,
-            err_msg='_test_data_samples changed after cache re-read',
+            err_msg="_test_data_samples changed after cache re-read",
         )

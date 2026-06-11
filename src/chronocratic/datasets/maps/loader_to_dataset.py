@@ -22,4 +22,4 @@ FORECASTING_LOADER_MAP: dict[ForecastingLoaderMode, TimeSeriesDatasetMode | None
     ForecastingLoaderMode.INPUT_ONLY: TimeSeriesDatasetMode.SAMPLE_ONLY,
 }
 
-__all__ = ['CLASSIFICATION_LOADER_MAP', 'FORECASTING_LOADER_MAP']
+__all__ = ["CLASSIFICATION_LOADER_MAP", "FORECASTING_LOADER_MAP"]

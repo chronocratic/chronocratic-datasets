@@ -162,7 +162,7 @@ class TestWeatherDataset:
 
         data = np.random.randn(2000, 22).astype(np.float32)
         dataset = WeatherDataset(
-            data=data, seq_len=32, step=32, mode='sample_only', forecast_horizon=96
+            data=data, seq_len=32, step=32, mode="sample_only", forecast_horizon=96
         )
         assert len(dataset) > 0
 
@@ -172,11 +172,11 @@ class TestWeatherDataset:
 
         data = np.random.randn(2000, 22).astype(np.float32)
         dataset = WeatherDataset(
-            data=data, seq_len=64, step=64, mode='sample_only', forecast_horizon=96
+            data=data, seq_len=64, step=64, mode="sample_only", forecast_horizon=96
         )
         sample = dataset[0]
         # SAMPLE_ONLY mode returns single data array
-        assert hasattr(sample, 'shape')
+        assert hasattr(sample, "shape")
         assert sample.shape[0] == 64  # seq_len
         assert sample.shape[1] == 22  # features
 
@@ -200,7 +200,7 @@ class TestElectricityDataset:
 
         data = np.random.randn(50, 1000, 1).astype(np.float32)
         dataset = ElectricityDataset(
-            data=data, seq_len=32, step=32, mode='sample_only', forecast_horizon=24
+            data=data, seq_len=32, step=32, mode="sample_only", forecast_horizon=24
         )
         assert len(dataset) > 0
 
@@ -212,10 +212,10 @@ class TestElectricityDataset:
         data_10 = np.random.randn(10, 500, 1).astype(np.float32)
 
         ds5 = ElectricityDataset(
-            data=data_5, seq_len=32, step=32, mode='sample_only', forecast_horizon=24
+            data=data_5, seq_len=32, step=32, mode="sample_only", forecast_horizon=24
         )
         ds10 = ElectricityDataset(
-            data=data_10, seq_len=32, step=32, mode='sample_only', forecast_horizon=24
+            data=data_10, seq_len=32, step=32, mode="sample_only", forecast_horizon=24
         )
         # 10 series should have ~2x the samples of 5 series
         assert len(ds10) > len(ds5)

@@ -94,11 +94,11 @@ class TestBaseTimeSeriesDataModule:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         # Set up mock data samples
-        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
-        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+        mod._train_data_samples = pd.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0]})
+        mod._valid_data_samples = pd.DataFrame({"a": [5.0], "b": [6.0]})
+        mod._test_data_samples = pd.DataFrame({"a": [7.0], "b": [8.0]})
 
-        mod.setup(stage='fit')
+        mod.setup(stage="fit")
 
         # If scale_data=True and create_data_scaler works, data should be transformed
         assert mod._train_data_samples is not None
@@ -120,12 +120,12 @@ class TestBaseTimeSeriesDataModule:
 
         real_dataset = TensorDataset(torch.randn(10, 5), torch.randint(0, 2, (10,)))
         with patch(
-            'chronocratic.datasets.modules._base.base.DataLoader', wraps=DataLoader
+            "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
             module._process_test_dataloader(dataset_object=real_dataset)
             call_kwargs = mock_loader.call_args[1]
-            assert call_kwargs['shuffle'] is False
-            assert isinstance(call_kwargs['dataset'], TensorDataset)
+            assert call_kwargs["shuffle"] is False
+            assert isinstance(call_kwargs["dataset"], TensorDataset)
 
     def test_process_valid_dataloader_returns_none_when_no_valid(
         self, concrete_module_class
@@ -163,18 +163,18 @@ class TestBaseTimeSeriesDataModule:
 
         # Patch DataLoader to capture args
         with patch(
-            'chronocratic.datasets.modules._base.base.DataLoader', wraps=DataLoader
+            "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
             mod_zero._process_train_dataloader(dataset_object=real_dataset)
             call_kwargs = mock_loader.call_args[1]
-            assert 'persistent_workers' not in call_kwargs
+            assert "persistent_workers" not in call_kwargs
 
     def test_get_custom_collate_fn(self, module) -> None:
         """_get_custom_collate_fn returns partial with correct batch size."""
 
         collate = module._get_custom_collate_fn()
         assert isinstance(collate, partial)
-        assert collate.keywords['desired_batch_size'] == module.batch_size
+        assert collate.keywords["desired_batch_size"] == module.batch_size
 
     def test_collate_fn_with_strict_batch_size(self, module) -> None:
         """strict_batch_size=True sets collate_fn on dataloader."""
@@ -182,11 +182,11 @@ class TestBaseTimeSeriesDataModule:
 
         real_dataset = TensorDataset(torch.randn(5, 3))
         with patch(
-            'chronocratic.datasets.modules._base.base.DataLoader', wraps=DataLoader
+            "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
             module._process_train_dataloader(dataset_object=real_dataset, strict_batch_size=True)
             call_kwargs = mock_loader.call_args[1]
-            assert 'collate_fn' in call_kwargs
+            assert "collate_fn" in call_kwargs
 
     def test_scaling_method_type_is_enum(self, concrete_module_class) -> None:
         """data_scaling_method is typed as ScalingMethod enum."""
@@ -221,12 +221,12 @@ class TestBaseTimeSeriesDataModule:
 
     def test_name_property(self, module) -> None:
         """name property returns _dataset_name."""
-        module._dataset_name = 'TestDataset'
-        assert module.name == 'TestDataset'
+        module._dataset_name = "TestDataset"
+        assert module.name == "TestDataset"
 
     def test_train_data_samples_property(self, module) -> None:
         """train_data_samples property returns _train_data_samples."""
-        data = pd.DataFrame({'x': [1, 2, 3]})
+        data = pd.DataFrame({"x": [1, 2, 3]})
         module._train_data_samples = data
         assert module.train_data_samples is data
 
@@ -257,7 +257,7 @@ class TestSetupSentinel:
             shuffle=True,
             scale_data=False,
         )
-        assert hasattr(mod, '_setup_completed_stages')
+        assert hasattr(mod, "_setup_completed_stages")
         assert mod._setup_completed_stages == set()
 
     def test_setup_idempotent_same_stage(self, concrete_module_class) -> None:
@@ -270,16 +270,16 @@ class TestSetupSentinel:
             shuffle=True,
             scale_data=True,
         )
-        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
-        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+        mod._train_data_samples = pd.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0]})
+        mod._valid_data_samples = pd.DataFrame({"a": [5.0], "b": [6.0]})
+        mod._test_data_samples = pd.DataFrame({"a": [7.0], "b": [8.0]})
 
         with patch(
-            'chronocratic.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
+            "chronocratic.datasets.modules._base.base.create_data_scaler", wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
-            mod.setup(stage='fit')
-            mod.setup(stage='fit')
+            mod.setup(stage="fit")
+            mod.setup(stage="fit")
             assert scaler_spy.call_count == 1
 
     def test_setup_none_covers_all_stages(self, concrete_module_class) -> None:
@@ -292,16 +292,16 @@ class TestSetupSentinel:
             shuffle=True,
             scale_data=True,
         )
-        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
-        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+        mod._train_data_samples = pd.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0]})
+        mod._valid_data_samples = pd.DataFrame({"a": [5.0], "b": [6.0]})
+        mod._test_data_samples = pd.DataFrame({"a": [7.0], "b": [8.0]})
 
         with patch(
-            'chronocratic.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
+            "chronocratic.datasets.modules._base.base.create_data_scaler", wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
             mod.setup(stage=None)
-            mod.setup(stage='fit')
+            mod.setup(stage="fit")
             assert scaler_spy.call_count == 1
 
     def test_setup_none_then_test_runs(self, concrete_module_class) -> None:
@@ -319,19 +319,19 @@ class TestSetupSentinel:
             shuffle=True,
             scale_data=True,
         )
-        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0], 'b': [3.0, 4.0]})
-        mod._valid_data_samples = pd.DataFrame({'a': [5.0], 'b': [6.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [7.0], 'b': [8.0]})
+        mod._train_data_samples = pd.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0]})
+        mod._valid_data_samples = pd.DataFrame({"a": [5.0], "b": [6.0]})
+        mod._test_data_samples = pd.DataFrame({"a": [7.0], "b": [8.0]})
 
         with patch(
-            'chronocratic.datasets.modules._base.base.create_data_scaler', wraps=MagicMock()
+            "chronocratic.datasets.modules._base.base.create_data_scaler", wraps=MagicMock()
         ) as scaler_spy:
             scaler_spy.return_value = lambda t, v, te: (t, v, te)
             mod.setup(stage=None)
-            mod.setup(stage='test')
+            mod.setup(stage="test")
             # test stage should have run (scaler reused from cache)
             assert scaler_spy.call_count == 1
-            assert 'test' in mod._setup_completed_stages
+            assert "test" in mod._setup_completed_stages
 
 
 class TestPrepareDataWrapper:
@@ -408,10 +408,10 @@ class TestPrepareDataWrapper:
         from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
         # _do_prepare_data must be abstract
-        assert getattr(BaseTimeSeriesDataModule._do_prepare_data, '__isabstractmethod__', False)
+        assert getattr(BaseTimeSeriesDataModule._do_prepare_data, "__isabstractmethod__", False)
 
         # prepare_data must NOT be abstract (it's the concrete wrapper now)
-        assert not getattr(BaseTimeSeriesDataModule.prepare_data, '__isabstractmethod__', False)
+        assert not getattr(BaseTimeSeriesDataModule.prepare_data, "__isabstractmethod__", False)
 
 
 class TestSetupStageGating:
@@ -445,8 +445,8 @@ class TestSetupStageGating:
             shuffle=True,
             scale_data=False,
         )
-        with pytest.raises(ValueError, match=r'Unknown stage'):
-            mod.setup(stage='warmup')  # type: ignore[arg-type]
+        with pytest.raises(ValueError, match=r"Unknown stage"):
+            mod.setup(stage="warmup")  # type: ignore[arg-type]
 
     def test_default_stage_is_none(self, concrete_module_class) -> None:
         """setup() with no args uses stage=None and does not raise TypeError."""
@@ -458,9 +458,9 @@ class TestSetupStageGating:
             shuffle=True,
             scale_data=False,
         )
-        mod._train_data_samples = pd.DataFrame({'a': [1.0]})
-        mod._valid_data_samples = pd.DataFrame({'a': [2.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [3.0]})
+        mod._train_data_samples = pd.DataFrame({"a": [1.0]})
+        mod._valid_data_samples = pd.DataFrame({"a": [2.0]})
+        mod._test_data_samples = pd.DataFrame({"a": [3.0]})
         # Should not raise TypeError
         mod.setup()
 
@@ -482,17 +482,17 @@ class TestSetupStageGating:
             shuffle=True,
             scale_data=True,
         )
-        mod._train_data_samples = pd.DataFrame({'a': [1.0, 2.0]})
-        mod._valid_data_samples = pd.DataFrame({'a': [3.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [4.0]})
+        mod._train_data_samples = pd.DataFrame({"a": [1.0, 2.0]})
+        mod._valid_data_samples = pd.DataFrame({"a": [3.0]})
+        mod._test_data_samples = pd.DataFrame({"a": [4.0]})
 
         with patch(
-            'chronocratic.datasets.modules._base.base.create_data_scaler',
+            "chronocratic.datasets.modules._base.base.create_data_scaler",
             side_effect=counting_scaler,
         ):
-            mod.setup(stage='fit')
+            mod.setup(stage="fit")
             assert mod._scaler_cache is not None
-            mod.setup(stage='test')
+            mod.setup(stage="test")
             assert call_count == 1
 
     def test_validate_does_not_mutate(self, concrete_module_class) -> None:
@@ -505,12 +505,12 @@ class TestSetupStageGating:
             shuffle=True,
             scale_data=False,
         )
-        train = pd.DataFrame({'a': [1.0, 2.0]})
+        train = pd.DataFrame({"a": [1.0, 2.0]})
         mod._train_data_samples = train
-        mod._valid_data_samples = pd.DataFrame({'a': [3.0]})
-        mod._test_data_samples = pd.DataFrame({'a': [4.0]})
+        mod._valid_data_samples = pd.DataFrame({"a": [3.0]})
+        mod._test_data_samples = pd.DataFrame({"a": [4.0]})
 
-        mod.setup(stage='validate')
+        mod.setup(stage="validate")
         assert mod._train_data_samples is train
 
 
@@ -546,14 +546,14 @@ class TestCacheInfrastructure:
             scale_data=False,
             cache_dir=None,
         )
-        mod._dataset_name = 'TestDataset'
+        mod._dataset_name = "TestDataset"
         cache_dir = mod._get_cache_dir()
-        assert cache_dir.parts[-2] == 'tsdatasets'
-        assert cache_dir.name == 'TestDataset'
+        assert cache_dir.parts[-2] == "tsdatasets"
+        assert cache_dir.name == "TestDataset"
 
     def test_cache_dir_custom_path(self, concrete_module_class, tmp_path) -> None:
         """Constructor accepts cache_dir=custom_path, stores resolved path."""
-        custom = tmp_path / 'my_cache'
+        custom = tmp_path / "my_cache"
         mod = concrete_module_class(
             batch_size=16,
             seq_len=None,
@@ -625,14 +625,14 @@ class TestCacheInfrastructure:
         )
         # Set attrs to non-None values
         mod._full_data_raw = np.zeros((100, 5))
-        mod._time_index = pd.date_range('2020-01-01', periods=100, freq='h')
+        mod._time_index = pd.date_range("2020-01-01", periods=100, freq="h")
         mod._full_data_scaled = np.ones((100, 5))
         mod._data_scaler_cache = MagicMock()
         mod._ts_feature_scaler_cache = MagicMock()
         mod._train_data_samples = np.zeros((50, 5))
         mod._valid_data_samples = np.zeros((25, 5))
         mod._test_data_samples = np.zeros((25, 5))
-        mod._setup_completed_stages.add('fit')
+        mod._setup_completed_stages.add("fit")
         mod._prepare_data_called = True
 
         mod.reset()
@@ -658,7 +658,7 @@ class TestCacheInfrastructure:
             shuffle=True,
             scale_data=False,
         )
-        mod._cache_key = 'test_key'
+        mod._cache_key = "test_key"
         mod.reset()
         assert mod._cache_key is None
 
@@ -711,13 +711,13 @@ class TestPrepareDimensionsCache:
             scale_data=False,
             cache_dir=tmp_path,
         )
-        mod._dataset_name = 'TestDataset'
-        mod._cache_key = 'test'
+        mod._dataset_name = "TestDataset"
+        mod._cache_key = "test"
 
         # Write metadata.json in the cache dir
-        meta_path = tmp_path / f'{mod._cache_key}_metadata.json'
+        meta_path = tmp_path / f"{mod._cache_key}_metadata.json"
         atomic_save_metadata(
-            meta_path, {'version': 1, 'dataset_name': 'TestDataset', 'n_features': 5, 'seq_len': 64}
+            meta_path, {"version": 1, "dataset_name": "TestDataset", "n_features": 5, "seq_len": 64}
         )
 
         result = mod.prepare_dimensions()
@@ -737,10 +737,10 @@ class TestPrepareDimensionsCache:
             scale_data=False,
             cache_dir=tmp_path,
         )
-        mod._cache_key = 'test'
-        mod._dataset_name = 'TestDataset'
+        mod._cache_key = "test"
+        mod._dataset_name = "TestDataset"
 
-        with pytest.raises(FileNotFoundError, match='Cache metadata not found'):
+        with pytest.raises(FileNotFoundError, match="Cache metadata not found"):
             mod.prepare_dimensions()
 
     def test_raises_value_error_on_version_mismatch(self, concrete_module_class, tmp_path) -> None:
@@ -756,21 +756,21 @@ class TestPrepareDimensionsCache:
             scale_data=False,
             cache_dir=tmp_path,
         )
-        mod._cache_key = 'test'
-        mod._dataset_name = 'TestDataset'
+        mod._cache_key = "test"
+        mod._dataset_name = "TestDataset"
 
         # Write metadata with wrong version
-        meta_path = tmp_path / f'{mod._cache_key}_metadata.json'
+        meta_path = tmp_path / f"{mod._cache_key}_metadata.json"
         atomic_save_metadata(
             meta_path,
             {
-                'version': 2,  # Wrong version
-                'n_features': 5,
-                'seq_len': 64,
+                "version": 2,  # Wrong version
+                "n_features": 5,
+                "seq_len": 64,
             },
         )
 
-        with pytest.raises(ValueError, match='Cache version'):
+        with pytest.raises(ValueError, match="Cache version"):
             mod.prepare_dimensions()
 
     def test_integration_with_synthetic_cache_dir(
@@ -786,9 +786,9 @@ class TestPrepareDimensionsCache:
             scale_data=False,
             cache_dir=synthetic_cache_dir,
         )
-        mod._cache_key = 'synthetic'
+        mod._cache_key = "synthetic"
         # Write a metadata file that matches synthetic_cache_dir content
         from chronocratic.datasets.utils.cache import load_metadata
 
-        meta = load_metadata(synthetic_cache_dir / 'metadata.json')
-        assert meta['n_features'] == 7
+        meta = load_metadata(synthetic_cache_dir / "metadata.json")
+        assert meta["n_features"] == 7

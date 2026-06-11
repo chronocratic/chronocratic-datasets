@@ -3,10 +3,10 @@
 import numpy as np
 import torch
 
-__all__ = ['convert_numpy_to_tensor', 'expand_data_dimensionality']
+__all__ = ["convert_numpy_to_tensor", "expand_data_dimensionality"]
 
 
-def convert_numpy_to_tensor(data: np.ndarray, dtype: str = 'float') -> torch.Tensor:
+def convert_numpy_to_tensor(data: np.ndarray, dtype: str = "float") -> torch.Tensor:
     """Convert a numpy array to a PyTorch tensor.
 
     Args:
@@ -20,9 +20,9 @@ def convert_numpy_to_tensor(data: np.ndarray, dtype: str = 'float') -> torch.Ten
         TypeError: If data is not a numpy array.
     """
     if not isinstance(data, np.ndarray):
-        msg = f'Expected np.ndarray, got {type(data).__name__}.'
+        msg = f"Expected np.ndarray, got {type(data).__name__}."
         raise TypeError(msg)
-    dtype_map = {'float': torch.float, 'long': torch.long, 'int': torch.int, 'double': torch.double}
+    dtype_map = {"float": torch.float, "long": torch.long, "int": torch.int, "double": torch.double}
     if dtype not in dtype_map:
         msg = f'Unsupported dtype "{dtype}". Choose from {list(dtype_map.keys())}.'
         raise ValueError(msg)
@@ -54,8 +54,8 @@ def expand_data_dimensionality(
     ndim = data.ndim
     if expand_dims_axis < 0 or expand_dims_axis > ndim:
         msg = (
-            f'expand_dims_axis={expand_dims_axis} is out of range '
-            f'for input with {ndim} dimensions. Must be in [0, {ndim}].'
+            f"expand_dims_axis={expand_dims_axis} is out of range "
+            f"for input with {ndim} dimensions. Must be in [0, {ndim}]."
         )
         raise ValueError(msg)
     result = np.expand_dims(data, axis=expand_dims_axis)

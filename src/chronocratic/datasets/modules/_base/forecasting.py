@@ -34,7 +34,7 @@ from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 
 logger = getLogger(__name__)
 
-__all__ = ['BaseForecastingTimeSeriesDataModule']
+__all__ = ["BaseForecastingTimeSeriesDataModule"]
 
 
 class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
@@ -111,8 +111,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         )
         if scale_data and data_scaling_method == ScalingMethod.NONE:
             msg = (
-                'scale_data=True is incompatible with ScalingMethod.NONE. '
-                'Use scale_data=False instead.'
+                "scale_data=True is incompatible with ScalingMethod.NONE. "
+                "Use scale_data=False instead."
             )
             raise ValueError(msg)
         self._mode = mode
@@ -261,14 +261,14 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             ValueError: If stage is not one of
                 ``{'fit', 'validate', 'test', 'predict', None}``.
         """
-        if stage not in ('fit', 'validate', 'test', 'predict', None):
-            msg = f'Unknown stage: {stage!r}'
+        if stage not in ("fit", "validate", "test", "predict", None):
+            msg = f"Unknown stage: {stage!r}"
             raise ValueError(msg)
         if stage in self._setup_completed_stages:
             return
         # fit and None are equivalent -- skip if the other already ran
-        if stage in ('fit', None) and (
-            'fit' in self._setup_completed_stages or None in self._setup_completed_stages
+        if stage in ("fit", None) and (
+            "fit" in self._setup_completed_stages or None in self._setup_completed_stages
         ):
             return
 
@@ -276,12 +276,12 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         # is missing (populated by _do_prepare_data in concrete modules).
         cache_dir = self._resolve_cache_dir()
         if self._cache_key is not None:
-            cache_path = cache_dir / f'{self._cache_key}.npz'
+            cache_path = cache_dir / f"{self._cache_key}.npz"
             try:
                 loaded = np.load(str(cache_path))
-                self._full_data_raw = loaded['data'].astype(np.float32)
-                if 'index' in loaded:
-                    self._time_index = pd.DatetimeIndex(loaded['index'])
+                self._full_data_raw = loaded["data"].astype(np.float32)
+                if "index" in loaded:
+                    self._time_index = pd.DatetimeIndex(loaded["index"])
                 else:
                     self._time_index = None
             except FileNotFoundError:
@@ -293,14 +293,14 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             self._set_data_slices()
 
         if self._full_data_raw is None:
-            msg = 'setup() requires _full_data_raw. Ensure prepare_data() was called.'
+            msg = "setup() requires _full_data_raw. Ensure prepare_data() was called."
             raise RuntimeError(msg)
         if self._train_slice is None:
-            msg = 'setup() requires _train_slice. Ensure _set_data_slices() was called.'
+            msg = "setup() requires _train_slice. Ensure _set_data_slices() was called."
             raise RuntimeError(msg)
 
         # validate: no data mutation, just mark stage complete
-        if stage == 'validate':
+        if stage == "validate":
             self._setup_completed_stages.add(stage)
             return
 
@@ -317,11 +317,11 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             num_time_series_features = 0
 
         if self.scale_data:
-            if stage in ('fit', None):
+            if stage in ("fit", None):
                 data_scaler = self._prepare_data_scaler()
                 data_scaler.fit(full_array[self._train_slice])
                 self._data_scaler_cache = data_scaler
-                self._save_scaler_to_cache(data_scaler, 'data')
+                self._save_scaler_to_cache(data_scaler, "data")
 
                 self._full_data_scaled = data_scaler.transform(full_array)
                 self._scaling_done = True
@@ -332,14 +332,14 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                     ts_feature_scaler = self._prepare_data_scaler()
                     ts_feature_scaler.fit(time_series_features[self._train_slice])
                     self._ts_feature_scaler_cache = ts_feature_scaler
-                    self._save_scaler_to_cache(ts_feature_scaler, 'ts')
+                    self._save_scaler_to_cache(ts_feature_scaler, "ts")
                     self._apply_ts_features(ts_feature_scaler, time_series_features)
                 self._num_time_series_features = num_time_series_features
                 self._calculate_num_features()
                 self._split_data()
-            elif stage in ('test', 'predict'):
+            elif stage in ("test", "predict"):
                 if self._data_scaler_cache is None:
-                    self._data_scaler_cache = self._load_scaler_from_cache('data')
+                    self._data_scaler_cache = self._load_scaler_from_cache("data")
 
                 if self._data_scaler_cache is not None and self._train_data_samples is None:
                     self._full_data_scaled = self._data_scaler_cache.transform(full_array)
@@ -348,7 +348,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
                     if num_time_series_features > 0:
                         if self._ts_feature_scaler_cache is None:
-                            self._ts_feature_scaler_cache = self._load_scaler_from_cache('ts')
+                            self._ts_feature_scaler_cache = self._load_scaler_from_cache("ts")
                         if self._ts_feature_scaler_cache is not None:
                             self._apply_ts_features(
                                 self._ts_feature_scaler_cache, time_series_features
@@ -361,7 +361,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                     pass
                 else:
                     msg = (
-                        'scale_data=True but no fitted scaler cache available. '
+                        "scale_data=True but no fitted scaler cache available. "
                         'Call setup(stage="fit") first or provide a pre-fitted _data_scaler_cache.'
                     )
                     raise RuntimeError(msg)
@@ -388,7 +388,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         pattern between the fit and test/predict branches of ``setup()``.
         """
         if self._full_data_scaled is None:
-            msg = '_apply_ts_features requires _full_data_scaled. Ensure scaling completed.'
+            msg = "_apply_ts_features requires _full_data_scaled. Ensure scaling completed."
             raise RuntimeError(msg)
         scaled = np.expand_dims(ts_scaler.transform(time_series_features), axis=0)
         repeated = np.repeat(scaled, self._full_data_scaled.shape[0], axis=0)
@@ -400,7 +400,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
     def _resolve_cache_dir(self) -> Path:
         """Return the resolved cache directory for the current dataset."""
-        name = self._dataset_name or 'default'
+        name = self._dataset_name or "default"
         return resolve_cache_dir(cache_dir=self._cache_dir, dataset_name=name)
 
     def _save_scaler_to_cache(self, scaler: object, kind: str) -> None:
@@ -412,7 +412,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if self._cache_key is None:
             return
         cache_dir = self._resolve_cache_dir()
-        scaler_path = cache_dir / f'{self._cache_key}_{kind}_scaler.pt'
+        scaler_path = cache_dir / f"{self._cache_key}_{kind}_scaler.pt"
         save_scaler(scaler=scaler, path=scaler_path)
 
     def _load_scaler_from_cache(self, kind: str) -> MinMaxScaler | StandardScaler | None:
@@ -424,7 +424,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         if self._cache_key is None:
             return None
         cache_dir = self._resolve_cache_dir()
-        scaler_path = cache_dir / f'{self._cache_key}_{kind}_scaler.pt'
+        scaler_path = cache_dir / f"{self._cache_key}_{kind}_scaler.pt"
         try:
             return load_scaler(path=scaler_path)
         except FileNotFoundError:
@@ -474,8 +474,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         # after setup(). Check at runtime to satisfy static analysis.
         if not isinstance(data_partition, np.ndarray):
             msg = (
-                f'data_partition must be np.ndarray, got {type(data_partition).__name__}. '
-                'Call setup() first.'
+                f"data_partition must be np.ndarray, got {type(data_partition).__name__}. "
+                "Call setup() first."
             )
             raise TypeError(msg)
 
@@ -495,8 +495,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         # Validate forecast_horizon is set
         if self.forecast_horizon is None:
             msg = (
-                f'loader_mode={loader_mode.value!r} requires forecast_horizon '
-                f'to be set on the datamodule constructor.'
+                f"loader_mode={loader_mode.value!r} requires forecast_horizon "
+                f"to be set on the datamodule constructor."
             )
             raise ValueError(msg)
 
@@ -504,7 +504,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         step = self._step
         if step is None:
             if self._seq_len is None:
-                msg = 'step and seq_len are both None; cannot build sliding-window dataset'
+                msg = "step and seq_len are both None; cannot build sliding-window dataset"
                 raise ValueError(msg)
             step = self._seq_len
 
@@ -514,9 +514,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         partition_length = data_partition.shape[1]
         if self._seq_len is not None and self._seq_len + horizon > partition_length:
             msg = (
-                f'seq_len ({self._seq_len}) + forecast_horizon ({horizon}) '
-                f'exceeds partition length ({partition_length}). '
-                f'Reduce seq_len or forecast_horizon.'
+                f"seq_len ({self._seq_len}) + forecast_horizon ({horizon}) "
+                f"exceeds partition length ({partition_length}). "
+                f"Reduce seq_len or forecast_horizon."
             )
             raise ValueError(msg)
 
@@ -524,8 +524,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         internal_mode = FORECASTING_LOADER_MAP[loader_mode]
         if internal_mode is None:
             msg = (
-                f'FORECASTING_LOADER_MAP returned None for {loader_mode.value!r}. '
-                f'This loader_mode should not reach the sliding-window path.'
+                f"FORECASTING_LOADER_MAP returned None for {loader_mode.value!r}. "
+                f"This loader_mode should not reach the sliding-window path."
             )
             raise RuntimeError(msg)
 
@@ -598,13 +598,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             return MinMaxScaler(feature_range=self.data_scaling_range)
         if self.data_scaling_method == ScalingMethod.STANDARD:
             return StandardScaler()
-        msg = f'Unsupported scaling method for forecasting: {self.data_scaling_method}'
+        msg = f"Unsupported scaling method for forecasting: {self.data_scaling_method}"
         raise ValueError(msg)
 
     def _calculate_num_features(self) -> None:
         """Calculate number of features from scaled data shape."""
         if self._full_data_scaled is None:
-            msg = '_calculate_num_features requires _full_data_scaled. Ensure scaling completed.'
+            msg = "_calculate_num_features requires _full_data_scaled. Ensure scaling completed."
             raise RuntimeError(msg)
         self._num_features = self._full_data_scaled.shape[-1]
 
@@ -618,16 +618,16 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             RuntimeError: If required attributes are not set.
         """
         if self._full_data_scaled is None:
-            msg = '_split_data requires _full_data_scaled. Ensure scaling completed.'
+            msg = "_split_data requires _full_data_scaled. Ensure scaling completed."
             raise RuntimeError(msg)
         if self._train_slice is None:
-            msg = '_split_data requires _train_slice. Ensure _set_data_slices() was called.'
+            msg = "_split_data requires _train_slice. Ensure _set_data_slices() was called."
             raise RuntimeError(msg)
         if self._valid_slice is None:
-            msg = '_split_data requires _valid_slice. Ensure _set_data_slices() was called.'
+            msg = "_split_data requires _valid_slice. Ensure _set_data_slices() was called."
             raise RuntimeError(msg)
         if self._test_slice is None:
-            msg = '_split_data requires _test_slice. Ensure _set_data_slices() was called.'
+            msg = "_split_data requires _test_slice. Ensure _set_data_slices() was called."
             raise RuntimeError(msg)
 
         train_data = self._full_data_scaled[:, self._train_slice]
@@ -636,13 +636,13 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
 
         if train_data.shape[1] == 0:
             logger.warning(
-                'Train split is empty for %s. Data may be too small for the configured slices.',
+                "Train split is empty for %s. Data may be too small for the configured slices.",
                 self._dataset_name,
             )
         if valid_data.shape[1] == 0:
-            logger.warning('Validation split is empty for %s.', self._dataset_name)
+            logger.warning("Validation split is empty for %s.", self._dataset_name)
         if test_data.shape[1] == 0:
-            logger.warning('Test split is empty for %s.', self._dataset_name)
+            logger.warning("Test split is empty for %s.", self._dataset_name)
 
         self._train_data_samples = train_data
         self._valid_data_samples = valid_data

@@ -11,7 +11,8 @@ select = ["ALL"]
 ignore = [
     "D107", # Allow missing docstring in __init__ if class docstring is present,
     "D212", # Disable first-line summary style in favor of D213 second-line style
-    "Q000", # Allow double quotes,
+    "Q000", # Formatter enforces double quotes
+    "Q003", # Avoid triple double quotes,
     "D100", # Allow missing docstring in public modules
     "INP001", # Allow implicit namespace packages
     "COM812", # Skip the check for trailing commas in function calls
@@ -56,10 +57,10 @@ order-by-type = false
 
 [format]
 # Use single quotes for strings
-quote-style = "single"
+quote-style = "double"
 # Use spaces for indentation
 indent-style = "space"
 # Avoid adding trailing commas unnecessarily
-skip-magic-trailing-comma = true
+skip-magic-trailing-comma = false
 # Use the system's default line endings
 line-ending = "auto"

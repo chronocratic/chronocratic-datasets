@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
-__all__ = ['UCRClassificationUnivariateDataset']
+__all__ = ["UCRClassificationUnivariateDataset"]
 
 
 class UCRClassificationUnivariateDataset(FixedTimeSeriesDatasetUnivariate):

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
-__all__ = ['UEAClassificationMultivariateDataset']
+__all__ = ["UEAClassificationMultivariateDataset"]
 
 
 class UEAClassificationMultivariateDataset(FixedTimeSeriesDatasetMultivariate):

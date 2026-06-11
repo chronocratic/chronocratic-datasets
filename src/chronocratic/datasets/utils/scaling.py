@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from chronocratic.datasets.enums.data import DataForm, ScalingMethod
 from chronocratic.datasets.utils.common import flatten_list_of_np_arrays
 
-__all__ = ['create_data_scaler']
+__all__ = ["create_data_scaler"]
 
 
 def create_data_scaler(
@@ -65,7 +65,7 @@ def create_data_scaler(
                 scaling_range=scaling_range,
             )
 
-        msg = f'Unsupported data form: {data_form}'
+        msg = f"Unsupported data form: {data_form}"
         raise ValueError(msg)
 
     return scale_data
@@ -87,7 +87,7 @@ def _get_scaler(
         return MinMaxScaler(feature_range=scaling_range)
     if scaling_method == ScalingMethod.STANDARD:
         return StandardScaler()
-    msg = f'Unsupported scaling method: {scaling_method}'
+    msg = f"Unsupported scaling method: {scaling_method}"
     raise ValueError(msg)
 
 

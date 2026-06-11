@@ -145,6 +145,6 @@ def test_all_exports() -> None:
     import chronocratic.datasets.utils.general as general_mod
 
     assert general_mod.__all__ == [
-        'custom_collate_fn',
-        'process_data_with_varying_sequence_lengths_single',
+        "custom_collate_fn",
+        "process_data_with_varying_sequence_lengths_single",
     ]

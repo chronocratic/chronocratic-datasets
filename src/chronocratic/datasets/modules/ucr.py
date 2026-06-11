@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
     from torch.utils.data import DataLoader
 
-__all__ = ['UCRClassificationDataModule']
+__all__ = ["UCRClassificationDataModule"]
 
 logger = logging.getLogger(__name__)
 
@@ -110,10 +110,10 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._cache_key = build_cache_key(
             dataset_name=dataset_folder_path.name,
             params={
-                'splitting_strategy': splitting_strategy.value,
-                'test_size': test_size,
-                'valid_size': valid_size,
-                'data_scaling_method': data_scaling_method.value,
+                "splitting_strategy": splitting_strategy.value,
+                "test_size": test_size,
+                "valid_size": valid_size,
+                "data_scaling_method": data_scaling_method.value,
             },
         )
 
@@ -126,8 +126,8 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._datatype_handling_functions_map = defaultdict(
             lambda: lambda x: x,
             {
-                'nominal': lambda x: x.str.decode('utf-8').astype('category').astype('int64'),
-                'numeric': lambda x: x.astype('float64'),
+                "nominal": lambda x: x.str.decode("utf-8").astype("category").astype("int64"),
+                "numeric": lambda x: x.astype("float64"),
             },
         )
 
@@ -176,12 +176,12 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         """
         # Validate folder exists
         if not self.dataset_folder_path.exists():
-            msg = f'Dataset folder not found: {self.dataset_folder_path}'
+            msg = f"Dataset folder not found: {self.dataset_folder_path}"
             raise FileNotFoundError(msg)
 
         # Construct ARFF paths
-        arff_train = self.dataset_folder_path / f'{self._dataset_name}_TRAIN.arff'
-        arff_test = self.dataset_folder_path / f'{self._dataset_name}_TEST.arff'
+        arff_train = self.dataset_folder_path / f"{self._dataset_name}_TRAIN.arff"
+        arff_test = self.dataset_folder_path / f"{self._dataset_name}_TEST.arff"
 
         # Read and process ARFF files
         train_data = self._read_arff_file_as_df(arff_train)
@@ -217,10 +217,10 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         self._valid_data_samples = None
         if self.valid_size > 0.0:
             data_df = self._train_data_samples.copy(deep=True)
-            data_df['label'] = self._train_data_labels.copy(deep=True)
-            filtered = data_df.groupby('label').filter(lambda x: len(x) > 1)
-            x_filt = filtered.drop('label', axis=1)
-            y_filt = filtered['label']
+            data_df["label"] = self._train_data_labels.copy(deep=True)
+            filtered = data_df.groupby("label").filter(lambda x: len(x) > 1)
+            x_filt = filtered.drop("label", axis=1)
+            y_filt = filtered["label"]
             try:
                 (
                     self._train_data_samples,
@@ -232,9 +232,9 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                 )
             except ValueError as e:
                 pattern = (
-                    r'The test_size = \d+ should be'
-                    r' greater or equal to the'
-                    r' number of classes = \d+'
+                    r"The test_size = \d+ should be"
+                    r" greater or equal to the"
+                    r" number of classes = \d+"
                 )
                 if re.match(pattern, str(e)):
                     num_classes = len(set(y_filt))
@@ -257,7 +257,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
 
         # Write cache
         cache_dir = self._get_cache_dir()
-        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_path = cache_dir / f"{self._cache_key}.npz"
 
         train_samples_arr = (
             self._train_data_samples.to_numpy()
@@ -291,15 +291,15 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         )
 
         atomic_save_metadata(
-            path=cache_dir / f'{self._cache_key}_metadata.json',
+            path=cache_dir / f"{self._cache_key}_metadata.json",
             data={
-                'version': CACHE_SCHEMA_VERSION,
-                'dataset_name': self._dataset_name,
-                'n_features': self._num_features,
-                'seq_len': self._seq_len,
-                'has_datetime_index': False,
-                'data_scaling_method': self.data_scaling_method.value,
-                'data_scaling_range': self.data_scaling_range,
+                "version": CACHE_SCHEMA_VERSION,
+                "dataset_name": self._dataset_name,
+                "n_features": self._num_features,
+                "seq_len": self._seq_len,
+                "has_datetime_index": False,
+                "data_scaling_method": self.data_scaling_method.value,
+                "data_scaling_range": self.data_scaling_range,
             },
         )
 
@@ -309,18 +309,18 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             return
 
         cache_dir = self._get_cache_dir()
-        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_path = cache_dir / f"{self._cache_key}.npz"
         loaded = np.load(str(cache_path))
 
-        self._train_data_samples = pd.DataFrame(loaded['train_samples'])
-        self._train_data_labels = pd.Series(loaded['train_labels'], dtype='category')
-        self._test_data_samples = pd.DataFrame(loaded['test_samples'])
-        self._test_data_labels = pd.Series(loaded['test_labels'], dtype='category')
+        self._train_data_samples = pd.DataFrame(loaded["train_samples"])
+        self._train_data_labels = pd.Series(loaded["train_labels"], dtype="category")
+        self._test_data_samples = pd.DataFrame(loaded["test_samples"])
+        self._test_data_labels = pd.Series(loaded["test_labels"], dtype="category")
 
-        valid_samples = loaded['valid_samples']
+        valid_samples = loaded["valid_samples"]
         if valid_samples.size > 0:
             self._valid_data_samples = pd.DataFrame(valid_samples)
-            self._valid_data_labels = pd.Series(loaded['valid_labels'], dtype='category')
+            self._valid_data_labels = pd.Series(loaded["valid_labels"], dtype="category")
         else:
             self._valid_data_samples = None
             self._valid_data_labels = None

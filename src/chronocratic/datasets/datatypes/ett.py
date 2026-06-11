@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     import numpy as np
 
-__all__ = ['ETTDataset']
+__all__ = ["ETTDataset"]
 
 
 class ETTDataset(FlexibleTimeSeriesDatasetSingleFile):
@@ -51,7 +51,7 @@ class ETTDataset(FlexibleTimeSeriesDatasetSingleFile):
     ) -> None:
         # Validate forecast_horizon > 0
         if forecast_horizon <= 0:
-            msg = f'forecast_horizon must be positive, got {forecast_horizon}'
+            msg = f"forecast_horizon must be positive, got {forecast_horizon}"
             raise ValueError(msg)
         super().__init__(
             data=data,

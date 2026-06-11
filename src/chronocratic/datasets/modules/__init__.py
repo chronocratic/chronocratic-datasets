@@ -12,12 +12,12 @@ from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 from chronocratic.datasets.modules.weather import WeatherDataModule
 
 __all__ = [
-    'BaseClassificationTimeSeriesDataModule',
-    'BaseForecastingTimeSeriesDataModule',
-    'BaseTimeSeriesDataModule',
-    'ETTDataModule',
-    'ElectricityLoadDataModule',
-    'UCRClassificationDataModule',
-    'UEAClassificationDataModule',
-    'WeatherDataModule',
+    "BaseClassificationTimeSeriesDataModule",
+    "BaseForecastingTimeSeriesDataModule",
+    "BaseTimeSeriesDataModule",
+    "ETTDataModule",
+    "ElectricityLoadDataModule",
+    "UCRClassificationDataModule",
+    "UEAClassificationDataModule",
+    "WeatherDataModule",
 ]

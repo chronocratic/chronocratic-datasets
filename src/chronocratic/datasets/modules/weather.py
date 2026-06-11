@@ -33,7 +33,7 @@ from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 if TYPE_CHECKING:
     from pathlib import Path
 
-__all__ = ['WeatherDataModule']
+__all__ = ["WeatherDataModule"]
 
 
 class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
@@ -106,10 +106,10 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         self._cache_key = build_cache_key(
             dataset_name=dataset_file_path.stem,
             params={
-                'seq_len': seq_len,
-                'mode': mode.value,
-                'data_scaling_method': data_scaling_method.value,
-                'data_scaling_range': list(data_scaling_range),
+                "seq_len": seq_len,
+                "mode": mode.value,
+                "data_scaling_method": data_scaling_method.value,
+                "data_scaling_range": list(data_scaling_range),
             },
         )
 
@@ -120,7 +120,7 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
     def _set_data_slices(self) -> None:
         """Set 60/20/20 fractional train/valid/test splits."""
         if self._full_data_raw is None:
-            msg = '_set_data_slices requires _full_data_raw. Ensure prepare_data() was called.'
+            msg = "_set_data_slices requires _full_data_raw. Ensure prepare_data() was called."
             raise RuntimeError(msg)
         num_samples = len(self._full_data_raw)
         self._train_slice = slice(None, int(0.6 * num_samples))
@@ -133,7 +133,7 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         Produces shape (1, samples, features).
         """
         if self._full_data_scaled is None:
-            msg = '_transform_data requires _full_data_scaled. Ensure scaling completed.'
+            msg = "_transform_data requires _full_data_scaled. Ensure scaling completed."
             raise RuntimeError(msg)
         self._full_data_scaled = np.expand_dims(self._full_data_scaled, axis=0)
 
@@ -182,10 +182,10 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
             FileNotFoundError: If the CSV file does not exist.
         """
         if not self.dataset_file_path.exists():
-            msg = f'Dataset file not found: {self.dataset_file_path}'
+            msg = f"Dataset file not found: {self.dataset_file_path}"
             raise FileNotFoundError(msg)
 
-        df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col='date')
+        df = pd.read_csv(self.dataset_file_path, parse_dates=True, index_col="date")
 
         if self._mode == ForecastingMode.UNIVARIATE:
             df = df.iloc[:, -1:]  # Last column for univariate
@@ -195,7 +195,7 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         index_ns = df.index.astype(np.int64).to_numpy()
 
         cache_dir = self._resolve_cache_dir()
-        cache_path = cache_dir / f'{self._cache_key}.npz'
+        cache_path = cache_dir / f"{self._cache_key}.npz"
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         atomic_save_npz(cache_path, data=data, index=index_ns)
@@ -207,24 +207,24 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         train_end = int(0.6 * len(data))
         valid_end = int(0.8 * len(data))
         splits = {
-            'train': [0, train_end],
-            'valid': [train_end, valid_end],
-            'test': [valid_end, len(data)],
+            "train": [0, train_end],
+            "valid": [train_end, valid_end],
+            "test": [valid_end, len(data)],
         }
         n_features = data.shape[1]
         if self.scale_data and self._time_index is not None:
             n_features += TIME_FEATURE_COUNT
         metadata = {
-            'version': CACHE_SCHEMA_VERSION,
-            'dataset_name': self._dataset_name,
-            'n_features': n_features,
-            'seq_len': self._seq_len,
-            'splits': splits,
-            'has_datetime_index': True,
-            'data_scaling_method': self.data_scaling_method.value,
-            'data_scaling_range': list(self.data_scaling_range),
+            "version": CACHE_SCHEMA_VERSION,
+            "dataset_name": self._dataset_name,
+            "n_features": n_features,
+            "seq_len": self._seq_len,
+            "splits": splits,
+            "has_datetime_index": True,
+            "data_scaling_method": self.data_scaling_method.value,
+            "data_scaling_range": list(self.data_scaling_range),
         }
-        atomic_save_metadata(cache_dir / f'{self._cache_key}_metadata.json', metadata)
+        atomic_save_metadata(cache_dir / f"{self._cache_key}_metadata.json", metadata)
 
     # ------------------------------------------------------------------
     # Dataloaders

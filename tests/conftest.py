@@ -61,35 +61,35 @@ def synthetic_cache_dir(tmp_path: Path) -> Path:
     """
     rng = np.random.default_rng(42)
     data = rng.standard_normal((500, 7)).astype(np.float32)
-    time_index = pd.date_range('2016-01-01', periods=500, freq='h')
+    time_index = pd.date_range("2016-01-01", periods=500, freq="h")
     index_ns = time_index.astype(np.int64).to_numpy()
 
-    cache_key = 'synthetic.cache'
+    cache_key = "synthetic.cache"
 
     # Write npz file with data and index arrays
-    npz_path = tmp_path / f'{cache_key}.npz'
+    npz_path = tmp_path / f"{cache_key}.npz"
     atomic_save_npz(npz_path, data=data, index=index_ns)
 
     # Write metadata.json
-    metadata_path = tmp_path / 'metadata.json'
+    metadata_path = tmp_path / "metadata.json"
     atomic_save_metadata(
         metadata_path,
         {
-            'version': 1,
-            'dataset_name': 'SyntheticETT',
-            'n_features': 7,
-            'seq_len': 128,
-            'splits': {'train': [0, 300], 'valid': [300, 400], 'test': [400, 500]},
-            'has_datetime_index': True,
-            'data_scaling_method': 'MINMAX',
-            'data_scaling_range': [0, 1],
+            "version": 1,
+            "dataset_name": "SyntheticETT",
+            "n_features": 7,
+            "seq_len": 128,
+            "splits": {"train": [0, 300], "valid": [300, 400], "test": [400, 500]},
+            "has_datetime_index": True,
+            "data_scaling_method": "MINMAX",
+            "data_scaling_range": [0, 1],
         },
     )
 
     # Fit and save scaler
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaler.fit(data)
-    scaler_path = tmp_path / f'{cache_key}_data_scaler.pt'
+    scaler_path = tmp_path / f"{cache_key}_data_scaler.pt"
     save_scaler(scaler, scaler_path)
 
     return tmp_path

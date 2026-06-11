@@ -12,12 +12,12 @@ from chronocratic.datasets.enums.data import (
 )
 
 __all__ = [
-    'ClassificationLoaderMode',
-    'ClassificationSplitMode',
-    'DataForm',
-    'DataPartition',
-    'ForecastingLoaderMode',
-    'ForecastingMode',
-    'ScalingMethod',
-    'TimeSeriesDatasetMode',
+    "ClassificationLoaderMode",
+    "ClassificationSplitMode",
+    "DataForm",
+    "DataPartition",
+    "ForecastingLoaderMode",
+    "ForecastingMode",
+    "ScalingMethod",
+    "TimeSeriesDatasetMode",
 ]

@@ -27,7 +27,7 @@ def test_no_dataformenum_defined() -> None:
     """scaling.py does not define a local DataFormEnum class."""
     import chronocratic.datasets.utils.scaling as scaling_mod
 
-    assert not hasattr(scaling_mod, 'DataFormEnum')
+    assert not hasattr(scaling_mod, "DataFormEnum")
 
 
 # --------------------------------------------------------------------------- #
@@ -102,15 +102,15 @@ def test_create_data_scaler_regular_dataframe() -> None:
         scaling_method=ScalingMethod.MINMAX,
         data_form=DataForm.REGULAR,
     )
-    train = pd.DataFrame({'a': [0.0, 10.0], 'b': [10.0, 30.0]})
-    test = pd.DataFrame({'a': [5.0], 'b': [20.0]})
+    train = pd.DataFrame({"a": [0.0, 10.0], "b": [10.0, 30.0]})
+    test = pd.DataFrame({"a": [5.0], "b": [20.0]})
 
     scaled_train, _scaled_valid, _scaled_test = scaler_fn(
         train_data=train, valid_data=None, test_data=test
     )
 
     assert isinstance(scaled_train, pd.DataFrame)
-    assert list(scaled_train.columns) == ['a', 'b']
+    assert list(scaled_train.columns) == ["a", "b"]
 
 
 # --------------------------------------------------------------------------- #
@@ -225,7 +225,7 @@ def test_get_scaler_invalid_raises() -> None:
     """_get_scaler raises ValueError for unknown method."""
     from chronocratic.datasets.utils.scaling import _get_scaler
 
-    with pytest.raises(ValueError, match='Unsupported scaling method'):
+    with pytest.raises(ValueError, match="Unsupported scaling method"):
         _get_scaler(scaling_method=ScalingMethod.NONE, scaling_range=(0.0, 1.0))
 
 
@@ -238,4 +238,4 @@ def test_all_exports() -> None:
     """__all__ exports only create_data_scaler (not private helpers)."""
     import chronocratic.datasets.utils.scaling as scaling_mod
 
-    assert scaling_mod.__all__ == ['create_data_scaler']
+    assert scaling_mod.__all__ == ["create_data_scaler"]

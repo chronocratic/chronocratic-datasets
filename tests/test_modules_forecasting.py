@@ -24,9 +24,9 @@ from chronocratic.datasets.enums.data import ForecastingMode, ScalingMethod
 @pytest.fixture
 def synthetic_csv_file(tmp_path: Path) -> Path:
     """Create a minimal CSV file for forecasting module tests."""
-    csv_file = tmp_path / 'synthetic.csv'
-    dates = pd.date_range('2020-01-01', periods=100, freq='h')
-    df = pd.DataFrame({'date': dates, 'col1': np.random.randn(100), 'col2': np.random.randn(100)})
+    csv_file = tmp_path / "synthetic.csv"
+    dates = pd.date_range("2020-01-01", periods=100, freq="h")
+    df = pd.DataFrame({"date": dates, "col1": np.random.randn(100), "col2": np.random.randn(100)})
     df.to_csv(csv_file, index=False)
     return csv_file
 
@@ -37,14 +37,14 @@ def electricity_csv_file(tmp_path: Path) -> Path:
 
     Generates enough data to cover the filtering logic and '2012' slicing.
     """
-    csv_file = tmp_path / 'electricity.csv'
+    csv_file = tmp_path / "electricity.csv"
     # Generate data spanning 2011-2014 to cover the '2012:' slice
-    dates = pd.date_range('2011-01-01', periods=10000, freq='h')
+    dates = pd.date_range("2011-01-01", periods=10000, freq="h")
     df = pd.DataFrame(
-        {'MT_001': np.random.randn(10000), 'MT_002': np.random.randn(10000)}, index=dates
+        {"MT_001": np.random.randn(10000), "MT_002": np.random.randn(10000)}, index=dates
     )
-    df.index.name = 'datetime'
-    df.to_csv(csv_file, sep=';', decimal=',')
+    df.index.name = "datetime"
+    df.to_csv(csv_file, sep=";", decimal=",")
     return csv_file
 
 
@@ -68,12 +68,12 @@ class TestETTDataModuleConstructor:
 
         module = ETTDataModule(
             dataset_file_path=synthetic_csv_file,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=64,
             mode=ForecastingMode.UNIVARIATE,
             batch_size=16,
         )
-        assert module.variant == 'ETTh1'
+        assert module.variant == "ETTh1"
         assert module.sequence_length == 64
         assert module._mode == ForecastingMode.UNIVARIATE
         assert module.batch_size == 16
@@ -82,14 +82,14 @@ class TestETTDataModuleConstructor:
         """Constructor raises ValueError for unknown variant."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        with pytest.raises(ValueError, match='Unknown ETT variant'):
-            ETTDataModule(dataset_file_path=synthetic_csv_file, variant='unknown_variant')
+        with pytest.raises(ValueError, match="Unknown ETT variant"):
+            ETTDataModule(dataset_file_path=synthetic_csv_file, variant="unknown_variant")
 
     def test_all_variants_accepted(self, synthetic_csv_file: Path) -> None:
         """All four valid variants are accepted without error."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        for variant in ['ETTh1', 'ETTh2', 'ETTm1', 'ETTm2']:
+        for variant in ["ETTh1", "ETTh2", "ETTm1", "ETTm2"]:
             module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
             assert module.variant == variant
 
@@ -101,7 +101,7 @@ class TestETTSetDataSlices:
         """ETTh1/ETTh2 use 16/4/4 month slices (hourly resolution)."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        for variant in ['ETTh1', 'ETTh2']:
+        for variant in ["ETTh1", "ETTh2"]:
             module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
             module._dataset_name = variant
             module._set_data_slices()
@@ -115,7 +115,7 @@ class TestETTSetDataSlices:
         """ETTm1/ETTm2 use 4x multiplier for 15-min resolution."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        for variant in ['ETTm1', 'ETTm2']:
+        for variant in ["ETTm1", "ETTm2"]:
             module = ETTDataModule(dataset_file_path=synthetic_csv_file, variant=variant)
             module._dataset_name = variant
             module._set_data_slices()
@@ -133,7 +133,7 @@ class TestETTPrepareData:
         """prepare_data raises FileNotFoundError for missing file."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        module = ETTDataModule(dataset_file_path=Path('/nonexistent/ETT.csv'), variant='ETTh1')
+        module = ETTDataModule(dataset_file_path=Path("/nonexistent/ETT.csv"), variant="ETTh1")
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
@@ -176,7 +176,7 @@ class TestElectricityLoadPrepareData:
         """prepare_data raises FileNotFoundError for missing file."""
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        module = ElectricityLoadDataModule(dataset_file_path=Path('/nonexistent/electricity.csv'))
+        module = ElectricityLoadDataModule(dataset_file_path=Path("/nonexistent/electricity.csv"))
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
@@ -186,7 +186,7 @@ class TestElectricityLoadPrepareData:
 
         module = ElectricityLoadDataModule(dataset_file_path=electricity_csv_file)
         module.prepare_data()
-        assert module._dataset_name == 'ElectricityLoad'
+        assert module._dataset_name == "ElectricityLoad"
 
 
 class TestElectricityLoadTransform:
@@ -246,7 +246,7 @@ class TestWeatherPrepareData:
         """prepare_data raises FileNotFoundError for missing file."""
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherDataModule(dataset_file_path=Path('/nonexistent/weather.csv'))
+        module = WeatherDataModule(dataset_file_path=Path("/nonexistent/weather.csv"))
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
@@ -284,27 +284,27 @@ class TestForecastingModulesUseTensorDataset:
         import chronocratic.datasets.modules.ett as ett_module
 
         source = open(
-            Path(ett_module.__file__).parent / 'ett.py'  # type: ignore[arg-type]
+            Path(ett_module.__file__).parent / "ett.py"  # type: ignore[arg-type]
         ).read()
-        assert 'TensorDataset' in source
+        assert "TensorDataset" in source
 
     def test_electricity_uses_tensordataset_in_source(self) -> None:
         """Electricity source code references TensorDataset."""
         import chronocratic.datasets.modules.electricity as elec_module
 
         source = open(
-            Path(elec_module.__file__).parent / 'electricity.py'  # type: ignore[arg-type]
+            Path(elec_module.__file__).parent / "electricity.py"  # type: ignore[arg-type]
         ).read()
-        assert 'TensorDataset' in source
+        assert "TensorDataset" in source
 
     def test_weather_uses_tensordataset_in_source(self) -> None:
         """Weather source code references TensorDataset."""
         import chronocratic.datasets.modules.weather as weather_module
 
         source = open(
-            Path(weather_module.__file__).parent / 'weather.py'  # type: ignore[arg-type]
+            Path(weather_module.__file__).parent / "weather.py"  # type: ignore[arg-type]
         ).read()
-        assert 'TensorDataset' in source
+        assert "TensorDataset" in source
 
 
 class TestForecastingSlices:
@@ -355,16 +355,16 @@ class TestWeatherDataModuleIntegration:
         Columns: 'date' (DatetimeIndex), 'wbng', 'wbhh', 'wbat', 'sbfg'.
         Written via df.to_csv(index=False).
         """
-        csv_path = tmp_path / 'weather.csv'
-        dates = pd.date_range('2006-01-01', periods=200, freq='h')
+        csv_path = tmp_path / "weather.csv"
+        dates = pd.date_range("2006-01-01", periods=200, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
             {
-                'date': dates,
-                'wbng': rng.standard_normal(200),
-                'wbhh': rng.standard_normal(200),
-                'wbat': rng.standard_normal(200),
-                'sbfg': rng.standard_normal(200),
+                "date": dates,
+                "wbng": rng.standard_normal(200),
+                "wbhh": rng.standard_normal(200),
+                "wbat": rng.standard_normal(200),
+                "sbfg": rng.standard_normal(200),
             }
         )
         df.to_csv(csv_path, index=False)
@@ -388,7 +388,7 @@ class TestWeatherDataModuleIntegration:
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_data_samples is not None
         assert module._valid_data_samples is not None
@@ -409,7 +409,7 @@ class TestWeatherDataModuleIntegration:
 
         module = WeatherDataModule(dataset_file_path=weather_csv_file)
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # 60/20/20 of 200 rows: train[:120], valid[120:160], test[160:]
         assert module._train_slice == slice(None, 120)
@@ -434,7 +434,7 @@ class TestWeatherDataModuleIntegration:
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # Verify train dataloader
         train_dl = module.train_dataloader()
@@ -478,16 +478,16 @@ class TestETTGoldenPathIntegration:
         Columns match ETT schema: 'date' (DatetimeIndex), 'HUFL', 'HT',
         'OT' (target), 'Wsp' (wind speed). Written via df.to_csv(index=False).
         """
-        csv_file = tmp_path / 'ETT_synthetic.csv'
-        dates = pd.date_range('2016-01-01', periods=500, freq='h')
+        csv_file = tmp_path / "ETT_synthetic.csv"
+        dates = pd.date_range("2016-01-01", periods=500, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
             {
-                'date': dates,
-                'HUFL': rng.standard_normal(500),
-                'HT': rng.standard_normal(500),
-                'OT': rng.standard_normal(500),
-                'Wsp': rng.standard_normal(500),
+                "date": dates,
+                "HUFL": rng.standard_normal(500),
+                "HT": rng.standard_normal(500),
+                "OT": rng.standard_normal(500),
+                "Wsp": rng.standard_normal(500),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -500,15 +500,15 @@ class TestETTGoldenPathIntegration:
         Provides a reusable fixture for forecasting integration tests.
         DataFrame has DatetimeIndex and 2-3 feature columns.
         """
-        csv_file = tmp_path / 'synthetic_forecasting.csv'
-        dates = pd.date_range('2020-01-01', periods=200, freq='h')
+        csv_file = tmp_path / "synthetic_forecasting.csv"
+        dates = pd.date_range("2020-01-01", periods=200, freq="h")
         rng = np.random.default_rng(123)
         df = pd.DataFrame(
             {
-                'date': dates,
-                'feature_a': rng.standard_normal(200),
-                'feature_b': rng.standard_normal(200),
-                'OT': rng.standard_normal(200),
+                "date": dates,
+                "feature_a": rng.standard_normal(200),
+                "feature_b": rng.standard_normal(200),
+                "OT": rng.standard_normal(200),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -526,7 +526,7 @@ class TestETTGoldenPathIntegration:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -534,7 +534,7 @@ class TestETTGoldenPathIntegration:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_data_samples is not None
         assert module._valid_data_samples is not None
@@ -554,7 +554,7 @@ class TestETTGoldenPathIntegration:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.MULTIVARIATE,
@@ -562,7 +562,7 @@ class TestETTGoldenPathIntegration:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_data_samples is not None
         assert module._valid_data_samples is not None
@@ -583,7 +583,7 @@ class TestETTGoldenPathIntegration:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -591,7 +591,7 @@ class TestETTGoldenPathIntegration:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         train_dl = module.train_dataloader()
         assert isinstance(train_dl, DataLoader)
@@ -613,7 +613,7 @@ class TestETTGoldenPathIntegration:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv_file,
-            variant='ETTm1',
+            variant="ETTm1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -621,7 +621,7 @@ class TestETTGoldenPathIntegration:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_data_samples is not None
         assert module._valid_data_samples is not None
@@ -645,16 +645,16 @@ class TestETTCacheIntegration:
     @pytest.fixture
     def ett_csv(self, tmp_path: Path) -> Path:
         """Create a minimal ETT-style CSV with 'date', 'HUFL', 'OT', 'Wsp' columns."""
-        csv_file = tmp_path / 'ett.csv'
-        dates = pd.date_range('2016-01-01', periods=200, freq='h')
+        csv_file = tmp_path / "ett.csv"
+        dates = pd.date_range("2016-01-01", periods=200, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
             {
-                'date': dates,
-                'HUFL': rng.standard_normal(200),
-                'HT': rng.standard_normal(200),
-                'OT': rng.standard_normal(200),
-                'Wsp': rng.standard_normal(200),
+                "date": dates,
+                "HUFL": rng.standard_normal(200),
+                "HT": rng.standard_normal(200),
+                "OT": rng.standard_normal(200),
+                "Wsp": rng.standard_normal(200),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -664,10 +664,10 @@ class TestETTCacheIntegration:
         """ETT: prepare_data() writes .npz file to cache directory."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -675,14 +675,14 @@ class TestETTCacheIntegration:
         module._cache_dir = cache_dir
         module.prepare_data()
 
-        npz_path = cache_dir / f'{module._cache_key}.npz'
-        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+        npz_path = cache_dir / f"{module._cache_key}.npz"
+        assert npz_path.exists(), f"Expected .npz cache file at {npz_path}"
 
         loaded = np.load(str(npz_path))
-        assert 'data' in loaded, 'Cache .npz missing data array'
-        assert 'index' in loaded, 'Cache .npz missing index array'
-        assert loaded['data'].dtype == np.float32
-        assert loaded['data'].shape == (200, 1)  # 200 rows, univariate (OT only)
+        assert "data" in loaded, "Cache .npz missing data array"
+        assert "index" in loaded, "Cache .npz missing index array"
+        assert loaded["data"].dtype == np.float32
+        assert loaded["data"].shape == (200, 1)  # 200 rows, univariate (OT only)
 
     def test_prepare_data_writes_metadata(self, ett_csv: Path, tmp_path: Path) -> None:
         """ETT: prepare_data() writes metadata.json with version=1 and split ranges."""
@@ -690,10 +690,10 @@ class TestETTCacheIntegration:
 
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -701,30 +701,30 @@ class TestETTCacheIntegration:
         module._cache_dir = cache_dir
         module.prepare_data()
 
-        meta_path = cache_dir / f'{module._cache_key}_metadata.json'
-        assert meta_path.exists(), 'Expected metadata.json in cache directory'
+        meta_path = cache_dir / f"{module._cache_key}_metadata.json"
+        assert meta_path.exists(), "Expected metadata.json in cache directory"
 
         with meta_path.open() as f:
             meta = json.load(f)
 
-        assert meta['version'] == 1
-        assert meta['dataset_name'] == 'ETTh1'
-        assert meta['n_features'] == 8  # 1 (univariate OT) + 7 (time features)
-        assert meta['seq_len'] == 96
-        assert meta['has_datetime_index'] is True
-        assert 'splits' in meta
-        assert meta['splits']['train'] == [None, 12 * 30 * 24]
-        assert meta['splits']['valid'] == [12 * 30 * 24, 16 * 30 * 24]
-        assert meta['splits']['test'] == [16 * 30 * 24, 20 * 30 * 24]
+        assert meta["version"] == 1
+        assert meta["dataset_name"] == "ETTh1"
+        assert meta["n_features"] == 8  # 1 (univariate OT) + 7 (time features)
+        assert meta["seq_len"] == 96
+        assert meta["has_datetime_index"] is True
+        assert "splits" in meta
+        assert meta["splits"]["train"] == [None, 12 * 30 * 24]
+        assert meta["splits"]["valid"] == [12 * 30 * 24, 16 * 30 * 24]
+        assert meta["splits"]["test"] == [16 * 30 * 24, 20 * 30 * 24]
 
     def test_setup_reads_cache_and_sets_raw(self, ett_csv: Path, tmp_path: Path) -> None:
         """ETT: setup('fit') reads .npz from cache and sets _full_data_raw."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -738,7 +738,7 @@ class TestETTCacheIntegration:
         module._full_data_raw = None
         module._setup_completed_stages.clear()
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._full_data_raw is not None
         assert module._full_data_raw.shape == (200, 1)  # 200 rows, univariate
@@ -749,10 +749,10 @@ class TestETTCacheIntegration:
         """ETT: _transform_data produces _full_data_scaled with shape (1, samples, features)."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -761,7 +761,7 @@ class TestETTCacheIntegration:
         )
         module._cache_dir = cache_dir
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._full_data_scaled is not None
         assert module._full_data_scaled.shape[0] == 1  # expanded dimension
@@ -783,16 +783,16 @@ class TestWeatherCacheIntegration:
     @pytest.fixture
     def weather_csv(self, tmp_path: Path) -> Path:
         """Create a minimal Weather-style CSV with date index and features."""
-        csv_file = tmp_path / 'weather.csv'
-        dates = pd.date_range('2006-01-01', periods=200, freq='h')
+        csv_file = tmp_path / "weather.csv"
+        dates = pd.date_range("2006-01-01", periods=200, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
             {
-                'date': dates,
-                'wbng': rng.standard_normal(200),
-                'wbhh': rng.standard_normal(200),
-                'wbat': rng.standard_normal(200),
-                'sbfg': rng.standard_normal(200),
+                "date": dates,
+                "wbng": rng.standard_normal(200),
+                "wbhh": rng.standard_normal(200),
+                "wbat": rng.standard_normal(200),
+                "sbfg": rng.standard_normal(200),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -802,7 +802,7 @@ class TestWeatherCacheIntegration:
         """Weather: prepare_data() writes .npz file to cache directory."""
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
@@ -812,14 +812,14 @@ class TestWeatherCacheIntegration:
         module._cache_dir = cache_dir
         module.prepare_data()
 
-        npz_path = cache_dir / f'{module._cache_key}.npz'
-        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+        npz_path = cache_dir / f"{module._cache_key}.npz"
+        assert npz_path.exists(), f"Expected .npz cache file at {npz_path}"
 
         loaded = np.load(str(npz_path))
-        assert 'data' in loaded, 'Cache .npz missing data array'
-        assert 'index' in loaded, 'Cache .npz missing index array'
-        assert loaded['data'].dtype == np.float32
-        assert loaded['data'].shape == (200, 1)  # 200 rows, univariate (last col)
+        assert "data" in loaded, "Cache .npz missing data array"
+        assert "index" in loaded, "Cache .npz missing index array"
+        assert loaded["data"].dtype == np.float32
+        assert loaded["data"].shape == (200, 1)  # 200 rows, univariate (last col)
 
     def test_prepare_data_writes_metadata(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: prepare_data() writes metadata.json with version=1 and splits."""
@@ -827,7 +827,7 @@ class TestWeatherCacheIntegration:
 
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
@@ -837,27 +837,27 @@ class TestWeatherCacheIntegration:
         module._cache_dir = cache_dir
         module.prepare_data()
 
-        meta_path = cache_dir / f'{module._cache_key}_metadata.json'
-        assert meta_path.exists(), 'Expected metadata.json in cache directory'
+        meta_path = cache_dir / f"{module._cache_key}_metadata.json"
+        assert meta_path.exists(), "Expected metadata.json in cache directory"
 
         with meta_path.open() as f:
             meta = json.load(f)
 
-        assert meta['version'] == 1
-        assert meta['n_features'] == 8  # 1 (univariate) + 7 (time features)
-        assert meta['seq_len'] == 96
-        assert meta['has_datetime_index'] is True
-        assert 'splits' in meta
+        assert meta["version"] == 1
+        assert meta["n_features"] == 8  # 1 (univariate) + 7 (time features)
+        assert meta["seq_len"] == 96
+        assert meta["has_datetime_index"] is True
+        assert "splits" in meta
         # 60/20/20 of 200 rows: train[:120], valid[120:160], test[160:]
-        assert meta['splits']['train'] == [0, 120]
-        assert meta['splits']['valid'] == [120, 160]
-        assert meta['splits']['test'] == [160, 200]
+        assert meta["splits"]["train"] == [0, 120]
+        assert meta["splits"]["valid"] == [120, 160]
+        assert meta["splits"]["test"] == [160, 200]
 
     def test_setup_reads_cache_and_sets_raw(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: setup('fit') reads .npz from cache and sets _full_data_raw."""
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
@@ -873,7 +873,7 @@ class TestWeatherCacheIntegration:
         module._full_data_raw = None
         module._setup_completed_stages.clear()
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._full_data_raw is not None
         assert module._full_data_raw.shape == (200, 1)  # 200 rows, univariate
@@ -884,7 +884,7 @@ class TestWeatherCacheIntegration:
         """Weather: _transform_data produces (1, samples, features) shape."""
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
@@ -895,7 +895,7 @@ class TestWeatherCacheIntegration:
         )
         module._cache_dir = cache_dir
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._full_data_scaled is not None
         assert module._full_data_scaled.shape[0] == 1  # expanded dimension
@@ -922,35 +922,35 @@ class TestElectricityCacheIntegration:
         by resample('1h', closed='right'), yielding exactly 500 rows
         after processing.
         """
-        csv_file = tmp_path / 'electricity.csv'
-        dates = pd.date_range('2012-01-01', periods=501, freq='h')
+        csv_file = tmp_path / "electricity.csv"
+        dates = pd.date_range("2012-01-01", periods=501, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
-            {'MT_001': rng.standard_normal(501), 'MT_002': rng.standard_normal(501)}, index=dates
+            {"MT_001": rng.standard_normal(501), "MT_002": rng.standard_normal(501)}, index=dates
         )
-        df.index.name = 'datetime'
-        df.to_csv(csv_file, sep=';', decimal=',')
+        df.index.name = "datetime"
+        df.to_csv(csv_file, sep=";", decimal=",")
         return csv_file
 
     def test_prepare_data_writes_npz(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: prepare_data() writes .npz file to cache directory."""
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv, seq_len=96, batch_size=16, mode=ForecastingMode.UNIVARIATE
         )
         module._cache_dir = cache_dir
         module.prepare_data()
 
-        npz_path = cache_dir / f'{module._cache_key}.npz'
-        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+        npz_path = cache_dir / f"{module._cache_key}.npz"
+        assert npz_path.exists(), f"Expected .npz cache file at {npz_path}"
 
         loaded = np.load(str(npz_path))
-        assert 'data' in loaded, 'Cache .npz missing data array'
-        assert 'index' in loaded, 'Cache .npz missing index array'
-        assert loaded['data'].dtype == np.float32
-        assert loaded['data'].shape == (500, 1)  # 500 rows, univariate (MT_001)
+        assert "data" in loaded, "Cache .npz missing data array"
+        assert "index" in loaded, "Cache .npz missing index array"
+        assert loaded["data"].dtype == np.float32
+        assert loaded["data"].shape == (500, 1)  # 500 rows, univariate (MT_001)
 
     def test_prepare_data_writes_metadata(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: prepare_data() writes metadata.json with version=1."""
@@ -958,35 +958,35 @@ class TestElectricityCacheIntegration:
 
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv, seq_len=96, batch_size=16, mode=ForecastingMode.UNIVARIATE
         )
         module._cache_dir = cache_dir
         module.prepare_data()
 
-        meta_path = cache_dir / f'{module._cache_key}_metadata.json'
-        assert meta_path.exists(), 'Expected metadata.json in cache directory'
+        meta_path = cache_dir / f"{module._cache_key}_metadata.json"
+        assert meta_path.exists(), "Expected metadata.json in cache directory"
 
         with meta_path.open() as f:
             meta = json.load(f)
 
-        assert meta['version'] == 1
-        assert meta['dataset_name'] == 'ElectricityLoad'
-        assert meta['n_features'] == 8  # 1 (univariate) + 7 (time features)
-        assert meta['seq_len'] == 96
-        assert meta['has_datetime_index'] is True
-        assert 'splits' in meta
+        assert meta["version"] == 1
+        assert meta["dataset_name"] == "ElectricityLoad"
+        assert meta["n_features"] == 8  # 1 (univariate) + 7 (time features)
+        assert meta["seq_len"] == 96
+        assert meta["has_datetime_index"] is True
+        assert "splits" in meta
         # 60/20/20 of 500 rows: train[:300], valid[300:400], test[400:]
-        assert meta['splits']['train'] == [0, 300]
-        assert meta['splits']['valid'] == [300, 400]
-        assert meta['splits']['test'] == [400, 500]
+        assert meta["splits"]["train"] == [0, 300]
+        assert meta["splits"]["valid"] == [300, 400]
+        assert meta["splits"]["test"] == [400, 500]
 
     def test_setup_reads_cache_and_sets_raw(self, elec_csv: Path, tmp_path: Path) -> None:
         """Electricity: setup('fit') reads .npz from cache and sets _full_data_raw."""
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv,
             seq_len=96,
@@ -1002,7 +1002,7 @@ class TestElectricityCacheIntegration:
         module._full_data_raw = None
         module._setup_completed_stages.clear()
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._full_data_raw is not None
         assert module._full_data_raw.shape == (500, 1)  # 500 rows, univariate
@@ -1013,7 +1013,7 @@ class TestElectricityCacheIntegration:
         """Electricity: transform produces (features, samples, 1) shape."""
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ElectricityLoadDataModule(
             dataset_file_path=elec_csv,
             seq_len=96,
@@ -1024,7 +1024,7 @@ class TestElectricityCacheIntegration:
         )
         module._cache_dir = cache_dir
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._full_data_scaled is not None
         # transpose + expand_dims(-1): (500,1) -> (1,500) -> (1,500,1), then time features
@@ -1054,8 +1054,8 @@ class TestForecastingSetupEdgeCases:
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
-            variant='ETTh1',
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1063,7 +1063,7 @@ class TestForecastingSetupEdgeCases:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         # Isolated cache dir to prevent cache pollution from prior tests
-        module._cache_dir = tmp_path / 'cache'
+        module._cache_dir = tmp_path / "cache"
         # pure numpy, no DatetimeIndex
         rng = np.random.default_rng(42)
         module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
@@ -1072,7 +1072,7 @@ class TestForecastingSetupEdgeCases:
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module.num_time_series_features == 0
         assert module._train_data_samples is not None
@@ -1087,8 +1087,8 @@ class TestForecastingSetupEdgeCases:
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
-            variant='ETTh1',
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1096,7 +1096,7 @@ class TestForecastingSetupEdgeCases:
             data_scaling_method=ScalingMethod.STANDARD,
         )
         # Isolated cache dir to prevent cache pollution from prior tests
-        module._cache_dir = tmp_path / 'cache'
+        module._cache_dir = tmp_path / "cache"
         rng = np.random.default_rng(42)
         module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
         module._time_index = None
@@ -1104,7 +1104,7 @@ class TestForecastingSetupEdgeCases:
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_data_samples is not None
         # No DatetimeIndex with numpy, so time features == 0
@@ -1119,8 +1119,8 @@ class TestForecastingSetupEdgeCases:
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
-            variant='ETTh1',
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1128,7 +1128,7 @@ class TestForecastingSetupEdgeCases:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         # Bypass cache read to use injected _full_data_raw
-        module._cache_dir = Path('/nonexistent-cache-dir')
+        module._cache_dir = Path("/nonexistent-cache-dir")
         rng = np.random.default_rng(42)
         module._full_data_raw = rng.standard_normal((100, 5)).astype(np.float32)
         module._time_index = None
@@ -1136,7 +1136,7 @@ class TestForecastingSetupEdgeCases:
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_data_samples is not None
         assert module._valid_data_samples is not None
@@ -1168,8 +1168,8 @@ class TestForecastingBugFixes:
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
-            variant='ETTh1',
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1177,7 +1177,7 @@ class TestForecastingBugFixes:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         # Isolated cache dir to prevent cache pollution from prior tests
-        module._cache_dir = tmp_path / 'cache'
+        module._cache_dir = tmp_path / "cache"
         rng = np.random.default_rng(42)
         raw_data = rng.standard_normal((100, 5)).astype(np.float32)
         # Make validation rows (60-79) have large values
@@ -1188,7 +1188,7 @@ class TestForecastingBugFixes:
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # With MINMAX on train-only, train data should span [0, 1].
         # If scaler leaked validation data (which has values ~500+),
@@ -1196,11 +1196,11 @@ class TestForecastingBugFixes:
         train_min = module._train_data_samples.min()
         train_max = module._train_data_samples.max()
         assert train_min >= -1e-6, (
-            f'Train min {train_min} is negative — scaler likely saw validation data'
+            f"Train min {train_min} is negative — scaler likely saw validation data"
         )
         assert train_max > 0.5, (
-            f'Train max {train_max} is too low — scaler likely leaked validation '
-            f'data (expected ~1.0 for MINMAX fitted on train only)'
+            f"Train max {train_max} is too low — scaler likely leaked validation "
+            f"data (expected ~1.0 for MINMAX fitted on train only)"
         )
 
     def test_scale_data_false_preserves_values(self) -> None:
@@ -1215,8 +1215,8 @@ class TestForecastingBugFixes:
         original = rng.standard_normal((100, 5)).astype(np.float32)
 
         module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
-            variant='ETTh1',
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1224,23 +1224,23 @@ class TestForecastingBugFixes:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         # Bypass cache read to use injected _full_data_raw
-        module._cache_dir = Path('/nonexistent-cache-dir')
+        module._cache_dir = Path("/nonexistent-cache-dir")
         module._full_data_raw = original.copy()
         module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # _full_data_scaled after _transform_data has shape (1, 100, 5) due to
         # expand_dims(axis=0). Extract the actual data plane.
         transformed = module._full_data_scaled
         # Compare the data plane (squeeze axis 0 added by _transform_data)
         actual_data = transformed.squeeze(axis=0)
-        assert actual_data.shape == (100, 5), f'Unexpected shape {actual_data.shape}'
+        assert actual_data.shape == (100, 5), f"Unexpected shape {actual_data.shape}"
         assert np.allclose(actual_data, original, atol=1e-6), (
-            'Data was modified despite scale_data=False'
+            "Data was modified despite scale_data=False"
         )
 
     def test_scale_data_true_modifies_values(self, tmp_path: Path) -> None:
@@ -1255,8 +1255,8 @@ class TestForecastingBugFixes:
         original = rng.standard_normal((100, 5)).astype(np.float32)
 
         module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
-            variant='ETTh1',
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1264,19 +1264,19 @@ class TestForecastingBugFixes:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         # Isolated cache dir to prevent cache pollution from prior tests
-        module._cache_dir = tmp_path / 'cache'
+        module._cache_dir = tmp_path / "cache"
         module._full_data_raw = original.copy()
         module._time_index = None
         module._train_slice = slice(None, 60)
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         transformed = module._full_data_scaled
         actual_data = transformed.squeeze(axis=0)
         assert not np.allclose(actual_data, original, atol=1e-6), (
-            'Data was NOT modified despite scale_data=True'
+            "Data was NOT modified despite scale_data=True"
         )
 
 
@@ -1293,16 +1293,16 @@ class TestElectricityBugFixes:
         """
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
-        csv_file = tmp_path / 'small_electricity.csv'
-        dates = pd.date_range('2012-01-01', periods=100, freq='h')
+        csv_file = tmp_path / "small_electricity.csv"
+        dates = pd.date_range("2012-01-01", periods=100, freq="h")
         rng = np.random.default_rng(42)
         df = pd.DataFrame(
-            {'MT_001': rng.standard_normal(100), 'MT_002': rng.standard_normal(100)}, index=dates
+            {"MT_001": rng.standard_normal(100), "MT_002": rng.standard_normal(100)}, index=dates
         )
-        df.index.name = 'datetime'
-        df.to_csv(csv_file, sep=';', decimal=',')
+        df.index.name = "datetime"
+        df.to_csv(csv_file, sep=";", decimal=",")
 
-        cache_dir = tmp_path / 'cache'
+        cache_dir = tmp_path / "cache"
         module = ElectricityLoadDataModule(
             dataset_file_path=csv_file, mode=ForecastingMode.UNIVARIATE
         )
@@ -1311,11 +1311,11 @@ class TestElectricityBugFixes:
         module.prepare_data()
 
         # Verify cache files were written
-        npz_path = cache_dir / f'{module._cache_key}.npz'
-        assert npz_path.exists(), f'Expected .npz cache file at {npz_path}'
+        npz_path = cache_dir / f"{module._cache_key}.npz"
+        assert npz_path.exists(), f"Expected .npz cache file at {npz_path}"
 
         loaded = np.load(str(npz_path))
-        assert loaded['data'].shape[0] > 0
+        assert loaded["data"].shape[0] > 0
 
 
 class TestElectricityLoadDataModuleIntegration:
@@ -1346,14 +1346,14 @@ class TestElectricityLoadDataModuleIntegration:
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_data_samples is not None
         assert module._valid_data_samples is not None
         assert module._test_data_samples is not None
         assert module.num_features is not None
         # Hardcoded dataset name
-        assert module._dataset_name == 'ElectricityLoad'
+        assert module._dataset_name == "ElectricityLoad"
 
     def test_electricity_transform_shape(self, electricity_csv_file: Path) -> None:
         """Electricity transform produces (features, samples, 1) pattern.
@@ -1374,7 +1374,7 @@ class TestElectricityLoadDataModuleIntegration:
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         # Trailing dimension >= 1 (expand_dims adds it, time features may enlarge)
         assert module.full_data.shape[-1] >= 1
@@ -1402,8 +1402,8 @@ class TestSetupIdempotency:
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         module = ETTDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
-            variant='ETTh1',
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1417,9 +1417,9 @@ class TestSetupIdempotency:
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
         snapshot = module._train_data_samples.copy()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         np.testing.assert_array_equal(snapshot, module._train_data_samples)
 
@@ -1428,7 +1428,7 @@ class TestSetupIdempotency:
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
         module = WeatherDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1441,9 +1441,9 @@ class TestSetupIdempotency:
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
         snapshot = module._train_data_samples.copy()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         np.testing.assert_array_equal(snapshot, module._train_data_samples)
 
@@ -1452,7 +1452,7 @@ class TestSetupIdempotency:
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         module = ElectricityLoadDataModule(
-            dataset_file_path=Path('/nonexistent/dummy.csv'),
+            dataset_file_path=Path("/nonexistent/dummy.csv"),
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1465,9 +1465,9 @@ class TestSetupIdempotency:
         module._valid_slice = slice(60, 80)
         module._test_slice = slice(80, None)
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
         snapshot = module._train_data_samples.copy()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         np.testing.assert_array_equal(snapshot, module._train_data_samples)
 
@@ -1482,13 +1482,13 @@ class TestPrepareDataIdempotency:
     @pytest.fixture
     def ett_csv(self, tmp_path: Path) -> Path:
         """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
-        csv_file = tmp_path / 'ett.csv'
-        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        csv_file = tmp_path / "ett.csv"
+        dates = pd.date_range("2016-01-01", periods=100, freq="h")
         df = pd.DataFrame(
             {
-                'date': dates,
-                'HUFL': np.random.default_rng(42).standard_normal(100),
-                'OT': np.random.default_rng(43).standard_normal(100),
+                "date": dates,
+                "HUFL": np.random.default_rng(42).standard_normal(100),
+                "OT": np.random.default_rng(43).standard_normal(100),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -1500,13 +1500,13 @@ class TestPrepareDataIdempotency:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
         )
 
-        with patch('pandas.read_csv', wraps=pd.read_csv) as spy:
+        with patch("pandas.read_csv", wraps=pd.read_csv) as spy:
             module.prepare_data()
             module.prepare_data()
             assert spy.call_count == 1
@@ -1522,7 +1522,7 @@ class TestPrepareDataIdempotency:
             mode=ForecastingMode.MULTIVARIATE,
         )
 
-        with patch('pandas.read_csv', wraps=pd.read_csv) as spy:
+        with patch("pandas.read_csv", wraps=pd.read_csv) as spy:
             module.prepare_data()
             module.prepare_data()
             assert spy.call_count == 1
@@ -1538,7 +1538,7 @@ class TestPrepareDataIdempotency:
             mode=ForecastingMode.UNIVARIATE,
         )
 
-        with patch('pandas.read_csv', wraps=pd.read_csv) as spy:
+        with patch("pandas.read_csv", wraps=pd.read_csv) as spy:
             module.prepare_data()
             module.prepare_data()
             assert spy.call_count == 1
@@ -1554,13 +1554,13 @@ class TestFinalizePrepareData:
     @pytest.fixture
     def ett_csv(self, tmp_path: Path) -> Path:
         """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
-        csv_file = tmp_path / 'ett.csv'
-        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        csv_file = tmp_path / "ett.csv"
+        dates = pd.date_range("2016-01-01", periods=100, freq="h")
         df = pd.DataFrame(
             {
-                'date': dates,
-                'HUFL': np.random.default_rng(42).standard_normal(100),
-                'OT': np.random.default_rng(43).standard_normal(100),
+                "date": dates,
+                "HUFL": np.random.default_rng(42).standard_normal(100),
+                "OT": np.random.default_rng(43).standard_normal(100),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -1572,13 +1572,13 @@ class TestFinalizePrepareData:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_slice is not None
         assert module._valid_slice is not None
@@ -1595,7 +1595,7 @@ class TestFinalizePrepareData:
             mode=ForecastingMode.MULTIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_slice is not None
         assert module._valid_slice is not None
@@ -1612,7 +1612,7 @@ class TestFinalizePrepareData:
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._train_slice is not None
         assert module._valid_slice is not None
@@ -1629,13 +1629,13 @@ class TestPrepareDimensions:
     @pytest.fixture
     def ett_csv(self, tmp_path: Path) -> Path:
         """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
-        csv_file = tmp_path / 'ett.csv'
-        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        csv_file = tmp_path / "ett.csv"
+        dates = pd.date_range("2016-01-01", periods=100, freq="h")
         df = pd.DataFrame(
             {
-                'date': dates,
-                'HUFL': np.random.default_rng(42).standard_normal(100),
-                'OT': np.random.default_rng(43).standard_normal(100),
+                "date": dates,
+                "HUFL": np.random.default_rng(42).standard_normal(100),
+                "OT": np.random.default_rng(43).standard_normal(100),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -1647,7 +1647,7 @@ class TestPrepareDimensions:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1664,13 +1664,13 @@ class TestPrepareDimensions:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
         n_features, seq_len = module.prepare_dimensions()
 
         assert n_features is not None
@@ -1682,7 +1682,7 @@ class TestPrepareDimensions:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1690,7 +1690,7 @@ class TestPrepareDimensions:
         module.prepare_data()
         pre_dims = module.prepare_dimensions()
 
-        module.setup(stage='fit')
+        module.setup(stage="fit")
         post_dims = module.prepare_dimensions()
 
         assert pre_dims == post_dims
@@ -1706,13 +1706,13 @@ class TestSetupStageGating:
     @pytest.fixture
     def ett_csv(self, tmp_path: Path) -> Path:
         """Create a minimal ETT-style CSV with 'date' and 'OT' columns."""
-        csv_file = tmp_path / 'ett.csv'
-        dates = pd.date_range('2016-01-01', periods=100, freq='h')
+        csv_file = tmp_path / "ett.csv"
+        dates = pd.date_range("2016-01-01", periods=100, freq="h")
         df = pd.DataFrame(
             {
-                'date': dates,
-                'HUFL': np.random.default_rng(42).standard_normal(100),
-                'OT': np.random.default_rng(43).standard_normal(100),
+                "date": dates,
+                "HUFL": np.random.default_rng(42).standard_normal(100),
+                "OT": np.random.default_rng(43).standard_normal(100),
             }
         )
         df.to_csv(csv_file, index=False)
@@ -1724,7 +1724,7 @@ class TestSetupStageGating:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1732,7 +1732,7 @@ class TestSetupStageGating:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
 
         assert module._data_scaler_cache is not None
 
@@ -1742,7 +1742,7 @@ class TestSetupStageGating:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1750,10 +1750,10 @@ class TestSetupStageGating:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
         scaler_id = id(module._data_scaler_cache)
 
-        module.setup(stage='test')
+        module.setup(stage="test")
 
         assert id(module._data_scaler_cache) == scaler_id
 
@@ -1763,7 +1763,7 @@ class TestSetupStageGating:
 
         module = ETTDataModule(
             dataset_file_path=ett_csv,
-            variant='ETTh1',
+            variant="ETTh1",
             seq_len=96,
             batch_size=16,
             mode=ForecastingMode.UNIVARIATE,
@@ -1771,9 +1771,9 @@ class TestSetupStageGating:
             data_scaling_method=ScalingMethod.MINMAX,
         )
         module.prepare_data()
-        module.setup(stage='fit')
+        module.setup(stage="fit")
         snapshot = module._train_data_samples.copy()
 
-        module.setup(stage='validate')
+        module.setup(stage="validate")
 
         np.testing.assert_array_equal(snapshot, module._train_data_samples)

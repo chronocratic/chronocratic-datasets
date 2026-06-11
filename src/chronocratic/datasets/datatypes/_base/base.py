@@ -30,9 +30,9 @@ class TimeSeriesDataset(Dataset[Any], ABC):
     """
 
     _get_sample_fun_map: ClassVar[dict[TimeSeriesDatasetMode, str]] = {
-        TimeSeriesDatasetMode.SAMPLE_ONLY: '_get_sample_1',
-        TimeSeriesDatasetMode.SAMPLE_LABEL: '_get_sample_2',
-        TimeSeriesDatasetMode.INPUT_OUTPUT: '_get_sample_3',
+        TimeSeriesDatasetMode.SAMPLE_ONLY: "_get_sample_1",
+        TimeSeriesDatasetMode.SAMPLE_LABEL: "_get_sample_2",
+        TimeSeriesDatasetMode.INPUT_OUTPUT: "_get_sample_3",
     }
 
     _data: np.ndarray | list[np.ndarray] | pd.DataFrame
@@ -98,7 +98,7 @@ class TimeSeriesDataset(Dataset[Any], ABC):
         sample = self._transform(self._get_current_data())
         label = self._get_current_label()
         if label is None:
-            msg = 'INPUT_OUTPUT mode requires labels; _get_current_label returned None'
+            msg = "INPUT_OUTPUT mode requires labels; _get_current_label returned None"
             raise RuntimeError(msg)
         return (sample, self._transform(label))
 
