@@ -70,11 +70,12 @@ from chronocratic.datasets.utils import (
 )
 
 __all__ = [
+    'CACHE_SCHEMA_VERSION',
+    'CLASSIFICATION_LOADER_MAP',
+    'FORECASTING_LOADER_MAP',
     'BaseClassificationTimeSeriesDataModule',
     'BaseForecastingTimeSeriesDataModule',
     'BaseTimeSeriesDataModule',
-    'CACHE_SCHEMA_VERSION',
-    'CLASSIFICATION_LOADER_MAP',
     'ClassificationLoaderMode',
     'ClassificationSplitMode',
     'DataForm',
@@ -83,7 +84,6 @@ __all__ = [
     'ETTDataset',
     'ElectricityDataset',
     'ElectricityLoadDataModule',
-    'FORECASTING_LOADER_MAP',
     'FixedTimeSeriesDatasetMultivariate',
     'FixedTimeSeriesDatasetUnivariate',
     'FlexibleTimeSeriesDatasetSingleFile',
