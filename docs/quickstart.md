@@ -26,9 +26,9 @@ A typical workflow looks like this:
 ```python
 from pathlib import Path
 
-from chronocratic.datasets import ForecastingMode, WeatherModule
+from chronocratic.datasets import ForecastingMode, WeatherDataModule
 
-weather = WeatherModule(
+weather = WeatherDataModule(
     dataset_file_path=Path("data/weather.csv"),
     mode=ForecastingMode.UNIVARIATE,
     seq_len=24,

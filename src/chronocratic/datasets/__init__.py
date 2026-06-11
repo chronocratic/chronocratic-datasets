@@ -70,25 +70,20 @@ from chronocratic.datasets.utils import (
 )
 
 __all__ = [
-    # Utils
-    'CACHE_SCHEMA_VERSION',
-    # Mappings
-    'CLASSIFICATION_LOADER_MAP',
-    'FORECASTING_LOADER_MAP',
-    # Modules
     'BaseClassificationTimeSeriesDataModule',
     'BaseForecastingTimeSeriesDataModule',
     'BaseTimeSeriesDataModule',
-    # Enums
+    'CACHE_SCHEMA_VERSION',
+    'CLASSIFICATION_LOADER_MAP',
     'ClassificationLoaderMode',
     'ClassificationSplitMode',
     'DataForm',
     'DataPartition',
     'ETTDataModule',
-    # Datatypes
     'ETTDataset',
     'ElectricityDataset',
-    'ElectricityLoadModule',
+    'ElectricityLoadDataModule',
+    'FORECASTING_LOADER_MAP',
     'FixedTimeSeriesDatasetMultivariate',
     'FixedTimeSeriesDatasetUnivariate',
     'FlexibleTimeSeriesDatasetSingleFile',
@@ -102,8 +97,8 @@ __all__ = [
     'UCRClassificationUnivariateDataset',
     'UEAClassificationDataModule',
     'UEAClassificationMultivariateDataset',
+    'WeatherDataModule',
     'WeatherDataset',
-    'WeatherModule',
     '__version__',
     'atomic_save_metadata',
     'atomic_save_npz',

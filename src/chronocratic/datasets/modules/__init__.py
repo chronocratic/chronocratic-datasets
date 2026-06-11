@@ -16,8 +16,8 @@ __all__ = [
     'BaseForecastingTimeSeriesDataModule',
     'BaseTimeSeriesDataModule',
     'ETTDataModule',
-    'ElectricityLoadModule',
+    'ElectricityLoadDataModule',
     'UCRClassificationDataModule',
     'UEAClassificationDataModule',
-    'WeatherModule',
+    'WeatherDataModule',
 ]

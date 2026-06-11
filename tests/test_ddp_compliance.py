@@ -164,7 +164,7 @@ class TestDDPSmokeTests:
     def test_ddp_forecasting_cache_round_trip(self, tmp_path: Path) -> None:
         """Forecasting: rank-0 writes cache, all ranks read identical state.
 
-        Uses WeatherModule with a synthetic CSV. Verifies that both ranks
+        Uses WeatherDataModule with a synthetic CSV. Verifies that both ranks
         load the same _full_data_raw shape and dtype from cache after
         setup(stage='fit'). Weather uses fractional splits (60/20/20),
         making it suitable for small synthetic datasets.

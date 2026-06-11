@@ -139,15 +139,15 @@ class TestETTPrepareData:
 
 
 # ---------------------------------------------------------------------------
-# ElectricityLoadModule Tests
+# ElectricityLoadDataModule Tests
 # ---------------------------------------------------------------------------
 
 
-class TestElectricityLoadModuleConstructor:
-    """Tests for ElectricityLoadModule constructor."""
+class TestElectricityLoadDataModuleConstructor:
+    """Tests for ElectricityLoadDataModule constructor."""
 
     def test_import_electricity_module(self) -> None:
-        """ElectricityLoadModule can be imported from electricity module."""
+        """ElectricityLoadDataModule can be imported from electricity module."""
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         assert ElectricityLoadDataModule is not None
@@ -170,7 +170,7 @@ class TestElectricityLoadModuleConstructor:
 
 
 class TestElectricityLoadPrepareData:
-    """Tests for ElectricityLoadModule prepare_data."""
+    """Tests for ElectricityLoadDataModule prepare_data."""
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing file."""
@@ -190,7 +190,7 @@ class TestElectricityLoadPrepareData:
 
 
 class TestElectricityLoadTransform:
-    """Tests for ElectricityLoadModule _transform_data."""
+    """Tests for ElectricityLoadDataModule _transform_data."""
 
     def test_transform_uses_transpose_and_expand_dims(self, electricity_csv_file: Path) -> None:
         """_transform_data applies transpose + expand_dims(axis=-1).
@@ -210,15 +210,15 @@ class TestElectricityLoadTransform:
 
 
 # ---------------------------------------------------------------------------
-# WeatherModule Tests
+# WeatherDataModule Tests
 # ---------------------------------------------------------------------------
 
 
-class TestWeatherModuleConstructor:
-    """Tests for WeatherModule constructor."""
+class TestWeatherDataModuleConstructor:
+    """Tests for WeatherDataModule constructor."""
 
     def test_import_weather_module(self) -> None:
-        """WeatherModule can be imported from weather module."""
+        """WeatherDataModule can be imported from weather module."""
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
         assert WeatherDataModule is not None
@@ -240,7 +240,7 @@ class TestWeatherModuleConstructor:
 
 
 class TestWeatherPrepareData:
-    """Tests for WeatherModule prepare_data."""
+    """Tests for WeatherDataModule prepare_data."""
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing file."""
@@ -252,7 +252,7 @@ class TestWeatherPrepareData:
 
 
 class TestWeatherTransform:
-    """Tests for WeatherModule _transform_data."""
+    """Tests for WeatherDataModule _transform_data."""
 
     def test_transform_uses_expand_dims_axis_0(self, synthetic_csv_file: Path) -> None:
         """_transform_data applies expand_dims(axis=0).
@@ -336,12 +336,12 @@ class TestForecastingSlices:
 
 
 # ---------------------------------------------------------------------------
-# WeatherModule Integration Smoke Tests
+# WeatherDataModule Integration Smoke Tests
 # ---------------------------------------------------------------------------
 
 
-class TestWeatherModuleIntegration:
-    """Integration tests for WeatherModule dataloader pipeline.
+class TestWeatherDataModuleIntegration:
+    """Integration tests for WeatherDataModule dataloader pipeline.
 
     Verifies prepare_data() -> setup('fit') -> train_dataloader() using
     synthetic CSV fixtures with DatetimeIndex. Tests the fractional-split
@@ -1144,7 +1144,7 @@ class TestForecastingSetupEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# ElectricityLoadModule Integration Smoke Tests
+# ElectricityLoadDataModule Integration Smoke Tests
 # ---------------------------------------------------------------------------
 
 
@@ -1284,11 +1284,11 @@ class TestElectricityBugFixes:
     """Tests for hardcoded iloc[8920] fix."""
 
     def test_prepare_data_small_dataset(self, tmp_path: Path) -> None:
-        """ElectricityLoadModule.prepare_data() does not crash on small CSV.
+        """ElectricityLoadDataModule.prepare_data() does not crash on small CSV.
 
         Create a synthetic electricity CSV with only 100 rows (semicolon-
         delimited, comma decimal, with MT_001 and MT_002 columns).
-        Instantiate ElectricityLoadModule, call prepare_data().
+        Instantiate ElectricityLoadDataModule, call prepare_data().
         Assert no IndexError is raised and cache files are written.
         """
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
@@ -1318,8 +1318,8 @@ class TestElectricityBugFixes:
         assert loaded['data'].shape[0] > 0
 
 
-class TestElectricityModuleIntegration:
-    """Integration tests for ElectricityLoadModule dataloader pipeline.
+class TestElectricityLoadDataModuleIntegration:
+    """Integration tests for ElectricityLoadDataModule dataloader pipeline.
 
     Verifies prepare_data() -> setup('fit') -> train_dataloader() using
     the existing electricity_csv_file fixture (semicolon-delimited CSV,
