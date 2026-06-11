@@ -219,15 +219,15 @@ class TestWeatherModuleConstructor:
 
     def test_import_weather_module(self) -> None:
         """WeatherModule can be imported from weather module."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        assert WeatherModule is not None
+        assert WeatherDataModule is not None
 
     def test_constructor_params(self, synthetic_csv_file: Path) -> None:
         """Constructor accepts standard forecasting params."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=synthetic_csv_file,
             seq_len=96,
             mode=ForecastingMode.UNIVARIATE,
@@ -244,9 +244,9 @@ class TestWeatherPrepareData:
 
     def test_prepare_data_raises_file_not_found(self) -> None:
         """prepare_data raises FileNotFoundError for missing file."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(dataset_file_path=Path('/nonexistent/weather.csv'))
+        module = WeatherDataModule(dataset_file_path=Path('/nonexistent/weather.csv'))
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
@@ -260,9 +260,9 @@ class TestWeatherTransform:
         Operates on _full_data_scaled (the already-scaled data array),
         expanding from (samples, features) to (1, samples, features).
         """
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(dataset_file_path=synthetic_csv_file)
+        module = WeatherDataModule(dataset_file_path=synthetic_csv_file)
         # Set synthetic scaled data: (3 samples, 2 features)
         module._full_data_scaled = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32)
         module._transform_data()
@@ -312,9 +312,9 @@ class TestForecastingSlices:
 
     def test_weather_fractional_split(self, synthetic_csv_file: Path) -> None:
         """Weather uses 60/20/20 fractional split."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(dataset_file_path=synthetic_csv_file)
+        module = WeatherDataModule(dataset_file_path=synthetic_csv_file)
         module._full_data_raw = np.array(list(range(100))).reshape(-1, 1)
         module._set_data_slices()
 
@@ -379,9 +379,9 @@ class TestWeatherModuleIntegration:
         extraction, data transformation, and train/valid/test splitting
         via the 60/20/20 fractional path.
         """
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=weather_csv_file,
             seq_len=96,
             batch_size=16,
@@ -405,9 +405,9 @@ class TestWeatherModuleIntegration:
         fixture. Confirms Weather's fractional split pattern differs
         from ETT's absolute month-boundary splits.
         """
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(dataset_file_path=weather_csv_file)
+        module = WeatherDataModule(dataset_file_path=weather_csv_file)
         module.prepare_data()
         module.setup(stage='fit')
 
@@ -425,9 +425,9 @@ class TestWeatherModuleIntegration:
         has shape (1, 120, total_features). DataLoader wraps this in
         TensorDataset.
         """
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=weather_csv_file,
             seq_len=96,
             batch_size=16,
@@ -800,10 +800,10 @@ class TestWeatherCacheIntegration:
 
     def test_prepare_data_writes_npz(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: prepare_data() writes .npz file to cache directory."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
             batch_size=16,
@@ -825,10 +825,10 @@ class TestWeatherCacheIntegration:
         """Weather: prepare_data() writes metadata.json with version=1 and splits."""
         import json
 
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
             batch_size=16,
@@ -855,10 +855,10 @@ class TestWeatherCacheIntegration:
 
     def test_setup_reads_cache_and_sets_raw(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: setup('fit') reads .npz from cache and sets _full_data_raw."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
             batch_size=16,
@@ -882,10 +882,10 @@ class TestWeatherCacheIntegration:
 
     def test_transform_data_produces_correct_shape(self, weather_csv: Path, tmp_path: Path) -> None:
         """Weather: _transform_data produces (1, samples, features) shape."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
         cache_dir = tmp_path / 'cache'
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=weather_csv,
             seq_len=96,
             batch_size=16,
@@ -1423,9 +1423,9 @@ class TestSetupIdempotency:
 
     def test_weather_setup_fit_twice_no_double_scale(self) -> None:
         """Weather: setup('fit') called twice produces identical train samples."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=Path('/nonexistent/dummy.csv'),
             seq_len=96,
             batch_size=16,
@@ -1511,9 +1511,9 @@ class TestPrepareDataIdempotency:
 
     def test_weather_prepare_data_runs_io_once(self, synthetic_csv_file: Path) -> None:
         """Weather: prepare_data() twice → pd.read_csv called once."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=synthetic_csv_file,
             seq_len=96,
             batch_size=16,
@@ -1584,9 +1584,9 @@ class TestFinalizePrepareData:
 
     def test_weather_slices_set_after_setup(self, synthetic_csv_file: Path) -> None:
         """Weather: slices are populated by setup() after cache read."""
-        from chronocratic.datasets.modules.weather import WeatherModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=synthetic_csv_file,
             seq_len=96,
             batch_size=16,

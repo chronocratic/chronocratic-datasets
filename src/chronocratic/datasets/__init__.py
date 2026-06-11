@@ -44,7 +44,7 @@ from chronocratic.datasets.modules import (
     ETTDataModule,
     UCRClassificationDataModule,
     UEAClassificationDataModule,
-    WeatherModule,
+    WeatherDataModule,
 )
 
 # Utils (18 symbols from utils/__init__.py __all__)

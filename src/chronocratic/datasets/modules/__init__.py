@@ -9,7 +9,7 @@ from chronocratic.datasets.modules.electricity import ElectricityLoadModule
 from chronocratic.datasets.modules.ett import ETTDataModule
 from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 from chronocratic.datasets.modules.uea import UEAClassificationDataModule
-from chronocratic.datasets.modules.weather import WeatherModule
+from chronocratic.datasets.modules.weather import WeatherDataModule
 
 __all__ = [
     'BaseClassificationTimeSeriesDataModule',

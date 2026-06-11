@@ -48,7 +48,7 @@ def _ddp_forecasting_worker(
         results_dir: Directory to write rank results for verification.
         csv_path: Path to synthetic CSV file.
     """
-    from chronocratic.datasets.modules.weather import WeatherModule
+    from chronocratic.datasets.modules.weather import WeatherDataModule
 
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = str(port)
@@ -57,7 +57,7 @@ def _ddp_forecasting_worker(
     try:
         # Rank 0: prepare_data() writes cache
         if rank == 0:
-            module = WeatherModule(
+            module = WeatherDataModule(
                 dataset_file_path=Path(csv_path), seq_len=96, mode=ForecastingMode.UNIVARIATE
             )
             module.prepare_data()
@@ -65,7 +65,7 @@ def _ddp_forecasting_worker(
         dist.barrier()  # Ensure cache is written before other ranks read
 
         # All ranks: fresh module instance, setup reads from cache
-        module = WeatherModule(
+        module = WeatherDataModule(
             dataset_file_path=Path(csv_path),
             seq_len=96,
             mode=ForecastingMode.UNIVARIATE,

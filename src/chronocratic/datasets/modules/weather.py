@@ -33,10 +33,10 @@ from chronocratic.datasets.utils.features import TIME_FEATURE_COUNT
 if TYPE_CHECKING:
     from pathlib import Path
 
-__all__ = ['WeatherDataModule', 'WeatherModule']
+__all__ = ['WeatherDataModule']
 
 
-class WeatherModule(BaseForecastingTimeSeriesDataModule):
+class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
     """LightningDataModule for weather forecasting.
 
     Reads CSV with standard format (comma-separated, period decimals),
@@ -296,7 +296,3 @@ class WeatherModule(BaseForecastingTimeSeriesDataModule):
         )
         assert result is not None  # _process_test_dataloader always returns DataLoader
         return result
-
-
-# Backward-compatible alias
-WeatherDataModule = WeatherModule
