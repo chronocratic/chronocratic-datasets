@@ -8,8 +8,8 @@ Ready-to-use time series datasets for PyTorch Lightning.
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/chronocratic-datasets?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/chronocratic-datasets)
 [![Build and Test](https://github.com/chronocratic/chronocratic-datasets/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/chronocratic/chronocratic-datasets/actions/workflows/build-and-test.yml)
 [![Documentation Status](https://readthedocs.org/projects/chronocratic-datasets/badge/?version=latest)](https://chronocratic-datasets.readthedocs.io/)
-[![GitHub Stars](https://img.shields.io/github/stars/chronocratic/chronocratic-datasets)](https://github.com/chronocratic/chronocratic-datasets)
 ![code style - ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
+[![GitHub Stars](https://img.shields.io/github/stars/chronocratic/chronocratic-datasets)](https://github.com/chronocratic/chronocratic-datasets)
 
 ## Installation
 
