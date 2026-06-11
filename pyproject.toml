@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
-keywords = ["time-series", "pytorch", "lightning", "machine-learning", "datasets"]
+keywords = ["time-series", "pytorch", "lightning", "machine-learning", "datasets", "data-modules", "forecasting", "classification", "regression", "artificial-intelligence"]
 authors = [{name = "The Chronocratic Developers", email = "github@users.noreply.github.com"}]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -18,8 +18,11 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
