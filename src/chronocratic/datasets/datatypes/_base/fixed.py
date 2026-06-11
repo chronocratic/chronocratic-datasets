@@ -140,7 +140,7 @@ class FixedTimeSeriesDatasetUnivariate(FixedTimeSeriesDataset, ABC):
         self._n = 0
 
     def _get_current_data(self) -> np.ndarray:
-        return self._data.iloc[self._n].to_numpy()
+        return self._data.iloc[self._n].to_numpy(copy=True)
 
 
 class FixedTimeSeriesDatasetMultivariate(FixedTimeSeriesDataset, ABC):
