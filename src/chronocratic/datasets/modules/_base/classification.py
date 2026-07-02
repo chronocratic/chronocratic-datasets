@@ -45,6 +45,17 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     and relies on the inherited ``setup()`` which calls
     ``create_data_scaler()``.
 
+    .. note::
+
+        Classification dataloaders construct dataset classes directly
+        (e.g., ``UCRClassificationUnivariateDataset``) rather than using
+        a shared ``_build_dataloader()`` like the forecasting branch.
+        This reflects fundamentally different data shapes and dataset
+        classes between the two branches. Loader mode resolution is
+        centralized via :meth:`_resolve_loader_mode`. A future refactor
+        could introduce a template method pattern to align the two
+        branches.
+
     Args:
         dataset_folder_path: Path to the dataset folder containing
             ARFF/CSV files.
