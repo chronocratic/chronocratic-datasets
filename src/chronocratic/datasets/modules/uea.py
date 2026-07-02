@@ -77,6 +77,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             :class:`~chronocratic.datasets.enums.data.ClassificationSplitMode`.
         test_size: Test set fraction for ``MANUAL`` splitting.
         num_workers: DataLoader worker count.
+        loader_mode: Per-init mode controlling dataloader output format.
+            Defaults to ``ClassificationLoaderMode.SAMPLE_LABEL``.
     """
 
     def __init__(
@@ -93,6 +95,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         splitting_strategy: ClassificationSplitMode = (ClassificationSplitMode.AS_DEFINED),
         test_size: float = 0.5,
         num_workers: int = 0,
+        loader_mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
     ) -> None:
         super().__init__(
             dataset_folder_path=dataset_folder_path,
@@ -107,6 +110,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             test_size=test_size,
             num_workers=num_workers,
             data_form=DataForm.NESTED,
+            loader_mode=loader_mode,
         )
         self._dataset_name = dataset_folder_path.name
         self._cache_key = build_cache_key(
