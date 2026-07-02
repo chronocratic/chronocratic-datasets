@@ -261,8 +261,7 @@ class TestDataLoaderNoneFallback:
         dl = mod.train_dataloader(loader_mode=None)
         assert isinstance(dl, DataLoader)
         batch = next(iter(dl))
-        # SAMPLE_LABEL yields (data, label) tuples
-        assert isinstance(batch, tuple)
+        # SAMPLE_LABEL yields [data, label] after collation
         assert len(batch) == 2
 
     def test_forecasting_val_dataloader_none_fallback(self, synthetic_ett_csv: Path) -> None:
@@ -318,8 +317,7 @@ class TestDataLoaderNoneFallback:
         if dl is not None:
             assert isinstance(dl, DataLoader)
             batch = next(iter(dl))
-            # SAMPLE_LABEL yields (data, label) tuples
-            assert isinstance(batch, tuple)
+            # SAMPLE_LABEL yields [data, label] after collation
             assert len(batch) == 2
         # When dl is None, the validation split is empty (acceptable for
         # small synthetic fixtures) -- the fallback resolution still
