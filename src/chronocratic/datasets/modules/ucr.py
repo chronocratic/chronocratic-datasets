@@ -355,9 +355,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         Returns:
             Configured DataLoader for training.
         """
-        resolved_mode = (
-            loader_mode if loader_mode is not None else self.loader_mode
-        )
+        resolved_mode = loader_mode if loader_mode is not None else self.loader_mode
         dataset = UCRClassificationUnivariateDataset(
             data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._train_data_labels,
@@ -392,9 +390,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         Returns:
             Configured DataLoader for validation, or ``None``.
         """
-        resolved_mode = (
-            loader_mode if loader_mode is not None else self.loader_mode
-        )
+        resolved_mode = loader_mode if loader_mode is not None else self.loader_mode
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
         dataset = UCRClassificationUnivariateDataset(
@@ -426,9 +422,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         Returns:
             Configured DataLoader for testing.
         """
-        resolved_mode = (
-            loader_mode if loader_mode is not None else self.loader_mode
-        )
+        resolved_mode = loader_mode if loader_mode is not None else self.loader_mode
         dataset = UCRClassificationUnivariateDataset(
             data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._test_data_labels,
