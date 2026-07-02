@@ -203,9 +203,7 @@ class TestUEAPrepareData:
 class TestUEADataLoaders:
     """Tests for dataloader methods."""
 
-    def test_train_dataloader_returns_dataloader(
-        self, synthetic_uea_folder: Path
-    ) -> None:
+    def test_train_dataloader_returns_dataloader(self, synthetic_uea_folder: Path) -> None:
         """train_dataloader returns a DataLoader instance."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
@@ -224,9 +222,7 @@ class TestUEADataLoaders:
             loader = module.train_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert isinstance(loader, DataLoader)
 
-    def test_val_dataloader_returns_dataloader_or_none(
-        self, synthetic_uea_folder: Path
-    ) -> None:
+    def test_val_dataloader_returns_dataloader_or_none(self, synthetic_uea_folder: Path) -> None:
         """val_dataloader returns None when valid_size=0."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
@@ -244,9 +240,7 @@ class TestUEADataLoaders:
             result = module.val_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert result is None
 
-    def test_test_dataloader_returns_dataloader(
-        self, synthetic_uea_folder: Path
-    ) -> None:
+    def test_test_dataloader_returns_dataloader(self, synthetic_uea_folder: Path) -> None:
         """test_dataloader returns a DataLoader instance."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
