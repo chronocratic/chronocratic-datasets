@@ -246,8 +246,12 @@ class TestDataLoaderNoneFallback:
         mod.prepare_data()
         mod.setup(stage="fit")
         # Calling with loader_mode=None should fall back to self.loader_mode
-        dl = mod.train_dataloader(loader_mode=None)  # type: ignore[arg-type]
+        dl = mod.train_dataloader(loader_mode=None)
         assert isinstance(dl, DataLoader)
+        batch = next(iter(dl))
+        # RAW_SERIES yields TensorDataset: single 3D tensor (batch, seq, features)
+        assert len(batch) == 1
+        assert batch[0].ndim == 3
 
     def test_classification_train_dataloader_none_fallback(
         self, synthetic_ucr_folder: Path
@@ -262,8 +266,11 @@ class TestDataLoaderNoneFallback:
         )
         mod.prepare_data()
         mod.setup(stage="fit")
-        dl = mod.train_dataloader(loader_mode=None)  # type: ignore[arg-type]
+        dl = mod.train_dataloader(loader_mode=None)
         assert isinstance(dl, DataLoader)
+        batch = next(iter(dl))
+        # SAMPLE_LABEL yields (data, label) tuples
+        assert isinstance(batch, tuple) and len(batch) == 2
 
     def test_forecasting_val_dataloader_none_fallback(
         self, synthetic_ett_csv: Path
@@ -278,9 +285,14 @@ class TestDataLoaderNoneFallback:
         )
         mod.prepare_data()
         mod.setup(stage="fit")
-        dl = mod.val_dataloader(loader_mode=None)  # type: ignore[arg-type]
+        dl = mod.val_dataloader(loader_mode=None)
         # May be None if valid_size=0; otherwise a DataLoader
         assert dl is None or isinstance(dl, DataLoader)
+        if dl is not None:
+            batch = next(iter(dl))
+            # RAW_SERIES yields TensorDataset: single 3D tensor
+            assert len(batch) == 1
+            assert batch[0].ndim == 3
 
     def test_forecasting_test_dataloader_none_fallback(
         self, synthetic_ett_csv: Path
@@ -295,8 +307,12 @@ class TestDataLoaderNoneFallback:
         )
         mod.prepare_data()
         mod.setup(stage="fit")
-        dl = mod.test_dataloader(loader_mode=None)  # type: ignore[arg-type]
+        dl = mod.test_dataloader(loader_mode=None)
         assert isinstance(dl, DataLoader)
+        batch = next(iter(dl))
+        # RAW_SERIES yields TensorDataset: single 3D tensor
+        assert len(batch) == 1
+        assert batch[0].ndim == 3
 
     def test_classification_val_dataloader_none_fallback(
         self, synthetic_ucr_folder: Path
@@ -311,8 +327,15 @@ class TestDataLoaderNoneFallback:
         )
         mod.prepare_data()
         mod.setup(stage="fit")
-        dl = mod.val_dataloader(loader_mode=None)  # type: ignore[arg-type]
-        assert dl is None or isinstance(dl, DataLoader)
+        dl = mod.val_dataloader(loader_mode=None)
+        if dl is not None:
+            assert isinstance(dl, DataLoader)
+            batch = next(iter(dl))
+            # SAMPLE_LABEL yields (data, label) tuples
+            assert isinstance(batch, tuple) and len(batch) == 2
+        # When dl is None, the validation split is empty (acceptable for
+        # small synthetic fixtures) -- the fallback resolution still
+        # occurred; there is just no data to yield.
 
 
 class TestDataLoaderExplicitOverride:
@@ -441,3 +464,31 @@ class TestMultiModuleDefaults:
 
         mod = WeatherDataModule(dataset_file_path=csv_path)
         assert mod.loader_mode == ForecastingLoaderMode.RAW_SERIES
+
+
+class TestLoaderModeResetPreservation:
+    """Tests that reset() does NOT clear loader_mode (user-configured state)."""
+
+    def test_forecasting_reset_preserves_loader_mode(self, synthetic_ett_csv: Path) -> None:
+        """Forecasting reset() preserves explicitly set loader_mode."""
+        from chronocratic.datasets.modules.ett import ETTDataModule
+
+        mod = ETTDataModule(
+            dataset_file_path=synthetic_ett_csv,
+            variant="ETTh1",
+            loader_mode=ForecastingLoaderMode.INPUT_TARGET,
+        )
+        mod.reset()
+        assert mod.loader_mode == ForecastingLoaderMode.INPUT_TARGET
+
+    def test_classification_reset_preserves_loader_mode(self, synthetic_ucr_folder: Path) -> None:
+        """Classification reset() preserves explicitly set loader_mode."""
+        from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
+
+        mod = UCRClassificationDataModule(
+            dataset_folder_path=synthetic_ucr_folder,
+            target_column_name="class",
+            loader_mode=ClassificationLoaderMode.SAMPLE_ONLY,
+        )
+        mod.reset()
+        assert mod.loader_mode == ClassificationLoaderMode.SAMPLE_ONLY
