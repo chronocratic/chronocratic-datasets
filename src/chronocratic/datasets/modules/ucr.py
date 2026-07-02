@@ -336,7 +336,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def train_dataloader(
         self,
         *,
-        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
+        loader_mode: ClassificationLoaderMode | None = None,
         shuffle: bool | None = None,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
@@ -344,7 +344,8 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         """Build the training DataLoader.
 
         Args:
-            mode: Dataset mode (with/without labels, forecasting).
+            loader_mode: Dataset mode (with/without labels). Defaults to
+                :attr:`loader_mode` if ``None``.
             shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
             strict_batch_size: If True, pad the last batch via
                 :func:`custom_collate_fn`.
@@ -354,10 +355,13 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         Returns:
             Configured DataLoader for training.
         """
+        resolved_mode = (
+            loader_mode if loader_mode is not None else self.loader_mode
+        )
         dataset = UCRClassificationUnivariateDataset(
             data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._train_data_labels,
-            mode=CLASSIFICATION_LOADER_MAP[mode],
+            mode=CLASSIFICATION_LOADER_MAP[resolved_mode],
         )
         return self._process_train_dataloader(
             dataset_object=dataset,
@@ -369,7 +373,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def val_dataloader(
         self,
         *,
-        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
+        loader_mode: ClassificationLoaderMode | None = None,
         strict_batch_size: bool = True,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:  # ty:ignore[invalid-method-override]
@@ -378,7 +382,8 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         Returns ``None`` when :attr:`valid_size` is ``0.0``.
 
         Args:
-            mode: Dataset mode (with/without labels, forecasting).
+            loader_mode: Dataset mode (with/without labels). Defaults to
+                :attr:`loader_mode` if ``None``.
             strict_batch_size: If True, pad the last batch via
                 :func:`custom_collate_fn`.
             extra_args: Additional keyword arguments forwarded to
@@ -387,12 +392,15 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         Returns:
             Configured DataLoader for validation, or ``None``.
         """
+        resolved_mode = (
+            loader_mode if loader_mode is not None else self.loader_mode
+        )
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
         dataset = UCRClassificationUnivariateDataset(
             data=self._valid_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._valid_data_labels,
-            mode=CLASSIFICATION_LOADER_MAP[mode],
+            mode=CLASSIFICATION_LOADER_MAP[resolved_mode],
         )
         return self._process_valid_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args
@@ -401,14 +409,15 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     def test_dataloader(
         self,
         *,
-        mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
+        loader_mode: ClassificationLoaderMode | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:  # ty:ignore[invalid-method-override]
         """Build the test DataLoader.
 
         Args:
-            mode: Dataset mode (with/without labels, forecasting).
+            loader_mode: Dataset mode (with/without labels). Defaults to
+                :attr:`loader_mode` if ``None``.
             strict_batch_size: If True, pad the last batch via
                 :func:`custom_collate_fn`.
             extra_args: Additional keyword arguments forwarded to
@@ -417,10 +426,13 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         Returns:
             Configured DataLoader for testing.
         """
+        resolved_mode = (
+            loader_mode if loader_mode is not None else self.loader_mode
+        )
         dataset = UCRClassificationUnivariateDataset(
             data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._test_data_labels,
-            mode=CLASSIFICATION_LOADER_MAP[mode],
+            mode=CLASSIFICATION_LOADER_MAP[resolved_mode],
         )
         return self._process_test_dataloader(
             dataset_object=dataset, strict_batch_size=strict_batch_size, extra_args=extra_args

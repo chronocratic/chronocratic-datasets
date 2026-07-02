@@ -229,7 +229,7 @@ class TestUEADataLoaders:
             module.prepare_data()
             module.setup("fit")
 
-            loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            loader = module.train_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert isinstance(loader, DataLoader)
 
     @patch(
@@ -253,7 +253,7 @@ class TestUEADataLoaders:
                 scale_data=False,
             )
             module.prepare_data()
-            result = module.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            result = module.val_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert result is None
 
     @patch(
@@ -278,7 +278,7 @@ class TestUEADataLoaders:
             module.prepare_data()
             module.setup("fit")
 
-            loader = module.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            loader = module.test_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert isinstance(loader, DataLoader)
 
 

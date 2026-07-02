@@ -128,7 +128,7 @@ class TestUCRClassificationDataModule:
         mod.prepare_data()
         mod.setup("fit")
 
-        dl = mod.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
+        dl = mod.train_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert isinstance(dl, DataLoader)
 
     def test_test_dataloader_returns_dataloader(
@@ -141,7 +141,7 @@ class TestUCRClassificationDataModule:
         mod.prepare_data()
         mod.setup("fit")
 
-        dl = mod.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
+        dl = mod.test_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert isinstance(dl, DataLoader)
 
     def test_val_dataloader_returns_dataloader_or_none(
@@ -154,7 +154,7 @@ class TestUCRClassificationDataModule:
         mod.prepare_data()
         mod.setup("fit")
 
-        dl = mod.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
+        dl = mod.val_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert dl is None or isinstance(dl, DataLoader)
 
         # Test with valid_size=0
@@ -163,7 +163,7 @@ class TestUCRClassificationDataModule:
         )
         mod_no_val.prepare_data()
         mod_no_val.setup("fit")
-        dl_none = mod_no_val.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_LABEL)
+        dl_none = mod_no_val.val_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_LABEL)
         assert dl_none is None
 
 
