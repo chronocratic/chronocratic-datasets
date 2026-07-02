@@ -13,7 +13,12 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from chronocratic.datasets.enums.data import ClassificationSplitMode, DataForm, ScalingMethod
+from chronocratic.datasets.enums.data import (
+    ClassificationLoaderMode,
+    ClassificationSplitMode,
+    DataForm,
+    ScalingMethod,
+)
 from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 from chronocratic.datasets.utils.common import separate_target_feature_from_df
 from chronocratic.datasets.utils.general import process_data_with_varying_sequence_lengths_single
@@ -40,6 +45,17 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     and relies on the inherited ``setup()`` which calls
     ``create_data_scaler()``.
 
+    .. note::
+
+        Classification dataloaders construct dataset classes directly
+        (e.g., ``UCRClassificationUnivariateDataset``) rather than using
+        a shared ``_build_dataloader()`` like the forecasting branch.
+        This reflects fundamentally different data shapes and dataset
+        classes between the two branches. Loader mode resolution is
+        centralized via :meth:`_resolve_loader_mode`. A future refactor
+        could introduce a template method pattern to align the two
+        branches.
+
     Args:
         dataset_folder_path: Path to the dataset folder containing
             ARFF/CSV files.
@@ -57,6 +73,9 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         test_size: Fraction reserved as test set (used with
             :data:`ClassificationSplitMode.MANUAL`).
         num_workers: Number of DataLoader worker processes.
+        loader_mode: Per-init mode controlling dataloader output format.
+            Defaults to ``ClassificationLoaderMode.SAMPLE_LABEL``. Can be
+            overridden at dataloader call time or via the property setter.
     """
 
     def __init__(
@@ -74,6 +93,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         test_size: float = 0.5,
         num_workers: int = 0,
         data_form: DataForm = DataForm.REGULAR,
+        loader_mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -99,6 +119,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._train_data_labels: pd.Series | None = None
         self._test_data_labels: pd.Series | None = None
         self._valid_data_labels: pd.Series | None = None
+        self.loader_mode = loader_mode
 
     # ------------------------------------------------------------------
     # Properties
@@ -136,6 +157,40 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             msg = "No data loaded. Call prepare_data() and setup() first."
             raise RuntimeError(msg)
         return pd.concat(splits, axis=0)
+
+    @property
+    def loader_mode(self) -> ClassificationLoaderMode:
+        """Loader mode controlling dataloader output format."""
+        return self._loader_mode
+
+    @loader_mode.setter
+    def loader_mode(self, value: ClassificationLoaderMode) -> None:
+        """Set loader mode with type validation.
+
+        Args:
+            value: The loader mode to set.
+
+        Raises:
+            TypeError: If value is not a ClassificationLoaderMode instance.
+        """
+        if not isinstance(value, ClassificationLoaderMode):
+            msg = f"loader_mode must be ClassificationLoaderMode, got {type(value).__name__}"
+            raise TypeError(msg)
+        self._loader_mode = value
+
+    def _resolve_loader_mode(
+        self, loader_mode: ClassificationLoaderMode | None
+    ) -> ClassificationLoaderMode:
+        """Resolve per-call loader_mode, falling back to instance default.
+
+        Args:
+            loader_mode: Mode override for this call. When ``None``,
+                the instance-level :attr:`loader_mode` is used.
+
+        Returns:
+            The effective loader mode to use for dataset construction.
+        """
+        return loader_mode if loader_mode is not None else self.loader_mode
 
     # ------------------------------------------------------------------
     # Abstract methods for subclasses

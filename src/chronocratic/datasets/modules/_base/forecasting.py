@@ -80,6 +80,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             in dataloader calls. Does not affect cache key.
         step: Stride between consecutive sliding windows. Defaults to
             ``seq_len`` when not provided. Does not affect cache key.
+        loader_mode: Per-init mode controlling dataloader output format.
+            Defaults to ``ForecastingLoaderMode.RAW_SERIES``. Can be
+            overridden at dataloader call time or via the property setter.
     """
 
     def __init__(
@@ -97,6 +100,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         mode: ForecastingMode = ForecastingMode.UNIVARIATE,
         forecast_horizon: int | None = None,
         step: int | None = None,
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -118,6 +122,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._mode = mode
         self.forecast_horizon = forecast_horizon
         self._step = step
+        self.loader_mode = loader_mode
         self._train_slice: slice | None = None
         self._valid_slice: slice | None = None
         self._test_slice: slice | None = None
@@ -164,6 +169,26 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def num_time_series_features(self) -> int | None:
         """Number of cyclical time features extracted."""
         return self._num_time_series_features
+
+    @property
+    def loader_mode(self) -> ForecastingLoaderMode:
+        """Loader mode controlling dataloader output format."""
+        return self._loader_mode
+
+    @loader_mode.setter
+    def loader_mode(self, value: ForecastingLoaderMode) -> None:
+        """Set loader mode with type validation.
+
+        Args:
+            value: The loader mode to set.
+
+        Raises:
+            TypeError: If value is not a ForecastingLoaderMode instance.
+        """
+        if not isinstance(value, ForecastingLoaderMode):
+            msg = f"loader_mode must be ForecastingLoaderMode, got {type(value).__name__}"
+            raise TypeError(msg)
+        self._loader_mode = value
 
     # ------------------------------------------------------------------
     # Abstract methods
@@ -439,7 +464,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         *,
         data_partition: np.ndarray | pd.DataFrame | None,
         partition: DataPartition,
-        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        loader_mode: ForecastingLoaderMode | None = None,
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
@@ -453,7 +478,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_partition: Scaled data array (post-transform, 3D).
             partition: Which data partition to process, controlling shuffle
                 behavior and return type.
-            loader_mode: Per-call mode controlling output format.
+            loader_mode: Per-call mode controlling output format. When
+                ``None``, falls back to :attr:`loader_mode` set at init
+                time or via the property setter.
             shuffle: Whether to shuffle (train only).
             strict_batch_size: If True, pad the last batch.
             extra_args: Additional DataLoader keyword arguments.
@@ -470,6 +497,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         import torch
         from torch.utils.data import TensorDataset
 
+        # Resolve per-call loader_mode, falling back to instance default
+        effective_mode = loader_mode if loader_mode is not None else self.loader_mode
+
         # Type narrowing: forecasting modules always set *_data_samples to np.ndarray
         # after setup(). Check at runtime to satisfy static analysis.
         if not isinstance(data_partition, np.ndarray):
@@ -479,7 +509,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             )
             raise TypeError(msg)
 
-        if loader_mode == ForecastingLoaderMode.RAW_SERIES:
+        if effective_mode == ForecastingLoaderMode.RAW_SERIES:
             # TensorDataset on raw samples
             tensor = torch.from_numpy(data_partition).to(torch.float32)
             return self._dispatch_process_dataloader(
@@ -495,7 +525,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         # Validate forecast_horizon is set
         if self.forecast_horizon is None:
             msg = (
-                f"loader_mode={loader_mode.value!r} requires forecast_horizon "
+                f"loader_mode={effective_mode.value!r} requires forecast_horizon "
                 f"to be set on the datamodule constructor."
             )
             raise ValueError(msg)
@@ -521,10 +551,10 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             raise ValueError(msg)
 
         # Translate loader mode → dataset mode via map
-        internal_mode = FORECASTING_LOADER_MAP[loader_mode]
+        internal_mode = FORECASTING_LOADER_MAP[effective_mode]
         if internal_mode is None:
             msg = (
-                f"FORECASTING_LOADER_MAP returned None for {loader_mode.value!r}. "
+                f"FORECASTING_LOADER_MAP returned None for {effective_mode.value!r}. "
                 f"This loader_mode should not reach the sliding-window path."
             )
             raise RuntimeError(msg)

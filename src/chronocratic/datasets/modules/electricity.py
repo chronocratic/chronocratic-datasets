@@ -73,6 +73,8 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
         data_scaling_method: Scaling algorithm.
         data_scaling_range: Target min-max range.
         num_workers: DataLoader worker count.
+        loader_mode: Per-init mode controlling dataloader output format.
+            Defaults to ``ForecastingLoaderMode.RAW_SERIES``.
     """
 
     def __init__(
@@ -91,6 +93,7 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
         num_workers: int = 0,
         forecast_horizon: int = 24,
         step: int | None = None,
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -105,6 +108,7 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
             mode=mode,
             forecast_horizon=forecast_horizon,
             step=step,
+            loader_mode=loader_mode,
         )
         self.dataset_file_path = dataset_file_path
         self._dataset_name = "ElectricityLoad"
@@ -251,7 +255,7 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
     def train_dataloader(
         self,
         *,
-        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        loader_mode: ForecastingLoaderMode | None = None,
         shuffle: bool | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
@@ -260,6 +264,8 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
 
         Args:
             loader_mode: Per-call mode controlling output format.
+                Defaults to ``None``, which falls back to
+                :attr:`loader_mode` set at init time.
                 RAW_SERIES yields full series (existing behavior).
                 INPUT_TARGET yields (input, target) sliding-window pairs.
                 INPUT_ONLY yields input windows without targets.
@@ -284,7 +290,7 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
     def val_dataloader(
         self,
         *,
-        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        loader_mode: ForecastingLoaderMode | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:
@@ -300,7 +306,7 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
     def test_dataloader(
         self,
         *,
-        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        loader_mode: ForecastingLoaderMode | None = None,
         strict_batch_size: bool = False,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:

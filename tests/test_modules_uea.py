@@ -173,11 +173,7 @@ class TestUEAPrepareData:
         with pytest.raises(FileNotFoundError):
             module.prepare_data()
 
-    @patch(
-        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_prepare_data_loads_data(self, mock_read, synthetic_uea_folder: Path) -> None:
+    def test_prepare_data_loads_data(self, synthetic_uea_folder: Path) -> None:
         """prepare_data loads train/test data and sets module state."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
@@ -207,13 +203,7 @@ class TestUEAPrepareData:
 class TestUEADataLoaders:
     """Tests for dataloader methods."""
 
-    @patch(
-        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_train_dataloader_returns_dataloader(
-        self, mock_read, synthetic_uea_folder: Path
-    ) -> None:
+    def test_train_dataloader_returns_dataloader(self, synthetic_uea_folder: Path) -> None:
         """train_dataloader returns a DataLoader instance."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
@@ -229,16 +219,10 @@ class TestUEADataLoaders:
             module.prepare_data()
             module.setup("fit")
 
-            loader = module.train_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            loader = module.train_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert isinstance(loader, DataLoader)
 
-    @patch(
-        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_val_dataloader_returns_dataloader_or_none(
-        self, mock_read, synthetic_uea_folder: Path
-    ) -> None:
+    def test_val_dataloader_returns_dataloader_or_none(self, synthetic_uea_folder: Path) -> None:
         """val_dataloader returns None when valid_size=0."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
@@ -253,16 +237,10 @@ class TestUEADataLoaders:
                 scale_data=False,
             )
             module.prepare_data()
-            result = module.val_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            result = module.val_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert result is None
 
-    @patch(
-        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
-        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
-    )
-    def test_test_dataloader_returns_dataloader(
-        self, mock_read, synthetic_uea_folder: Path
-    ) -> None:
+    def test_test_dataloader_returns_dataloader(self, synthetic_uea_folder: Path) -> None:
         """test_dataloader returns a DataLoader instance."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
@@ -278,7 +256,7 @@ class TestUEADataLoaders:
             module.prepare_data()
             module.setup("fit")
 
-            loader = module.test_dataloader(mode=ClassificationLoaderMode.SAMPLE_ONLY)
+            loader = module.test_dataloader(loader_mode=ClassificationLoaderMode.SAMPLE_ONLY)
             assert isinstance(loader, DataLoader)
 
 
