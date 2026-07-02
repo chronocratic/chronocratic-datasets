@@ -167,6 +167,20 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             raise TypeError(msg)
         self._loader_mode = value
 
+    def _resolve_loader_mode(
+        self, loader_mode: ClassificationLoaderMode | None
+    ) -> ClassificationLoaderMode:
+        """Resolve per-call loader_mode, falling back to instance default.
+
+        Args:
+            loader_mode: Mode override for this call. When ``None``,
+                the instance-level :attr:`loader_mode` is used.
+
+        Returns:
+            The effective loader mode to use for dataset construction.
+        """
+        return loader_mode if loader_mode is not None else self.loader_mode
+
     # ------------------------------------------------------------------
     # Abstract methods for subclasses
     # ------------------------------------------------------------------

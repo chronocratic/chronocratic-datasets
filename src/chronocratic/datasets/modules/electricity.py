@@ -276,11 +276,10 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
         Returns:
             Configured DataLoader for training.
         """
-        resolved_mode = loader_mode if loader_mode is not None else self.loader_mode
         result = self._build_dataloader(
             data_partition=self._train_data_samples,
             partition=DataPartition.TRAIN,
-            loader_mode=resolved_mode,
+            loader_mode=loader_mode,
             shuffle=shuffle,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
@@ -296,11 +295,10 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:
         """Build the validation DataLoader."""
-        resolved_mode = loader_mode if loader_mode is not None else self.loader_mode
         return self._build_dataloader(
             data_partition=self._valid_data_samples,
             partition=DataPartition.VAL,
-            loader_mode=resolved_mode,
+            loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
@@ -313,11 +311,10 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader."""
-        resolved_mode = loader_mode if loader_mode is not None else self.loader_mode
         result = self._build_dataloader(
             data_partition=self._test_data_samples,
             partition=DataPartition.TEST,
-            loader_mode=resolved_mode,
+            loader_mode=loader_mode,
             strict_batch_size=strict_batch_size,
             extra_args=extra_args,
         )
