@@ -166,16 +166,12 @@ class TestLoaderModeSetterValidation:
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         # loader_mode must be a property (descriptor) on the base class
-        assert isinstance(
-            BaseForecastingTimeSeriesDataModule.__dict__["loader_mode"], property
-        )
+        assert isinstance(BaseForecastingTimeSeriesDataModule.__dict__["loader_mode"], property)
         mod = ETTDataModule(dataset_file_path=synthetic_ett_csv, variant="ETTh1")
         mod.loader_mode = ForecastingLoaderMode.INPUT_TARGET
         assert mod.loader_mode == ForecastingLoaderMode.INPUT_TARGET
 
-    def test_forecasting_setter_rejects_classification_mode(
-        self, synthetic_ett_csv: Path
-    ) -> None:
+    def test_forecasting_setter_rejects_classification_mode(self, synthetic_ett_csv: Path) -> None:
         """Forecasting loader_mode setter raises TypeError for ClassificationLoaderMode."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
@@ -191,9 +187,7 @@ class TestLoaderModeSetterValidation:
         from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
         # loader_mode must be a property (descriptor) on the base class
-        assert isinstance(
-            BaseClassificationTimeSeriesDataModule.__dict__["loader_mode"], property
-        )
+        assert isinstance(BaseClassificationTimeSeriesDataModule.__dict__["loader_mode"], property)
         mod = UCRClassificationDataModule(
             dataset_folder_path=synthetic_ucr_folder, target_column_name="class"
         )
@@ -232,9 +226,7 @@ class TestLoaderModeSetterValidation:
 class TestDataLoaderNoneFallback:
     """Tests for D-04: Dataloader method with loader_mode=None falls back to self.loader_mode."""
 
-    def test_forecasting_train_dataloader_none_fallback(
-        self, synthetic_ett_csv: Path
-    ) -> None:
+    def test_forecasting_train_dataloader_none_fallback(self, synthetic_ett_csv: Path) -> None:
         """Forecasting train_dataloader with loader_mode=None uses self.loader_mode."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
@@ -270,11 +262,10 @@ class TestDataLoaderNoneFallback:
         assert isinstance(dl, DataLoader)
         batch = next(iter(dl))
         # SAMPLE_LABEL yields (data, label) tuples
-        assert isinstance(batch, tuple) and len(batch) == 2
+        assert isinstance(batch, tuple)
+        assert len(batch) == 2
 
-    def test_forecasting_val_dataloader_none_fallback(
-        self, synthetic_ett_csv: Path
-    ) -> None:
+    def test_forecasting_val_dataloader_none_fallback(self, synthetic_ett_csv: Path) -> None:
         """Forecasting val_dataloader with loader_mode=None falls back to self.loader_mode."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
@@ -294,9 +285,7 @@ class TestDataLoaderNoneFallback:
             assert len(batch) == 1
             assert batch[0].ndim == 3
 
-    def test_forecasting_test_dataloader_none_fallback(
-        self, synthetic_ett_csv: Path
-    ) -> None:
+    def test_forecasting_test_dataloader_none_fallback(self, synthetic_ett_csv: Path) -> None:
         """Forecasting test_dataloader with loader_mode=None falls back to self.loader_mode."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
@@ -314,9 +303,7 @@ class TestDataLoaderNoneFallback:
         assert len(batch) == 1
         assert batch[0].ndim == 3
 
-    def test_classification_val_dataloader_none_fallback(
-        self, synthetic_ucr_folder: Path
-    ) -> None:
+    def test_classification_val_dataloader_none_fallback(self, synthetic_ucr_folder: Path) -> None:
         """Classification val_dataloader with loader_mode=None falls back to self.loader_mode."""
         from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
@@ -332,7 +319,8 @@ class TestDataLoaderNoneFallback:
             assert isinstance(dl, DataLoader)
             batch = next(iter(dl))
             # SAMPLE_LABEL yields (data, label) tuples
-            assert isinstance(batch, tuple) and len(batch) == 2
+            assert isinstance(batch, tuple)
+            assert len(batch) == 2
         # When dl is None, the validation split is empty (acceptable for
         # small synthetic fixtures) -- the fallback resolution still
         # occurred; there is just no data to yield.
@@ -341,9 +329,7 @@ class TestDataLoaderNoneFallback:
 class TestDataLoaderExplicitOverride:
     """Tests for D-10: Dataloader method with explicit loader_mode overrides self.loader_mode."""
 
-    def test_forecasting_train_dataloader_explicit_override(
-        self, synthetic_ett_csv: Path
-    ) -> None:
+    def test_forecasting_train_dataloader_explicit_override(self, synthetic_ett_csv: Path) -> None:
         """Forecasting train_dataloader with explicit loader_mode overrides self.loader_mode."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
