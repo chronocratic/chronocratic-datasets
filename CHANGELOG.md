@@ -9,6 +9,13 @@ Entries are managed with [towncrier](https://towncrier.readthedocs.io/); see
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a4 (2026-07-02)
+
+### Added
+
+- feat(dataloader): unified loader_mode injection for forecasting and classification modules: Added instance-level `loader_mode` property with validated setters to both forecasting and classification base classes; all 5 concrete modules propagate `loader_mode` through `super().__init__()` with None-to-self fallback in dataloader methods. 27 new TDD tests; 6 code-review findings fixed. ([#39](https://github.com/chronocratic/chronocratic-datasets/issues/39))
+
+
 ## v0.1.0a3 (2026-06-11)
 
 ### Changed
