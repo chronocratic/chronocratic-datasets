@@ -80,6 +80,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             in dataloader calls. Does not affect cache key.
         step: Stride between consecutive sliding windows. Defaults to
             ``seq_len`` when not provided. Does not affect cache key.
+        loader_mode: Per-init mode controlling dataloader output format.
+            Defaults to ``ForecastingLoaderMode.RAW_SERIES``. Can be
+            overridden at dataloader call time or via the property setter.
     """
 
     def __init__(
@@ -97,6 +100,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         mode: ForecastingMode = ForecastingMode.UNIVARIATE,
         forecast_horizon: int | None = None,
         step: int | None = None,
+        loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -118,6 +122,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._mode = mode
         self.forecast_horizon = forecast_horizon
         self._step = step
+        self.loader_mode = loader_mode
         self._train_slice: slice | None = None
         self._valid_slice: slice | None = None
         self._test_slice: slice | None = None
@@ -164,6 +169,26 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def num_time_series_features(self) -> int | None:
         """Number of cyclical time features extracted."""
         return self._num_time_series_features
+
+    @property
+    def loader_mode(self) -> ForecastingLoaderMode:
+        """Loader mode controlling dataloader output format."""
+        return self._loader_mode
+
+    @loader_mode.setter
+    def loader_mode(self, value: ForecastingLoaderMode) -> None:
+        """Set loader mode with type validation.
+
+        Args:
+            value: The loader mode to set.
+
+        Raises:
+            TypeError: If value is not a ForecastingLoaderMode instance.
+        """
+        if not isinstance(value, ForecastingLoaderMode):
+            msg = f"loader_mode must be ForecastingLoaderMode, got {type(value).__name__}"
+            raise TypeError(msg)
+        self._loader_mode = value
 
     # ------------------------------------------------------------------
     # Abstract methods

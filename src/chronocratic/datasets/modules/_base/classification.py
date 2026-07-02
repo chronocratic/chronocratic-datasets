@@ -13,7 +13,12 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from chronocratic.datasets.enums.data import ClassificationSplitMode, DataForm, ScalingMethod
+from chronocratic.datasets.enums.data import (
+    ClassificationLoaderMode,
+    ClassificationSplitMode,
+    DataForm,
+    ScalingMethod,
+)
 from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 from chronocratic.datasets.utils.common import separate_target_feature_from_df
 from chronocratic.datasets.utils.general import process_data_with_varying_sequence_lengths_single
@@ -57,6 +62,9 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         test_size: Fraction reserved as test set (used with
             :data:`ClassificationSplitMode.MANUAL`).
         num_workers: Number of DataLoader worker processes.
+        loader_mode: Per-init mode controlling dataloader output format.
+            Defaults to ``ClassificationLoaderMode.SAMPLE_LABEL``. Can be
+            overridden at dataloader call time or via the property setter.
     """
 
     def __init__(
@@ -74,6 +82,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         test_size: float = 0.5,
         num_workers: int = 0,
         data_form: DataForm = DataForm.REGULAR,
+        loader_mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -99,6 +108,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._train_data_labels: pd.Series | None = None
         self._test_data_labels: pd.Series | None = None
         self._valid_data_labels: pd.Series | None = None
+        self.loader_mode = loader_mode
 
     # ------------------------------------------------------------------
     # Properties
@@ -136,6 +146,26 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             msg = "No data loaded. Call prepare_data() and setup() first."
             raise RuntimeError(msg)
         return pd.concat(splits, axis=0)
+
+    @property
+    def loader_mode(self) -> ClassificationLoaderMode:
+        """Loader mode controlling dataloader output format."""
+        return self._loader_mode
+
+    @loader_mode.setter
+    def loader_mode(self, value: ClassificationLoaderMode) -> None:
+        """Set loader mode with type validation.
+
+        Args:
+            value: The loader mode to set.
+
+        Raises:
+            TypeError: If value is not a ClassificationLoaderMode instance.
+        """
+        if not isinstance(value, ClassificationLoaderMode):
+            msg = f"loader_mode must be ClassificationLoaderMode, got {type(value).__name__}"
+            raise TypeError(msg)
+        self._loader_mode = value
 
     # ------------------------------------------------------------------
     # Abstract methods for subclasses
