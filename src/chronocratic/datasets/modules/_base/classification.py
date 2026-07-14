@@ -77,7 +77,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             Defaults to ``ClassificationLoaderMode.SAMPLE_LABEL``. Can be
             overridden at dataloader call time or via the property setter.
         loader_strict_batch_size: Instance-level default for strict batch
-            size. Falls back from ``strict_batch_size=None`` in dataloader calls.
+            size. Falls back from ``loader_strict_batch_size=None`` in dataloader calls.
     """
 
     def __init__(

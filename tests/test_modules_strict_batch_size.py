@@ -182,12 +182,12 @@ class TestBaseLoaderStrictBatchSize:
 
 
 class TestUCRStrictBatchSizeFallback:
-    """Tests for strict_batch_size None-fallback on UCR dataloaders."""
+    """Tests for loader_strict_batch_size None-fallback on UCR dataloaders."""
 
     def test_ucr_train_dataloader_none_uses_instance_default(
         self, synthetic_ucr_folder: Path
     ) -> None:
-        """UCR train_dataloader with strict_batch_size=None uses instance default."""
+        """UCR train_dataloader with loader_strict_batch_size=None uses instance default."""
         from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
         mod = UCRClassificationDataModule(
@@ -198,19 +198,19 @@ class TestUCRStrictBatchSizeFallback:
         mod.prepare_data()
         mod.setup(stage="fit")
 
-        # strict_batch_size=None should resolve to self.loader_strict_batch_size (True)
+        # loader_strict_batch_size=None should resolve to self.loader_strict_batch_size (True)
         with patch(
             "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
-            mod.train_dataloader(strict_batch_size=None)
+            mod.train_dataloader(loader_strict_batch_size=None)
             call_kwargs = mock_loader.call_args[1]
             assert "collate_fn" in call_kwargs, (
-                "strict_batch_size=None with loader_strict_batch_size=True should "
+                "loader_strict_batch_size=None with loader_strict_batch_size=True should "
                 "apply collate_fn (strict mode)"
             )
 
     def test_ucr_train_dataloader_explicit_override(self, synthetic_ucr_folder: Path) -> None:
-        """UCR train_dataloader with strict_batch_size=True overrides instance default."""
+        """UCR train_dataloader with loader_strict_batch_size=True overrides instance default."""
         from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
         mod = UCRClassificationDataModule(
@@ -225,14 +225,14 @@ class TestUCRStrictBatchSizeFallback:
         with patch(
             "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
-            mod.train_dataloader(strict_batch_size=True)
+            mod.train_dataloader(loader_strict_batch_size=True)
             call_kwargs = mock_loader.call_args[1]
             assert "collate_fn" in call_kwargs
 
     def test_ucr_val_dataloader_none_uses_instance_default(
         self, synthetic_ucr_folder: Path
     ) -> None:
-        """UCR val_dataloader with strict_batch_size=None uses instance default."""
+        """UCR val_dataloader with loader_strict_batch_size=None uses instance default."""
         from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
         mod = UCRClassificationDataModule(
@@ -243,14 +243,14 @@ class TestUCRStrictBatchSizeFallback:
         mod.prepare_data()
         mod.setup(stage="fit")
 
-        val_dl = mod.val_dataloader(strict_batch_size=None)
+        val_dl = mod.val_dataloader(loader_strict_batch_size=None)
         if val_dl is not None:
             assert val_dl is not None  # exercised None-fallback path
 
     def test_ucr_test_dataloader_none_uses_instance_default(
         self, synthetic_ucr_folder: Path
     ) -> None:
-        """UCR test_dataloader with strict_batch_size=None uses instance default."""
+        """UCR test_dataloader with loader_strict_batch_size=None uses instance default."""
         from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
         mod = UCRClassificationDataModule(
@@ -261,20 +261,20 @@ class TestUCRStrictBatchSizeFallback:
         mod.prepare_data()
         mod.setup(stage="fit")
 
-        mod.test_dataloader(strict_batch_size=None)  # Should not raise
+        mod.test_dataloader(loader_strict_batch_size=None)  # Should not raise
 
     def test_ucr_dataloader_signatures_accept_none(self) -> None:
-        """UCR dataloader method signatures accept strict_batch_size: bool | None = None."""
+        """UCR dataloader method signatures accept loader_strict_batch_size: bool | None = None."""
         from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
         for method_name in ("train_dataloader", "val_dataloader", "test_dataloader"):
             method = getattr(UCRClassificationDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "strict_batch_size" in params, f"{method_name} missing 'strict_batch_size' param"
-            assert params["strict_batch_size"].default is None, (
-                f"{method_name} strict_batch_size default is not None, "
-                f"got {params['strict_batch_size'].default}"
+            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert params["loader_strict_batch_size"].default is None, (
+                f"{method_name} loader_strict_batch_size default is not None, "
+                f"got {params['loader_strict_batch_size'].default}"
             )
 
 
@@ -284,20 +284,20 @@ class TestUCRStrictBatchSizeFallback:
 
 
 class TestUEAStrictBatchSizeFallback:
-    """Tests for strict_batch_size None-fallback on UEA dataloaders."""
+    """Tests for loader_strict_batch_size None-fallback on UEA dataloaders."""
 
     def test_uea_dataloader_signatures_accept_none(self) -> None:
-        """UEA dataloader method signatures accept strict_batch_size: bool | None = None."""
+        """UEA dataloader method signatures accept loader_strict_batch_size: bool | None = None."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         for method_name in ("train_dataloader", "val_dataloader", "test_dataloader"):
             method = getattr(UEAClassificationDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "strict_batch_size" in params, f"{method_name} missing 'strict_batch_size' param"
-            assert params["strict_batch_size"].default is None, (
-                f"{method_name} strict_batch_size default is not None, "
-                f"got {params['strict_batch_size'].default}"
+            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert params["loader_strict_batch_size"].default is None, (
+                f"{method_name} loader_strict_batch_size default is not None, "
+                f"got {params['loader_strict_batch_size'].default}"
             )
 
     def test_uea_accepts_loader_strict_batch_size(self) -> None:
@@ -315,20 +315,20 @@ class TestUEAStrictBatchSizeFallback:
 
 
 class TestETTStrictBatchSizeFallback:
-    """Tests for strict_batch_size None-fallback on ETT dataloaders."""
+    """Tests for loader_strict_batch_size None-fallback on ETT dataloaders."""
 
     def test_ett_dataloader_signatures_accept_none(self) -> None:
-        """ETT dataloader method signatures accept strict_batch_size: bool | None = None."""
+        """ETT dataloader method signatures accept loader_strict_batch_size: bool | None = None."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         for method_name in ("train_dataloader", "val_dataloader", "test_dataloader"):
             method = getattr(ETTDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "strict_batch_size" in params, f"{method_name} missing 'strict_batch_size' param"
-            assert params["strict_batch_size"].default is None, (
-                f"{method_name} strict_batch_size default is not None, "
-                f"got {params['strict_batch_size'].default}"
+            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert params["loader_strict_batch_size"].default is None, (
+                f"{method_name} loader_strict_batch_size default is not None, "
+                f"got {params['loader_strict_batch_size'].default}"
             )
 
     def test_ett_accepts_loader_strict_batch_size(self, synthetic_ett_csv: Path) -> None:
@@ -343,7 +343,7 @@ class TestETTStrictBatchSizeFallback:
         assert mod.loader_strict_batch_size is True
 
     def test_ett_train_dataloader_none_fallback(self, synthetic_ett_csv: Path) -> None:
-        """ETT train_dataloader with strict_batch_size=None uses instance default."""
+        """ETT train_dataloader with loader_strict_batch_size=None uses instance default."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
         mod = ETTDataModule(
@@ -357,10 +357,10 @@ class TestETTStrictBatchSizeFallback:
         with patch(
             "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
-            mod.train_dataloader(strict_batch_size=None)
+            mod.train_dataloader(loader_strict_batch_size=None)
             call_kwargs = mock_loader.call_args[1]
             assert "collate_fn" in call_kwargs, (
-                "strict_batch_size=None with loader_strict_batch_size=True should apply collate_fn"
+                "loader_strict_batch_size=None with loader_strict_batch_size=True should apply collate_fn"
             )
 
 
@@ -370,20 +370,20 @@ class TestETTStrictBatchSizeFallback:
 
 
 class TestWeatherStrictBatchSizeFallback:
-    """Tests for strict_batch_size None-fallback on Weather dataloaders."""
+    """Tests for loader_strict_batch_size None-fallback on Weather dataloaders."""
 
     def test_weather_dataloader_signatures_accept_none(self) -> None:
-        """Weather dataloader method signatures accept strict_batch_size: bool | None = None."""
+        """Weather dataloader method signatures accept loader_strict_batch_size: bool | None = None."""
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
         for method_name in ("train_dataloader", "val_dataloader", "test_dataloader"):
             method = getattr(WeatherDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "strict_batch_size" in params, f"{method_name} missing 'strict_batch_size' param"
-            assert params["strict_batch_size"].default is None, (
-                f"{method_name} strict_batch_size default is not None, "
-                f"got {params['strict_batch_size'].default}"
+            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert params["loader_strict_batch_size"].default is None, (
+                f"{method_name} loader_strict_batch_size default is not None, "
+                f"got {params['loader_strict_batch_size'].default}"
             )
 
     def test_weather_accepts_loader_strict_batch_size(self, synthetic_weather_csv: Path) -> None:
@@ -403,20 +403,20 @@ class TestWeatherStrictBatchSizeFallback:
 
 
 class TestElectricityStrictBatchSizeFallback:
-    """Tests for strict_batch_size None-fallback on Electricity dataloaders."""
+    """Tests for loader_strict_batch_size None-fallback on Electricity dataloaders."""
 
     def test_electricity_dataloader_signatures_accept_none(self) -> None:
-        """Electricity dataloader method signatures accept strict_batch_size: bool | None = None."""
+        """Electricity dataloader method signatures accept loader_strict_batch_size: bool | None = None."""
         from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
 
         for method_name in ("train_dataloader", "val_dataloader", "test_dataloader"):
             method = getattr(ElectricityLoadDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "strict_batch_size" in params, f"{method_name} missing 'strict_batch_size' param"
-            assert params["strict_batch_size"].default is None, (
-                f"{method_name} strict_batch_size default is not None, "
-                f"got {params['strict_batch_size'].default}"
+            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert params["loader_strict_batch_size"].default is None, (
+                f"{method_name} loader_strict_batch_size default is not None, "
+                f"got {params['loader_strict_batch_size'].default}"
             )
 
     def test_electricity_accepts_loader_strict_batch_size(
@@ -455,7 +455,7 @@ class TestDataLoaderConstructorBehavior:
         with patch(
             "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
-            mod.train_dataloader(strict_batch_size=None)
+            mod.train_dataloader(loader_strict_batch_size=None)
             call_kwargs = mock_loader.call_args[1]
             assert "collate_fn" in call_kwargs
 
@@ -474,7 +474,7 @@ class TestDataLoaderConstructorBehavior:
         with patch(
             "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
-            mod.train_dataloader(strict_batch_size=None)
+            mod.train_dataloader(loader_strict_batch_size=None)
             call_kwargs = mock_loader.call_args[1]
             assert "collate_fn" not in call_kwargs
 

@@ -55,7 +55,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             ``~/.cache/tsdatasets/<dataset_name>``.
         loader_strict_batch_size: Instance-level default for strict batch
             size padding. When dataloader methods are called with
-            ``strict_batch_size=None``, this value is used as the fallback.
+            ``loader_strict_batch_size=None``, this value is used as the fallback.
     """
 
     prepare_data_per_node: bool = True
@@ -88,7 +88,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self.num_workers = num_workers
         self._data_form = data_form
         self._cache_dir = cache_dir
-        self.loader_strict_batch_size = loader_strict_batch_size
+        self._loader_strict_batch_size = loader_strict_batch_size
         self._datatype_handling_functions_map: dict[str, object] | None = None
         self._initiate_datatypes_handling_functions_map()
         self._dataset_name: str | None = None
@@ -176,6 +176,19 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         import numpy as np
 
         return np.concatenate(filtered, axis=0)
+
+    @property
+    def loader_strict_batch_size(self) -> bool:
+        """Instance-level default for strict batch size."""
+        return self._loader_strict_batch_size
+
+    @loader_strict_batch_size.setter
+    def loader_strict_batch_size(self, value: bool) -> None:
+        """Set loader_strict_batch_size with type validation."""
+        if not isinstance(value, bool):
+            msg = f"loader_strict_batch_size must be bool, got {type(value).__name__}"
+            raise TypeError(msg)
+        self._loader_strict_batch_size = value
 
     # ------------------------------------------------------------------
     # Abstract methods
@@ -402,7 +415,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         *,
         dataset_object: Dataset[object],
         shuffle: bool | None = None,
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
         """Build the training DataLoader.
@@ -410,7 +423,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Args:
             dataset_object: PyTorch Dataset instance.
             shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
-            strict_batch_size: If True, pad the last batch via
+            loader_strict_batch_size: If True, pad the last batch via
                 :func:`custom_collate_fn`.
             extra_args: Additional keyword arguments forwarded to
                 the DataLoader constructor.
@@ -429,7 +442,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         }
         if self.num_workers > 0:
             dataloader_args["persistent_workers"] = True
-        if strict_batch_size:
+        if loader_strict_batch_size:
             dataloader_args["collate_fn"] = self._get_custom_collate_fn()
         return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
@@ -437,7 +450,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self,
         *,
         dataset_object: Dataset[object],
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader.
@@ -446,7 +459,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
 
         Args:
             dataset_object: PyTorch Dataset instance.
-            strict_batch_size: If True, pad the last batch via
+            loader_strict_batch_size: If True, pad the last batch via
                 :func:`custom_collate_fn`.
             extra_args: Additional keyword arguments forwarded to
                 the DataLoader constructor.
@@ -463,7 +476,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         }
         if self.num_workers > 0:
             dataloader_args["persistent_workers"] = True
-        if strict_batch_size:
+        if loader_strict_batch_size:
             dataloader_args["collate_fn"] = self._get_custom_collate_fn()
         return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
@@ -471,7 +484,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self,
         *,
         dataset_object: Dataset[object],
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
         """Build the validation DataLoader.
@@ -480,7 +493,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
 
         Args:
             dataset_object: PyTorch Dataset instance.
-            strict_batch_size: If True, pad the last batch via
+            loader_strict_batch_size: If True, pad the last batch via
                 :func:`custom_collate_fn`.
             extra_args: Additional keyword arguments forwarded to
                 the DataLoader constructor.
@@ -492,6 +505,6 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             return None
         return self._process_test_dataloader(
             dataset_object=dataset_object,
-            strict_batch_size=strict_batch_size,
+            loader_strict_batch_size=loader_strict_batch_size,
             extra_args=extra_args,
         )
