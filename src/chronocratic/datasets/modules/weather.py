@@ -70,6 +70,8 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         num_workers: DataLoader worker count.
         loader_mode: Per-init mode controlling dataloader output format.
             Defaults to ``ForecastingLoaderMode.RAW_SERIES``.
+        loader_strict_batch_size: Instance-level default for strict batch
+            size. Falls back from ``loader_strict_batch_size=None`` in dataloader calls.
     """
 
     def __init__(
@@ -89,6 +91,7 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         forecast_horizon: int = 96,
         step: int | None = None,
         loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        loader_strict_batch_size: bool = False,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -104,6 +107,7 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
             forecast_horizon=forecast_horizon,
             step=step,
             loader_mode=loader_mode,
+            loader_strict_batch_size=loader_strict_batch_size,
         )
         self.dataset_file_path = dataset_file_path
         self._dataset_name = dataset_file_path.stem
@@ -239,7 +243,7 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         *,
         loader_mode: ForecastingLoaderMode | None = None,
         shuffle: bool | None = None,
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
         """Build the training DataLoader.
@@ -252,18 +256,24 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
                 INPUT_TARGET yields (input, target) sliding-window pairs.
                 INPUT_ONLY yields input windows without targets.
             shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
-            strict_batch_size: If True, pad the last batch.
+            loader_strict_batch_size: If True, pad the last batch. Defaults to
+                ``None``, which falls back to :attr:`loader_strict_batch_size`.
             extra_args: Additional keyword arguments for DataLoader.
 
         Returns:
             Configured DataLoader for training.
         """
+        effective_loader_strict = (
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
+        )
         result = self._build_dataloader(
             data_partition=self._train_data_samples,
             partition=DataPartition.TRAIN,
             loader_mode=loader_mode,
             shuffle=shuffle,
-            strict_batch_size=strict_batch_size,
+            loader_strict_batch_size=effective_loader_strict,
             extra_args=extra_args,
         )
         assert result is not None  # _process_train_dataloader always returns DataLoader
@@ -273,15 +283,20 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         self,
         *,
         loader_mode: ForecastingLoaderMode | None = None,
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:
         """Build the validation DataLoader."""
+        effective_loader_strict = (
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
+        )
         return self._build_dataloader(
             data_partition=self._valid_data_samples,
             partition=DataPartition.VAL,
             loader_mode=loader_mode,
-            strict_batch_size=strict_batch_size,
+            loader_strict_batch_size=effective_loader_strict,
             extra_args=extra_args,
         )
 
@@ -289,15 +304,20 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
         self,
         *,
         loader_mode: ForecastingLoaderMode | None = None,
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader."""
+        effective_loader_strict = (
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
+        )
         result = self._build_dataloader(
             data_partition=self._test_data_samples,
             partition=DataPartition.TEST,
             loader_mode=loader_mode,
-            strict_batch_size=strict_batch_size,
+            loader_strict_batch_size=effective_loader_strict,
             extra_args=extra_args,
         )
         assert result is not None  # _process_test_dataloader always returns DataLoader

@@ -83,6 +83,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         loader_mode: Per-init mode controlling dataloader output format.
             Defaults to ``ForecastingLoaderMode.RAW_SERIES``. Can be
             overridden at dataloader call time or via the property setter.
+        loader_strict_batch_size: Instance-level default for strict batch
+            size. Falls back from ``loader_strict_batch_size=None`` in dataloader calls.
     """
 
     def __init__(
@@ -101,6 +103,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         forecast_horizon: int | None = None,
         step: int | None = None,
         loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        loader_strict_batch_size: bool = False,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -112,6 +115,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_scaling_method=data_scaling_method,
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
+            loader_strict_batch_size=loader_strict_batch_size,
         )
         if scale_data and data_scaling_method == ScalingMethod.NONE:
             msg = (
@@ -466,7 +470,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         partition: DataPartition,
         loader_mode: ForecastingLoaderMode | None = None,
         shuffle: bool | None = None,
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
         """Build a dataloader with mode-based dispatch.
@@ -482,7 +486,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                 ``None``, falls back to :attr:`loader_mode` set at init
                 time or via the property setter.
             shuffle: Whether to shuffle (train only).
-            strict_batch_size: If True, pad the last batch.
+            loader_strict_batch_size: If True, pad the last batch.
             extra_args: Additional DataLoader keyword arguments.
 
         Returns:
@@ -516,7 +520,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                 partition=partition,
                 dataset_object=TensorDataset(tensor),
                 shuffle=shuffle,
-                strict_batch_size=strict_batch_size,
+                loader_strict_batch_size=loader_strict_batch_size,
                 extra_args=extra_args,
             )
 
@@ -567,7 +571,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             partition=partition,
             dataset_object=dataset,
             shuffle=shuffle,
-            strict_batch_size=strict_batch_size,
+            loader_strict_batch_size=loader_strict_batch_size,
             extra_args=extra_args,
         )
 
@@ -577,7 +581,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         *,
         dataset_object: Dataset[object],
         shuffle: bool | None = None,
-        strict_batch_size: bool = False,
+        loader_strict_batch_size: bool = False,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
         """Dispatch to the appropriate _process_* method based on partition.
@@ -586,7 +590,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             partition: Which data partition is being processed.
             dataset_object: PyTorch Dataset instance.
             shuffle: Whether to shuffle (used only for TRAIN).
-            strict_batch_size: If True, pad the last batch.
+            loader_strict_batch_size: If True, pad the last batch.
             extra_args: Additional DataLoader keyword arguments.
 
         Returns:
@@ -596,18 +600,18 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             return self._process_train_dataloader(
                 dataset_object=dataset_object,
                 shuffle=shuffle,
-                strict_batch_size=strict_batch_size,
+                loader_strict_batch_size=loader_strict_batch_size,
                 extra_args=extra_args,
             )
         if partition == DataPartition.VAL:
             return self._process_valid_dataloader(
                 dataset_object=dataset_object,
-                strict_batch_size=strict_batch_size,
+                loader_strict_batch_size=loader_strict_batch_size,
                 extra_args=extra_args,
             )
         return self._process_test_dataloader(
             dataset_object=dataset_object,
-            strict_batch_size=strict_batch_size,
+            loader_strict_batch_size=loader_strict_batch_size,
             extra_args=extra_args,
         )
 

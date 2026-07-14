@@ -49,12 +49,12 @@ class FixedTimeSeriesDataset(TimeSeriesDataset, ABC):
     """
 
     _data: np.ndarray | pd.DataFrame
-    _labels: pd.Series | pd.DataFrame | None
+    _labels: pd.Series | pd.DataFrame | np.ndarray | None
 
     def __init__(
         self,
         data: np.ndarray | pd.DataFrame,
-        labels: pd.Series | pd.DataFrame | None,
+        labels: pd.Series | pd.DataFrame | np.ndarray | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int | None,
         transformations_sequence: list[Callable] | tuple[Callable, ...] | None = None,
@@ -104,7 +104,9 @@ class FixedTimeSeriesDataset(TimeSeriesDataset, ABC):
     def _get_current_label(self) -> int | None:
         if self._labels is None:
             return None
-        return self._labels.iloc[self._n]  # pyright: ignore[reportReturnType]
+        if isinstance(self._labels, (pd.Series, pd.DataFrame)):
+            return self._labels.iloc[self._n]  # pyright: ignore[reportReturnType]
+        return self._labels[self._n]
 
 
 class FixedTimeSeriesDatasetUnivariate(FixedTimeSeriesDataset, ABC):
@@ -125,7 +127,7 @@ class FixedTimeSeriesDatasetUnivariate(FixedTimeSeriesDataset, ABC):
     def __init__(
         self,
         data: pd.DataFrame,
-        labels: pd.Series | pd.DataFrame | None,
+        labels: pd.Series | pd.DataFrame | np.ndarray | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int | None,
         transformations_sequence: list[Callable] | tuple[Callable, ...] | None = None,
@@ -161,7 +163,7 @@ class FixedTimeSeriesDatasetMultivariate(FixedTimeSeriesDataset, ABC):
     def __init__(
         self,
         data: np.ndarray,
-        labels: pd.Series | pd.DataFrame | None,
+        labels: pd.Series | pd.DataFrame | np.ndarray | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int | None,
         transformations_sequence: list[Callable] | tuple[Callable, ...] | None = None,

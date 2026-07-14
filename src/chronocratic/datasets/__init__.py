@@ -7,7 +7,6 @@ except ImportError:  # not built yet -- fall back to installed metadata
 
     __version__ = version(__name__)
 
-# Enums
 # Datatypes
 from chronocratic.datasets.datatypes import (
     ElectricityDataset,
@@ -21,6 +20,8 @@ from chronocratic.datasets.datatypes import (
     UEAClassificationMultivariateDataset,
     WeatherDataset,
 )
+
+# Enums
 from chronocratic.datasets.enums import (
     ClassificationLoaderMode,
     ClassificationSplitMode,
@@ -31,9 +32,6 @@ from chronocratic.datasets.enums import (
     ScalingMethod,
     TimeSeriesDatasetMode,
 )
-
-# Mappings
-from chronocratic.datasets.maps import CLASSIFICATION_LOADER_MAP, FORECASTING_LOADER_MAP
 
 # Modules
 from chronocratic.datasets.modules import (
@@ -47,32 +45,7 @@ from chronocratic.datasets.modules import (
     WeatherDataModule,
 )
 
-# Utils (18 symbols from utils/__init__.py __all__)
-from chronocratic.datasets.utils import (
-    atomic_save_metadata,
-    atomic_save_npz,
-    build_cache_key,
-    CACHE_SCHEMA_VERSION,
-    compose,
-    create_data_scaler,
-    custom_collate_fn,
-    extract_time_features,
-    flatten_list_of_np_arrays,
-    get_num_samples_from_ts,
-    load_metadata,
-    load_scaler,
-    process_data_with_varying_sequence_lengths_single,
-    process_df_according_to_dtypes,
-    read_arff_as_df,
-    resolve_cache_dir,
-    save_scaler,
-    separate_target_feature_from_df,
-)
-
 __all__ = [
-    "CACHE_SCHEMA_VERSION",
-    "CLASSIFICATION_LOADER_MAP",
-    "FORECASTING_LOADER_MAP",
     "BaseClassificationTimeSeriesDataModule",
     "BaseForecastingTimeSeriesDataModule",
     "BaseTimeSeriesDataModule",
@@ -100,21 +73,4 @@ __all__ = [
     "WeatherDataModule",
     "WeatherDataset",
     "__version__",
-    "atomic_save_metadata",
-    "atomic_save_npz",
-    "build_cache_key",
-    "compose",
-    "create_data_scaler",
-    "custom_collate_fn",
-    "extract_time_features",
-    "flatten_list_of_np_arrays",
-    "get_num_samples_from_ts",
-    "load_metadata",
-    "load_scaler",
-    "process_data_with_varying_sequence_lengths_single",
-    "process_df_according_to_dtypes",
-    "read_arff_as_df",
-    "resolve_cache_dir",
-    "save_scaler",
-    "separate_target_feature_from_df",
 ]

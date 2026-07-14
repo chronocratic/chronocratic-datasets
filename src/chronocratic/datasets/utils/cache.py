@@ -89,7 +89,7 @@ def atomic_save_npz(path: Path, **arrays: np.ndarray) -> None:
     # np.savez_compressed appends .npz to the given path, so we
     # write to a stem-named temp file and rename the resulting .npz.
     tmp_stem = path.with_name(path.stem + "_tmp")
-    np.savez_compressed(str(tmp_stem), **arrays)
+    np.savez_compressed(str(tmp_stem), allow_pickle=True, **arrays)
     actual_tmp = Path(str(tmp_stem) + ".npz")
     actual_tmp.replace(path)
 

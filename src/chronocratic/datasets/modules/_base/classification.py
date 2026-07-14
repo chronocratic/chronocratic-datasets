@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
+    import numpy as np
     from torch.utils.data import DataLoader
 
 
@@ -76,6 +77,8 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         loader_mode: Per-init mode controlling dataloader output format.
             Defaults to ``ClassificationLoaderMode.SAMPLE_LABEL``. Can be
             overridden at dataloader call time or via the property setter.
+        loader_strict_batch_size: Instance-level default for strict batch
+            size. Falls back from ``loader_strict_batch_size=None`` in dataloader calls.
     """
 
     def __init__(
@@ -94,6 +97,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         num_workers: int = 0,
         data_form: DataForm = DataForm.REGULAR,
         loader_mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
+        loader_strict_batch_size: bool = False,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -106,6 +110,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
             data_form=data_form,
+            loader_strict_batch_size=loader_strict_batch_size,
         )
         self.dataset_folder_path = dataset_folder_path
         self.target_column_name = target_column_name
@@ -116,9 +121,9 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._cache_key: str | None = None
         self._data_column_names: str | None = None
         self._num_classes: int | None = None
-        self._train_data_labels: pd.Series | None = None
-        self._test_data_labels: pd.Series | None = None
-        self._valid_data_labels: pd.Series | None = None
+        self._train_data_labels: pd.Series | np.ndarray | None = None
+        self._test_data_labels: pd.Series | np.ndarray | None = None
+        self._valid_data_labels: pd.Series | np.ndarray | None = None
         self.loader_mode = loader_mode
 
     # ------------------------------------------------------------------
@@ -149,7 +154,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def all_data_labels(self) -> pd.Series:
         """Concatenation of all label splits."""
         splits = [
-            s
+            pd.Series(s) if hasattr(s, "__array__") else s
             for s in (self._train_data_labels, self._test_data_labels, self._valid_data_labels)
             if s is not None
         ]

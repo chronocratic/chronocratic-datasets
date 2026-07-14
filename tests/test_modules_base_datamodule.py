@@ -176,15 +176,17 @@ class TestBaseTimeSeriesDataModule:
         assert isinstance(collate, partial)
         assert collate.keywords["desired_batch_size"] == module.batch_size
 
-    def test_collate_fn_with_strict_batch_size(self, module) -> None:
-        """strict_batch_size=True sets collate_fn on dataloader."""
+    def test_collate_fn_with_loader_strict_batch_size(self, module) -> None:
+        """loader_strict_batch_size=True sets collate_fn on dataloader."""
         import torch
 
         real_dataset = TensorDataset(torch.randn(5, 3))
         with patch(
             "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
-            module._process_train_dataloader(dataset_object=real_dataset, strict_batch_size=True)
+            module._process_train_dataloader(
+                dataset_object=real_dataset, loader_strict_batch_size=True
+            )
             call_kwargs = mock_loader.call_args[1]
             assert "collate_fn" in call_kwargs
 

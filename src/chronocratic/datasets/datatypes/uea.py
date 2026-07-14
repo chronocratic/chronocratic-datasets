@@ -40,7 +40,7 @@ class UEAClassificationMultivariateDataset(FixedTimeSeriesDatasetMultivariate):
     def __init__(
         self,
         data: np.ndarray,
-        labels: pd.Series | pd.DataFrame | None,
+        labels: pd.Series | pd.DataFrame | np.ndarray | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int | None = None,
         transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
