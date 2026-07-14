@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
+    import numpy as np
     from torch.utils.data import DataLoader
 
 
@@ -120,9 +121,9 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         self._cache_key: str | None = None
         self._data_column_names: str | None = None
         self._num_classes: int | None = None
-        self._train_data_labels: pd.Series | None = None
-        self._test_data_labels: pd.Series | None = None
-        self._valid_data_labels: pd.Series | None = None
+        self._train_data_labels: pd.Series | np.ndarray | None = None
+        self._test_data_labels: pd.Series | np.ndarray | None = None
+        self._valid_data_labels: pd.Series | np.ndarray | None = None
         self.loader_mode = loader_mode
 
     # ------------------------------------------------------------------
@@ -153,7 +154,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
     def all_data_labels(self) -> pd.Series:
         """Concatenation of all label splits."""
         splits = [
-            s
+            pd.Series(s) if hasattr(s, "__array__") else s
             for s in (self._train_data_labels, self._test_data_labels, self._valid_data_labels)
             if s is not None
         ]

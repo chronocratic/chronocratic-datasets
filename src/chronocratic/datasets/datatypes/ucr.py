@@ -14,6 +14,7 @@ from chronocratic.datasets.utils.transformations import convert_numpy_to_tensor
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    import numpy as np
     import pandas as pd
 
     from chronocratic.datasets.enums import TimeSeriesDatasetMode
@@ -39,7 +40,7 @@ class UCRClassificationUnivariateDataset(FixedTimeSeriesDatasetUnivariate):
     def __init__(
         self,
         data: pd.DataFrame,
-        labels: pd.Series | pd.DataFrame | None,
+        labels: pd.Series | pd.DataFrame | np.ndarray | None,
         mode: TimeSeriesDatasetMode,
         expand_dims_axis: int = 1,
         transformations_sequence: tuple[Callable, ...] = (convert_numpy_to_tensor,),
