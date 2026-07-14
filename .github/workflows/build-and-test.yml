@@ -43,7 +43,7 @@ jobs:
       - name: Run ruff check
         run: uv run ruff check src/
       - name: Run ruff format check
-        run: uv run ruff format --check src/ tests/
+        run: uv run ruff format --check --exclude src/chronocratic/datasets/_version.py src/ tests/
       - name: Run ty check
         run: uv run ty check src/
 
