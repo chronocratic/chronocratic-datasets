@@ -78,7 +78,9 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         loader_mode: Per-init mode controlling dataloader output format.
             Defaults to ``ClassificationLoaderMode.SAMPLE_LABEL``.
         loader_strict_batch_size: Instance-level default for strict batch
-            size. Falls back from ``loader_strict_batch_size=None`` in dataloader calls.
+            size. Defaults to ``True`` for classification modules (last batch
+            may be small due to few samples). Falls back from
+            ``loader_strict_batch_size=None`` in dataloader calls.
     """
 
     def __init__(
@@ -96,7 +98,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         test_size: float = 0.5,
         num_workers: int = 0,
         loader_mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool = True,
     ) -> None:
         super().__init__(
             dataset_folder_path=dataset_folder_path,

@@ -184,6 +184,14 @@ class TestBaseLoaderStrictBatchSize:
 class TestUCRStrictBatchSizeFallback:
     """Tests for loader_strict_batch_size None-fallback on UCR dataloaders."""
 
+    def test_ucr_init_default_is_true(self) -> None:
+        """UCR classification modules default loader_strict_batch_size to True."""
+        import inspect
+        from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
+
+        sig = inspect.signature(UCRClassificationDataModule.__init__)
+        assert sig.parameters["loader_strict_batch_size"].default is True
+
     def test_ucr_train_dataloader_none_uses_instance_default(
         self, synthetic_ucr_folder: Path
     ) -> None:
@@ -287,6 +295,14 @@ class TestUCRStrictBatchSizeFallback:
 
 class TestUEAStrictBatchSizeFallback:
     """Tests for loader_strict_batch_size None-fallback on UEA dataloaders."""
+
+    def test_uea_init_default_is_true(self) -> None:
+        """UEA classification modules default loader_strict_batch_size to True."""
+        import inspect
+        from chronocratic.datasets.modules.uea import UEAClassificationDataModule
+
+        sig = inspect.signature(UEAClassificationDataModule.__init__)
+        assert sig.parameters["loader_strict_batch_size"].default is True
 
     def test_uea_dataloader_signatures_accept_none(self) -> None:
         """UEA dataloader method signatures accept loader_strict_batch_size: bool | None = None."""
