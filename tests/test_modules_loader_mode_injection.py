@@ -1,10 +1,8 @@
-"""TDD tests for loader_mode injection in forecasting and classification datamodules.
+"""Tests for loader_mode injection in forecasting and classification datamodules.
 
-Covers init defaults (D-01, D-02, D-09), property getter/setter (D-06, D-07),
-None fallback (D-04), call-time override (D-10), classification parameter rename
-(D-05), legacy rejection (D-13), and multi-module coverage (D-08, D-11, D-12, D-14).
-
-All tests initially FAIL (RED phase) to drive implementation via TDD.
+Covers init defaults, property getter/setter, None fallback, call-time
+override, classification parameter rename, legacy rejection, and
+multi-module coverage.
 """
 
 import inspect

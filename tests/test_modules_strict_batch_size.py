@@ -1,11 +1,9 @@
-"""TDD tests for loader_strict_batch_size as an init-time instance parameter.
+"""Tests for loader_strict_batch_size as an init-time instance parameter.
 
 Covers init defaults on BaseTimeSeriesDataModule, propagation through
 forecasting/classification bases, None fallback in all public dataloader
 methods across 5 concrete modules (UCR, UEA, ETT, Weather, Electricity),
 and explicit call-time override behavior.
-
-All tests initially FAIL (RED phase) to drive implementation via TDD.
 """
 
 from __future__ import annotations

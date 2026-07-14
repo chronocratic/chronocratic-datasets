@@ -12,7 +12,7 @@ import torch
 from chronocratic.datasets.datatypes._base.strategies import ForecastingStrategySingleFile
 from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
-# --- Task 2 RED-phase tests (will fail until flexible.py is implemented) ---
+# --- Flexible-length datatypes ---
 
 
 def test_flexible_accepts_seq_len_step():

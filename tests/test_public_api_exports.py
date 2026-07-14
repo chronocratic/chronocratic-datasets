@@ -47,7 +47,7 @@ def test_enum_exports_in_root():
 
 
 def test_init_files_exist():
-    """__init__.py files exist at all planned levels."""
+    """__init__.py files exist at all expected levels."""
     for init_path in EXPECTED_INIT_FILES:
         assert init_path.exists(), f"Missing __init__.py: {init_path.relative_to(PACKAGE_ROOT)}"
 

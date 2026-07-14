@@ -12,7 +12,7 @@ import torch
 
 from chronocratic.datasets.enums import TimeSeriesDatasetMode
 
-# --- Task 1 RED-phase tests (will fail until fixed.py is implemented) ---
+# --- Fixed-length datatypes ---
 
 
 def test_fixed_yields_data_label():
