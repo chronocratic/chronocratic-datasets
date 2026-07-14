@@ -271,7 +271,9 @@ class TestUCRStrictBatchSizeFallback:
             method = getattr(UCRClassificationDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert "loader_strict_batch_size" in params, (
+                f"{method_name} missing 'loader_strict_batch_size' param"
+            )
             assert params["loader_strict_batch_size"].default is None, (
                 f"{method_name} loader_strict_batch_size default is not None, "
                 f"got {params['loader_strict_batch_size'].default}"
@@ -294,7 +296,9 @@ class TestUEAStrictBatchSizeFallback:
             method = getattr(UEAClassificationDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert "loader_strict_batch_size" in params, (
+                f"{method_name} missing 'loader_strict_batch_size' param"
+            )
             assert params["loader_strict_batch_size"].default is None, (
                 f"{method_name} loader_strict_batch_size default is not None, "
                 f"got {params['loader_strict_batch_size'].default}"
@@ -325,7 +329,9 @@ class TestETTStrictBatchSizeFallback:
             method = getattr(ETTDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert "loader_strict_batch_size" in params, (
+                f"{method_name} missing 'loader_strict_batch_size' param"
+            )
             assert params["loader_strict_batch_size"].default is None, (
                 f"{method_name} loader_strict_batch_size default is not None, "
                 f"got {params['loader_strict_batch_size'].default}"
@@ -380,7 +386,9 @@ class TestWeatherStrictBatchSizeFallback:
             method = getattr(WeatherDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert "loader_strict_batch_size" in params, (
+                f"{method_name} missing 'loader_strict_batch_size' param"
+            )
             assert params["loader_strict_batch_size"].default is None, (
                 f"{method_name} loader_strict_batch_size default is not None, "
                 f"got {params['loader_strict_batch_size'].default}"
@@ -413,7 +421,9 @@ class TestElectricityStrictBatchSizeFallback:
             method = getattr(ElectricityLoadDataModule, method_name)
             sig = inspect.signature(method)
             params = sig.parameters
-            assert "loader_strict_batch_size" in params, f"{method_name} missing 'loader_strict_batch_size' param"
+            assert "loader_strict_batch_size" in params, (
+                f"{method_name} missing 'loader_strict_batch_size' param"
+            )
             assert params["loader_strict_batch_size"].default is None, (
                 f"{method_name} loader_strict_batch_size default is not None, "
                 f"got {params['loader_strict_batch_size'].default}"

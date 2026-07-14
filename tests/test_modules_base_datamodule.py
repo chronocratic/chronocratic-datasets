@@ -184,7 +184,9 @@ class TestBaseTimeSeriesDataModule:
         with patch(
             "chronocratic.datasets.modules._base.base.DataLoader", wraps=DataLoader
         ) as mock_loader:
-            module._process_train_dataloader(dataset_object=real_dataset, loader_strict_batch_size=True)
+            module._process_train_dataloader(
+                dataset_object=real_dataset, loader_strict_batch_size=True
+            )
             call_kwargs = mock_loader.call_args[1]
             assert "collate_fn" in call_kwargs
 
