@@ -9,6 +9,13 @@ Entries are managed with [towncrier](https://towncrier.readthedocs.io/); see
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a5 (2026-07-14)
+
+### Added
+
+- feat: add loader_strict_batch_size for uniform batch sizes; clean code and update CI: Added `loader_strict_batch_size` as an `__init__` parameter on `BaseTimeSeriesDataModule` (propagated through all 5 concrete modules) so dataloaders always produce uniform batch sizes via cycle-padding. Cleaned barrel exports and updated all CI workflows (`uv` tooling, `ty` type checking, protected files). ([#42](https://github.com/chronocratic/chronocratic-datasets/issues/42))
+
+
 ## v0.1.0a4 (2026-07-02)
 
 ### Added
