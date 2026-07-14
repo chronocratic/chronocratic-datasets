@@ -53,6 +53,9 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             :class:`~chronocratic.datasets.enums.data.DataForm`.
         cache_dir: Custom cache directory. ``None`` uses the default
             ``~/.cache/tsdatasets/<dataset_name>``.
+        loader_strict_batch_size: Instance-level default for strict batch
+            size padding. When dataloader methods are called with
+            ``strict_batch_size=None``, this value is used as the fallback.
     """
 
     prepare_data_per_node: bool = True
@@ -71,6 +74,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         num_workers: int = 0,
         data_form: DataForm = DataForm.REGULAR,
         cache_dir: Path | None = None,
+        loader_strict_batch_size: bool = False,
     ) -> None:
         super().__init__()
         self.batch_size = batch_size
@@ -84,6 +88,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self.num_workers = num_workers
         self._data_form = data_form
         self._cache_dir = cache_dir
+        self.loader_strict_batch_size = loader_strict_batch_size
         self._datatype_handling_functions_map: dict[str, object] | None = None
         self._initiate_datatypes_handling_functions_map()
         self._dataset_name: str | None = None

@@ -83,6 +83,8 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         loader_mode: Per-init mode controlling dataloader output format.
             Defaults to ``ForecastingLoaderMode.RAW_SERIES``. Can be
             overridden at dataloader call time or via the property setter.
+        loader_strict_batch_size: Instance-level default for strict batch
+            size. Falls back from ``strict_batch_size=None`` in dataloader calls.
     """
 
     def __init__(
@@ -101,6 +103,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         forecast_horizon: int | None = None,
         step: int | None = None,
         loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
+        loader_strict_batch_size: bool = False,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -112,6 +115,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_scaling_method=data_scaling_method,
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
+            loader_strict_batch_size=loader_strict_batch_size,
         )
         if scale_data and data_scaling_method == ScalingMethod.NONE:
             msg = (

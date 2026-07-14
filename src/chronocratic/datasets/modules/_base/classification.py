@@ -76,6 +76,8 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         loader_mode: Per-init mode controlling dataloader output format.
             Defaults to ``ClassificationLoaderMode.SAMPLE_LABEL``. Can be
             overridden at dataloader call time or via the property setter.
+        loader_strict_batch_size: Instance-level default for strict batch
+            size. Falls back from ``strict_batch_size=None`` in dataloader calls.
     """
 
     def __init__(
@@ -94,6 +96,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         num_workers: int = 0,
         data_form: DataForm = DataForm.REGULAR,
         loader_mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
+        loader_strict_batch_size: bool = False,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -106,6 +109,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             data_scaling_range=data_scaling_range,
             num_workers=num_workers,
             data_form=data_form,
+            loader_strict_batch_size=loader_strict_batch_size,
         )
         self.dataset_folder_path = dataset_folder_path
         self.target_column_name = target_column_name
