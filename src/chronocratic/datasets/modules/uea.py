@@ -384,7 +384,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         """
         resolved_mode = self._resolve_loader_mode(loader_mode)
         effective_loader_strict = (
-            loader_strict_batch_size if loader_strict_batch_size is not None else self.loader_strict_batch_size
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
         )
         dataset = UEAClassificationMultivariateDataset(
             data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
@@ -423,7 +425,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         """
         resolved_mode = self._resolve_loader_mode(loader_mode)
         effective_loader_strict = (
-            loader_strict_batch_size if loader_strict_batch_size is not None else self.loader_strict_batch_size
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
         )
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
@@ -433,7 +437,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             mode=CLASSIFICATION_LOADER_MAP[resolved_mode],
         )
         return self._process_valid_dataloader(
-            dataset_object=dataset, loader_strict_batch_size=effective_loader_strict, extra_args=extra_args
+            dataset_object=dataset,
+            loader_strict_batch_size=effective_loader_strict,
+            extra_args=extra_args,
         )
 
     def test_dataloader(
@@ -459,7 +465,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         """
         resolved_mode = self._resolve_loader_mode(loader_mode)
         effective_loader_strict = (
-            loader_strict_batch_size if loader_strict_batch_size is not None else self.loader_strict_batch_size
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
         )
         dataset = UEAClassificationMultivariateDataset(
             data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
@@ -467,5 +475,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             mode=CLASSIFICATION_LOADER_MAP[resolved_mode],
         )
         return self._process_test_dataloader(
-            dataset_object=dataset, loader_strict_batch_size=effective_loader_strict, extra_args=extra_args
+            dataset_object=dataset,
+            loader_strict_batch_size=effective_loader_strict,
+            extra_args=extra_args,
         )

@@ -294,7 +294,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             Configured DataLoader for training.
         """
         effective_loader_strict = (
-            loader_strict_batch_size if loader_strict_batch_size is not None else self.loader_strict_batch_size
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
         )
         result = self._build_dataloader(
             data_partition=self._train_data_samples,
@@ -328,7 +330,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             Configured DataLoader for validation, or ``None``.
         """
         effective_loader_strict = (
-            loader_strict_batch_size if loader_strict_batch_size is not None else self.loader_strict_batch_size
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
         )
         return self._build_dataloader(
             data_partition=self._valid_data_samples,
@@ -357,7 +361,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             Configured DataLoader for testing.
         """
         effective_loader_strict = (
-            loader_strict_batch_size if loader_strict_batch_size is not None else self.loader_strict_batch_size
+            loader_strict_batch_size
+            if loader_strict_batch_size is not None
+            else self.loader_strict_batch_size
         )
         result = self._build_dataloader(
             data_partition=self._test_data_samples,
