@@ -231,6 +231,22 @@ feat(classification): add UCRElectricalGM12 dataset loader
 
 Because contributor PRs are squash-merged, the commit on `dev` uses the PR title as the subject line. Write PR titles in conventional commits format. Local commits on your feature branch need not follow the format — they are development notes, not release history.
 
+## Protected Project Files
+
+Certain files affect the entire project and require maintainer review before merging:
+
+| File | Why Protected |
+| --- | --- |
+| `pyproject.toml` | Dependencies, build settings, project metadata |
+| `.vscode/**` | Shared editor config (linting, formatting, type-checking) |
+
+When a PR modifies any of these paths, the **Protected Files Check** workflow posts an automated warning comment requesting maintainer verification. Contributors are free to suggest changes, but the PR should not be merged until a maintainer confirms:
+
+- New dependencies are necessary and version-pinned
+- Build/tool configurations don't break CI
+- Changes are backward-compatible
+- Editor settings benefit all contributors (not local preferences)
+
 ## Pull Requests
 
 - Write clear commit messages following conventional commits
