@@ -245,6 +245,14 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
     # Dimension API override
     # ------------------------------------------------------------------
 
+    # NOTE (latent flaw): _compute_dimensions reads _full_data_raw.shape[-1], which is
+    # the pre-transform column count. For any dataset whose _transform_data reshapes the
+    # feature axis (e.g., Electricity transposes (T, C) -> (C, T, 1)), this method would
+    # return an incorrect n_features. However, it is structurally unreachable for all
+    # current forecasting subclasses because they all set a non-None _cache_key, so
+    # prepare_dimensions() always takes the metadata cache path (b) instead of falling
+    # through to this computation path (c). No subclass overrides _compute_dimensions to
+    # work around this because none of them reach it.
     def _compute_dimensions(self) -> tuple[int | None, int | None]:
         """Compute dimensions from typed attributes without requiring setup().
 
