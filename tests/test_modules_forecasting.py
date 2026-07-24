@@ -1777,3 +1777,89 @@ class TestSetupStageGating:
         module.setup(stage="validate")
 
         np.testing.assert_array_equal(snapshot, module._train_data_samples)
+
+
+# ---------------------------------------------------------------------------
+# Metadata-Runtime Dimension Agreement Tests
+# ---------------------------------------------------------------------------
+
+
+class TestForecastingDimsMatchLoader:
+    """Verify prepare_dimensions() pre-setup matches _full_data_scaled post-setup.
+
+    Regression tests for the Electricity n_features metadata mismatch:
+    the cache used to write n_features = 377 (raw CSV columns) but the
+    DataLoader yielded tensors with feature axis 8 (1 + 7 time features).
+    """
+
+    @pytest.fixture
+    def ett_csv(self, tmp_path: Path) -> Path:
+        """Create a minimal ETT-style CSV with columns expected by ETTDataModule."""
+        csv_file = tmp_path / "ett.csv"
+        dates = pd.date_range("2016-01-01", periods=200, freq="h")
+        rng = np.random.default_rng(42)
+        df = pd.DataFrame(
+            {
+                "date": dates,
+                "HUFL": rng.standard_normal(200),
+                "HT": rng.standard_normal(200),
+                "OT": rng.standard_normal(200),
+                "Wsp": rng.standard_normal(200),
+            }
+        )
+        df.to_csv(csv_file, index=False)
+        return csv_file
+
+    @pytest.mark.parametrize(
+        "mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE]
+    )
+    def test_electricity_metadata_matches_runtime(
+        self, electricity_csv_file: Path, mode: ForecastingMode
+    ) -> None:
+        """Electricity: metadata n_features equals runtime feature axis."""
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
+
+        module = ElectricityLoadDataModule(
+            dataset_file_path=electricity_csv_file, seq_len=32, mode=mode
+        )
+        module.prepare_data()
+        n_features_meta, _ = module.prepare_dimensions()
+        module.setup(stage="fit")
+        assert n_features_meta == module._full_data_scaled.shape[-1]
+
+    @pytest.mark.parametrize(
+        "mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE]
+    )
+    def test_ett_metadata_matches_runtime(
+        self, ett_csv: Path, mode: ForecastingMode
+    ) -> None:
+        """ETT: metadata n_features equals runtime feature axis."""
+        from chronocratic.datasets.modules.ett import ETTDataModule
+
+        module = ETTDataModule(
+            dataset_file_path=ett_csv,
+            variant="ETTh1",
+            seq_len=16,
+            mode=mode,
+        )
+        module.prepare_data()
+        n_features_meta, _ = module.prepare_dimensions()
+        module.setup(stage="fit")
+        assert n_features_meta == module._full_data_scaled.shape[-1]
+
+    @pytest.mark.parametrize(
+        "mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE]
+    )
+    def test_weather_metadata_matches_runtime(
+        self, synthetic_csv_file: Path, mode: ForecastingMode
+    ) -> None:
+        """Weather: metadata n_features equals runtime feature axis."""
+        from chronocratic.datasets.modules.weather import WeatherDataModule
+
+        module = WeatherDataModule(
+            dataset_file_path=synthetic_csv_file, seq_len=16, mode=mode
+        )
+        module.prepare_data()
+        n_features_meta, _ = module.prepare_dimensions()
+        module.setup(stage="fit")
+        assert n_features_meta == module._full_data_scaled.shape[-1]
