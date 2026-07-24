@@ -1810,9 +1810,7 @@ class TestForecastingDimsMatchLoader:
         df.to_csv(csv_file, index=False)
         return csv_file
 
-    @pytest.mark.parametrize(
-        "mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE]
-    )
+    @pytest.mark.parametrize("mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE])
     def test_electricity_metadata_matches_runtime(
         self, electricity_csv_file: Path, mode: ForecastingMode
     ) -> None:
@@ -1827,12 +1825,8 @@ class TestForecastingDimsMatchLoader:
         module.setup(stage="fit")
         assert n_features_meta == module._full_data_scaled.shape[-1]
 
-    @pytest.mark.parametrize(
-        "mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE]
-    )
-    def test_ett_metadata_matches_runtime(
-        self, ett_csv: Path, mode: ForecastingMode
-    ) -> None:
+    @pytest.mark.parametrize("mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE])
+    def test_ett_metadata_matches_runtime(self, ett_csv: Path, mode: ForecastingMode) -> None:
         """ETT: metadata n_features equals runtime feature axis."""
         from chronocratic.datasets.modules.ett import ETTDataModule
 
@@ -1847,18 +1841,14 @@ class TestForecastingDimsMatchLoader:
         module.setup(stage="fit")
         assert n_features_meta == module._full_data_scaled.shape[-1]
 
-    @pytest.mark.parametrize(
-        "mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE]
-    )
+    @pytest.mark.parametrize("mode", [ForecastingMode.UNIVARIATE, ForecastingMode.MULTIVARIATE])
     def test_weather_metadata_matches_runtime(
         self, synthetic_csv_file: Path, mode: ForecastingMode
     ) -> None:
         """Weather: metadata n_features equals runtime feature axis."""
         from chronocratic.datasets.modules.weather import WeatherDataModule
 
-        module = WeatherDataModule(
-            dataset_file_path=synthetic_csv_file, seq_len=16, mode=mode
-        )
+        module = WeatherDataModule(dataset_file_path=synthetic_csv_file, seq_len=16, mode=mode)
         module.prepare_data()
         n_features_meta, _ = module.prepare_dimensions()
         module.setup(stage="fit")
