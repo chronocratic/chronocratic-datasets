@@ -237,7 +237,10 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
             "valid": [train_end, valid_end],
             "test": [valid_end, len(data)],
         }
-        n_features = data.shape[1]
+        # Electricity transposes (T, C) -> (C, T, 1) in _transform_data, so the
+        # post-transform feature axis is always 1 regardless of client count or mode.
+        # n_features must reflect this post-transform value, not the raw CSV column count.
+        n_features = 1
         if self.scale_data and self._time_index is not None:
             n_features += TIME_FEATURE_COUNT
         metadata = {
