@@ -139,6 +139,7 @@ def _ddp_classification_worker(
         assert module._train_data_labels is not None, (
             f"Rank {rank}: _train_data_labels is None after setup"
         )
+        assert module.num_classes is not None, f"Rank {rank}: num_classes is None after setup"
 
         # Write rank results for post-spawn verification
         result_path = Path(results_dir) / f"rank_{rank}.npz"

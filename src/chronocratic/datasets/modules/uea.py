@@ -1,7 +1,7 @@
 """UEA multivariate classification LightningDataModule.
 
-Reads nested ARFF files via scipy.io.arff.loadarff, encodes
-labels with LabelEncoder, and manages splits with variable-length
+Reads nested ARFF files via scipy.io.arff.loadarff, jointly encodes
+labels over train U test, and manages splits with variable-length
 handling. Caches post-processed splits for DDP-safe setup().
 
 ``data_form`` is hardcoded as ``DataForm.NESTED``.
@@ -18,7 +18,6 @@ import numpy as np
 import pandas as pd
 from scipy.io import arff
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
 
 from chronocratic.datasets.datatypes.uea import UEAClassificationMultivariateDataset
 from chronocratic.datasets.enums.data import (
@@ -36,7 +35,9 @@ from chronocratic.datasets.utils.cache import (
     atomic_save_npz,
     build_cache_key,
     CACHE_SCHEMA_VERSION,
+    load_metadata,
 )
+from chronocratic.datasets.utils.common import encode_labels_jointly
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,7 +55,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
 
     Reads multi-dimensional nested ARFF files using raw
     :func:`scipy.io.arff.loadarff`, decodes byte values,
-    encodes labels with :class:`sklearn.preprocessing.LabelEncoder`,
+    jointly encodes labels over train U test with
+    :class:`sklearn.preprocessing.LabelEncoder`,
     and manages splits with variable-length handling.
 
     ``data_form`` is hardcoded as ``DataForm.NESTED``.
@@ -149,18 +151,19 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         return data
 
     def _process_stacked_data(self, data: Any) -> tuple[np.ndarray, np.ndarray]:
-        """Process nested ARFF data into samples and encoded labels.
+        """Process nested ARFF data into samples and raw decoded labels.
 
         Iterates over (sample, label) pairs. For each sample, iterates
         over points, decoding bytes to float. Builds numpy arrays and
-        encodes labels with LabelEncoder. Swaps axes so shape is
-        (samples, timesteps, features).
+        decodes labels from bytes to strings. Swaps axes so shape is
+        (samples, timesteps, features). Label encoding happens later,
+        jointly over train and test, in :meth:`_do_prepare_data`.
 
         Args:
             data: Raw numpy structured array from scipy.loadarff.
 
         Returns:
-            Tuple of (samples_array, encoded_labels_array).
+            Tuple of (samples_array, raw_labels_array).
         """
         processed_data: list[np.ndarray] = []
         labels: list[str] = []
@@ -179,10 +182,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             label_str = label.decode("utf-8") if isinstance(label, bytes) else label
             labels.append(label_str)
 
-        encoder = LabelEncoder()
-        encoded_labels = encoder.fit_transform(labels)
         output_data = np.array(processed_data).astype(np.float32).swapaxes(1, 2)
-        return output_data, np.array(encoded_labels)
+        return output_data, np.array(labels)
 
     # ------------------------------------------------------------------
     # Lightning lifecycle
@@ -212,6 +213,11 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
 
         self._train_data_samples, self._train_data_labels = self._process_stacked_data(train_data)
         self._test_data_samples, self._test_data_labels = self._process_stacked_data(test_data)
+
+        # Encode labels jointly over train U test, before any splitting/filtering
+        self._train_data_labels, self._test_data_labels, class_labels = encode_labels_jointly(
+            train_labels=self._train_data_labels, test_labels=self._test_data_labels
+        )
 
         # Apply splitting strategy
         if self.splitting_strategy == ClassificationSplitMode.MANUAL:
@@ -287,6 +293,18 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                         "Validation size adjusted to %d samples to cover all classes", num_classes
                     )
 
+        train_classes = set(np.unique(self._train_data_labels))
+        test_classes = set(np.unique(self._test_data_labels))
+        absent_from_train = test_classes - train_classes
+        if absent_from_train:
+            logger.warning(
+                "Dataset %s: %d classes present in test are absent from train after "
+                "filtering/splitting: %s",
+                self._dataset_name,
+                len(absent_from_train),
+                sorted(absent_from_train),
+            )
+
         # Variable-length processing
         self._process_data_with_varying_sequence_lengths()
 
@@ -297,7 +315,7 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             self._valid_data_labels = pd.Series(self._valid_data_labels, dtype="category")
 
         # Compute module state
-        self._num_classes = len(self._train_data_labels.unique())
+        self._num_classes = len(class_labels)
         self._seq_len, self._num_features = self._train_data_samples[0].shape
 
         # Write cache
@@ -332,6 +350,8 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                 "has_datetime_index": False,
                 "data_scaling_method": self.data_scaling_method.value,
                 "data_scaling_range": self.data_scaling_range,
+                "num_classes": self._num_classes,
+                "class_labels": [str(label) for label in class_labels],
             },
         )
 
@@ -343,6 +363,9 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         cache_dir = self._get_cache_dir()
         cache_path = cache_dir / f"{self._cache_key}.npz"
         loaded = np.load(str(cache_path))
+
+        metadata = load_metadata(cache_dir / f"{self._cache_key}_metadata.json")
+        self._num_classes = metadata["num_classes"]
 
         self._train_data_samples = loaded["train_samples"]
         self._train_data_labels = pd.Series(loaded["train_labels"], dtype="category")

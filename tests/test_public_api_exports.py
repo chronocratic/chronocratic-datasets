@@ -118,11 +118,17 @@ def test_removed_symbols_not_in_utils_barrel():
     """Removed utils symbols are not importable from the utils barrel.
 
     Per D-20, only compose, get_num_samples_from_ts, and separate_target_feature_from_df
-    are exported from chronocratic.datasets.utils.
+    are exported from chronocratic.datasets.utils. encode_labels_jointly is also
+    exported (joint label encoding, see chronocratic-joint-label-encoding spec).
     """
     import chronocratic.datasets.utils
 
-    retained = {"compose", "get_num_samples_from_ts", "separate_target_feature_from_df"}
+    retained = {
+        "compose",
+        "get_num_samples_from_ts",
+        "separate_target_feature_from_df",
+        "encode_labels_jointly",
+    }
     actual = set(chronocratic.datasets.utils.__all__)
     assert actual == retained, f"utils __all__ should be {sorted(retained)}, got {sorted(actual)}"
 

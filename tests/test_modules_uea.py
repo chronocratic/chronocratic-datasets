@@ -1,8 +1,8 @@
 """Tests for UEAClassificationDataModule.
 
 Covers constructor params, DataForm.NESTED, _process_stacked_data
-byte-decoding and LabelEncoder, FileNotFoundError for missing folder,
-and dataloader methods returning proper DataLoaders.
+byte-decoding, joint label encoding, FileNotFoundError for missing
+folder, and dataloader methods returning proper DataLoaders.
 """
 
 from pathlib import Path
@@ -11,7 +11,6 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader
 
 from chronocratic.datasets.enums.data import (
@@ -73,6 +72,16 @@ def _make_mock_test_data() -> np.ndarray:
     ]
     labels = [b"0", b"1"]
     data = np.array(list(zip(samples, labels, strict=False)), dtype=[("f0", "O"), ("f1", "O")])
+    return data
+
+
+def _make_mock_data(*, labels: list[bytes]) -> np.ndarray:
+    """Build mock nested ARFF data with one sample per given label."""
+    samples = [
+        np.array([[float(i), float(i + 1)], [float(i + 2), float(i + 3)]])
+        for i in range(len(labels))
+    ]
+    data = np.array(list(zip(samples, labels, strict=True)), dtype=[("f0", "O"), ("f1", "O")])
     return data
 
 
@@ -144,7 +153,7 @@ class TestUEAProcessStackedData:
         assert samples.shape[0] == 2
 
     def test_process_stacked_data_decodes_bytes(self, synthetic_uea_folder: Path) -> None:
-        """_process_stacked_data handles byte-decoded labels."""
+        """_process_stacked_data returns decoded raw string labels."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
@@ -156,8 +165,8 @@ class TestUEAProcessStackedData:
 
         _samples, labels = module._process_stacked_data(mock_data)
 
-        # Labels should be encoded integers (0, 1)
-        assert set(labels.tolist()).issubset({0, 1})
+        # Labels are the decoded raw strings; encoding happens later, jointly.
+        assert list(labels) == ["A", "B"]
 
 
 class TestUEAPrepareData:
@@ -283,14 +292,15 @@ class TestUEAUsesScipyLoadarff:
             module.prepare_data()
             mock_load.assert_called()
 
-    def test_uses_labelencoder(self, synthetic_uea_folder: Path) -> None:
-        """Module uses sklearn LabelEncoder for label processing."""
+    def test_process_stacked_data_returns_raw_string_labels(
+        self, synthetic_uea_folder: Path
+    ) -> None:
+        """_process_stacked_data no longer encodes; it returns raw strings."""
         from chronocratic.datasets.modules.uea import UEAClassificationDataModule
 
         module = UEAClassificationDataModule(
             dataset_folder_path=synthetic_uea_folder, target_column_name="class"
         )
-        # Build mock data with string labels
         sample1 = np.array([[1.0, 2.0], [3.0, 4.0]])
         sample2 = np.array([[5.0, 6.0], [7.0, 8.0]])
         mock_data = np.array(
@@ -299,10 +309,7 @@ class TestUEAUsesScipyLoadarff:
 
         _, labels = module._process_stacked_data(mock_data)
 
-        # LabelEncoder maps strings to integers
-        encoder = LabelEncoder()
-        expected = encoder.fit_transform(["classA", "classB"])
-        assert list(labels) == list(expected)
+        assert list(labels) == ["classA", "classB"]
 
 
 def test_setup_idempotent(synthetic_uea_folder: Path) -> None:
@@ -375,3 +382,64 @@ def test_cache_round_trip(synthetic_uea_folder: Path) -> None:
         np.testing.assert_array_equal(
             module._test_data_labels.to_numpy(), orig_test_labels.to_numpy()
         )
+
+
+# --------------------------------------------------------------------------- #
+# Joint label encoding tests                                                  #
+# --------------------------------------------------------------------------- #
+
+
+def test_class_sets_differ_between_files(synthetic_uea_folder: Path) -> None:
+    """Train has {A,B}, test has {A,C}: num_classes==3, A shares a code, C->2."""
+    from chronocratic.datasets.modules.uea import UEAClassificationDataModule
+
+    train_data = _make_mock_data(labels=[b"A", b"B", b"A", b"B", b"A"])
+    test_data = _make_mock_data(labels=[b"A", b"C"])
+
+    with patch(
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
+        side_effect=[train_data, test_data],
+    ):
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name="class",
+            valid_size=0.0,
+            scale_data=False,
+        )
+        module.prepare_data()
+
+    assert module._num_classes == 3
+    # LabelEncoder sorts A,B,C -> 0,1,2
+    train_codes = set(module._train_data_labels.unique())
+    test_codes = set(module._test_data_labels.unique())
+    assert train_codes == {0, 1}
+    assert 0 in test_codes  # "A" -> 0, same code in both splits
+    assert 2 in test_codes  # "C" -> 2
+
+
+def test_cache_round_trip_restores_num_classes(synthetic_uea_folder: Path) -> None:
+    """num_classes is restored from cache metadata after clearing in-memory state."""
+    from chronocratic.datasets.modules.uea import UEAClassificationDataModule
+
+    with patch(
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
+        side_effect=[_make_mock_train_data(), _make_mock_test_data()],
+    ):
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder, target_column_name="class", scale_data=False
+        )
+        module.prepare_data()
+
+    orig_labels = module._train_data_labels.copy()
+    module._num_classes = None
+    module._train_data_samples = None
+    module._test_data_samples = None
+    module._valid_data_samples = None
+    module._train_data_labels = None
+    module._test_data_labels = None
+    module._valid_data_labels = None
+
+    module.setup(stage="fit")
+
+    assert module._num_classes == 2
+    np.testing.assert_array_equal(module._train_data_labels.to_numpy(), orig_labels.to_numpy())

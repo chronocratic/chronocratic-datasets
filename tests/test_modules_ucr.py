@@ -1,8 +1,11 @@
 """Tests for UCRClassificationDataModule."""
 
+import json
+import logging
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 from torch.utils.data import DataLoader
@@ -12,6 +15,17 @@ from chronocratic.datasets.enums.data import (
     ClassificationSplitMode,
     DataForm,
 )
+
+
+def _make_arff(*, rows: list[tuple[float, float, float, int | str]], class_values: str) -> str:
+    """Build ARFF text with three numeric features and a nominal target column."""
+    header = (
+        "@relation test\n\n"
+        "@attribute t1 numeric\n@attribute t2 numeric\n@attribute t3 numeric\n"
+        f"@attribute class {{{class_values}}}\n\n@data\n"
+    )
+    body = "\n".join(f"{t1},{t2},{t3},{label}" for t1, t2, t3, label in rows)
+    return header + body + "\n"
 
 
 class TestUCRClassificationDataModule:
@@ -288,8 +302,6 @@ def test_cache_round_trip(tmp_path: Path) -> None:
     and metadata.json, clearing in-memory state and calling setup()
     restores data from cache that matches the original.
     """
-    import numpy as np
-
     from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
 
     arff_content = """@relation test
@@ -351,3 +363,113 @@ def test_cache_round_trip(tmp_path: Path) -> None:
     np.testing.assert_array_equal(mod._test_data_samples.to_numpy(), orig_test.to_numpy())
     np.testing.assert_array_equal(mod._train_data_labels.to_numpy(), orig_train_labels.to_numpy())
     np.testing.assert_array_equal(mod._test_data_labels.to_numpy(), orig_test_labels.to_numpy())
+
+
+# --------------------------------------------------------------------------- #
+# Joint label encoding tests                                                  #
+# --------------------------------------------------------------------------- #
+
+
+def test_negative_binary_labels_encode_to_0_1(tmp_path: Path) -> None:
+    """{-1,1} labels: num_classes == 2 and every split's labels are in {0, 1}."""
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
+
+    rows: list[tuple[float, float, float, int | str]] = [
+        (0.1 * i, 0.2 * i, 0.3 * i, -1 if i % 2 == 0 else 1) for i in range(1, 21)
+    ]
+    arff_content = _make_arff(rows=rows, class_values="-1,1")
+
+    dataset_dir = tmp_path / "synthetic"
+    dataset_dir.mkdir()
+    (dataset_dir / "synthetic_TRAIN.arff").write_text(arff_content)
+    (dataset_dir / "synthetic_TEST.arff").write_text(arff_content)
+
+    mod = UCRClassificationDataModule(
+        dataset_folder_path=dataset_dir, target_column_name="class", valid_size=0.1
+    )
+    mod.prepare_data()
+    mod.setup("fit")
+
+    assert mod.num_classes == 2
+    for labels in (mod._train_data_labels, mod._valid_data_labels, mod._test_data_labels):
+        if labels is not None:
+            assert set(labels.unique()) <= {0, 1}
+
+    metadata_path = mod._get_cache_dir() / f"{mod._cache_key}_metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    assert metadata["num_classes"] == 2
+    assert metadata["class_labels"] == ["-1", "1"]
+
+
+def test_class_absent_from_train_present_in_test(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Phoneme-like case: a class dropped as a train singleton stays in K and in test."""
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
+
+    train_rows: list[tuple[float, float, float, int | str]] = [
+        (0.1 * i, 0.2 * i, 0.3 * i, 1) for i in range(1, 11)
+    ]
+    train_rows += [(0.1 * i, 0.2 * i, 0.3 * i, 2) for i in range(1, 10)]
+    train_rows += [(0.99, 0.98, 0.97, 3)]  # singleton class, dropped by the valid-split filter
+    test_rows: list[tuple[float, float, float, int | str]] = [
+        (0.1 * i, 0.2 * i, 0.3 * i, 1) for i in range(1, 6)
+    ]
+    test_rows += [(0.1 * i, 0.2 * i, 0.3 * i, 2) for i in range(1, 6)]
+    test_rows += [(0.1 * i, 0.2 * i, 0.3 * i, 3) for i in range(1, 4)]
+
+    dataset_dir = tmp_path / "synthetic"
+    dataset_dir.mkdir()
+    (dataset_dir / "synthetic_TRAIN.arff").write_text(
+        _make_arff(rows=train_rows, class_values="1,2,3")
+    )
+    (dataset_dir / "synthetic_TEST.arff").write_text(
+        _make_arff(rows=test_rows, class_values="1,2,3")
+    )
+
+    mod = UCRClassificationDataModule(
+        dataset_folder_path=dataset_dir, target_column_name="class", valid_size=0.1
+    )
+    with caplog.at_level(logging.WARNING):
+        mod.prepare_data()
+    mod.setup("fit")
+
+    assert mod.num_classes == 3
+    # Class "3" -> code 2 (LabelEncoder sorts 1,2,3 -> 0,1,2)
+    assert 2 in set(mod._test_data_labels.unique())
+    assert 2 not in set(mod._train_data_labels.unique())
+    assert any("absent from train" in message for message in caplog.messages)
+
+
+def test_cache_round_trip_restores_num_classes(tmp_path: Path) -> None:
+    """num_classes is restored from cache metadata after clearing in-memory state."""
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
+
+    rows: list[tuple[float, float, float, int | str]] = [
+        (0.1 * i, 0.2 * i, 0.3 * i, i % 2) for i in range(1, 21)
+    ]
+    arff_content = _make_arff(rows=rows, class_values="0,1")
+
+    dataset_dir = tmp_path / "synthetic"
+    dataset_dir.mkdir()
+    (dataset_dir / "synthetic_TRAIN.arff").write_text(arff_content)
+    (dataset_dir / "synthetic_TEST.arff").write_text(arff_content)
+
+    mod = UCRClassificationDataModule(
+        dataset_folder_path=dataset_dir, target_column_name="class", valid_size=0.1
+    )
+    mod.prepare_data()
+
+    orig_labels = mod._train_data_labels.copy()
+    mod._num_classes = None
+    mod._train_data_samples = None
+    mod._test_data_samples = None
+    mod._valid_data_samples = None
+    mod._train_data_labels = None
+    mod._test_data_labels = None
+    mod._valid_data_labels = None
+
+    mod.setup(stage="fit")
+
+    assert mod.num_classes == 2
+    np.testing.assert_array_equal(mod._train_data_labels.to_numpy(), orig_labels.to_numpy())
