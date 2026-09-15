@@ -6,16 +6,21 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 __all__ = [
+    "LABEL_ENCODING_SCHEME",
     "compose",
+    "encode_labels_jointly",
     "flatten_list_of_np_arrays",
     "get_num_samples_from_ts",
     "separate_target_feature_from_df",
 ]
+
+LABEL_ENCODING_SCHEME = "joint_label_encoder_v1"
 
 
 def flatten_list_of_np_arrays(list_of_np_arrays: list[np.ndarray]) -> np.ndarray:
@@ -104,3 +109,29 @@ def separate_target_feature_from_df(
     target_feature = df[target_feature_name]
     features = df.drop(target_feature_name, axis=1)
     return features, target_feature
+
+
+def encode_labels_jointly(
+    *, train_labels: np.ndarray | pd.Series, test_labels: np.ndarray | pd.Series
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Encode train/test labels with one LabelEncoder fitted on their union.
+
+    Guarantees a shared ``0..K-1`` label space across splits, so the same
+    integer denotes the same class everywhere and ``K`` covers classes that
+    are absent from one split.
+
+    Args:
+        train_labels: Raw training labels.
+        test_labels: Raw test labels.
+
+    Returns:
+        Tuple of (encoded train labels, encoded test labels, original classes
+        in encoded order). Encoded arrays are ``int64``.
+    """
+    train_array, test_array = np.asarray(train_labels), np.asarray(test_labels)
+    encoder = LabelEncoder().fit(np.concatenate([train_array, test_array]))
+    return (
+        encoder.transform(train_array).astype(np.int64),
+        encoder.transform(test_array).astype(np.int64),
+        encoder.classes_,
+    )

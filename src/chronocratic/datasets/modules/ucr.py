@@ -33,7 +33,9 @@ from chronocratic.datasets.utils.cache import (
     atomic_save_npz,
     build_cache_key,
     CACHE_SCHEMA_VERSION,
+    load_metadata,
 )
+from chronocratic.datasets.utils.common import encode_labels_jointly, LABEL_ENCODING_SCHEME
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -124,6 +126,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                 "test_size": test_size,
                 "valid_size": valid_size,
                 "data_scaling_method": data_scaling_method.value,
+                "label_encoding": LABEL_ENCODING_SCHEME,
             },
         )
 
@@ -217,8 +220,19 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         )
         (self._test_data_samples, self._test_data_labels) = self._separate_target_feature(test_data)
 
+        # Encode labels jointly over train U test, before any splitting/filtering
+        train_codes, test_codes, class_labels = encode_labels_jointly(
+            train_labels=self._train_data_labels, test_labels=self._test_data_labels
+        )
+        self._train_data_labels = pd.Series(
+            train_codes, index=self._train_data_labels.index, name=self._train_data_labels.name
+        )
+        self._test_data_labels = pd.Series(
+            test_codes, index=self._test_data_labels.index, name=self._test_data_labels.name
+        )
+
         # Compute module state
-        self._num_classes = len(self._train_data_labels.unique())
+        self._num_classes = len(class_labels)
         self._seq_len = len(self._train_data_samples.columns)
         self._num_features = 1
 
@@ -261,6 +275,18 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                         num_classes,
                         self._dataset_name,
                     )
+
+        train_classes = set(self._train_data_labels.unique())
+        test_classes = set(self._test_data_labels.unique())
+        absent_from_train = test_classes - train_classes
+        if absent_from_train:
+            logger.warning(
+                "Dataset %s: %d classes present in test are absent from train after "
+                "filtering/splitting: %s",
+                self._dataset_name,
+                len(absent_from_train),
+                sorted(absent_from_train),
+            )
 
         # Variable-length processing
         self._process_data_with_varying_sequence_lengths()
@@ -310,6 +336,8 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                 "has_datetime_index": False,
                 "data_scaling_method": self.data_scaling_method.value,
                 "data_scaling_range": self.data_scaling_range,
+                "num_classes": self._num_classes,
+                "class_labels": [str(label) for label in class_labels],
             },
         )
 
@@ -321,6 +349,9 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         cache_dir = self._get_cache_dir()
         cache_path = cache_dir / f"{self._cache_key}.npz"
         loaded = np.load(str(cache_path))
+
+        metadata = load_metadata(cache_dir / f"{self._cache_key}_metadata.json")
+        self._num_classes = metadata["num_classes"]
 
         self._train_data_samples = pd.DataFrame(loaded["train_samples"])
         self._train_data_labels = pd.Series(loaded["train_labels"], dtype="category")
