@@ -12,15 +12,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 __all__ = [
-    "LABEL_ENCODING_SCHEME",
     "compose",
     "encode_labels_jointly",
     "flatten_list_of_np_arrays",
     "get_num_samples_from_ts",
     "separate_target_feature_from_df",
 ]
-
-LABEL_ENCODING_SCHEME = "joint_label_encoder_v1"
 
 
 def flatten_list_of_np_arrays(list_of_np_arrays: list[np.ndarray]) -> np.ndarray:

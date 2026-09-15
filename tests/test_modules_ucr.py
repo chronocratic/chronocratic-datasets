@@ -399,7 +399,6 @@ def test_negative_binary_labels_encode_to_0_1(tmp_path: Path) -> None:
     metadata = json.loads(metadata_path.read_text())
     assert metadata["num_classes"] == 2
     assert metadata["class_labels"] == ["-1", "1"]
-    assert "label_encoding=joint_label_encoder_v1" in mod._cache_key
 
 
 def test_class_absent_from_train_present_in_test(

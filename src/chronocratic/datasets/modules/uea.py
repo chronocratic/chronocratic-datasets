@@ -37,7 +37,7 @@ from chronocratic.datasets.utils.cache import (
     CACHE_SCHEMA_VERSION,
     load_metadata,
 )
-from chronocratic.datasets.utils.common import encode_labels_jointly, LABEL_ENCODING_SCHEME
+from chronocratic.datasets.utils.common import encode_labels_jointly
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -128,7 +128,6 @@ class UEAClassificationDataModule(BaseClassificationTimeSeriesDataModule):
                 "test_size": test_size,
                 "valid_size": valid_size,
                 "data_scaling_method": data_scaling_method.value,
-                "label_encoding": LABEL_ENCODING_SCHEME,
             },
         )
 
