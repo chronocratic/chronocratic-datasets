@@ -200,7 +200,7 @@ class WeatherDataModule(BaseForecastingTimeSeriesDataModule):
 
         # Convert to numpy and persist to cache
         data = df.to_numpy().astype(np.float32)
-        index_ns = df.index.astype(np.int64).to_numpy()
+        index_ns = pd.DatetimeIndex(df.index).as_unit("ns").asi8
 
         cache_dir = self._resolve_cache_dir()
         cache_path = cache_dir / f"{self._cache_key}.npz"

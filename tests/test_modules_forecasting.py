@@ -1853,3 +1853,113 @@ class TestForecastingDimsMatchLoader:
         n_features_meta, _ = module.prepare_dimensions()
         module.setup(stage="fit")
         assert n_features_meta == module._full_data_scaled.shape[-1]
+
+
+class TestTimeIndexCacheRoundTrip:
+    """The datetime index survives the cache, so time features match the CSV dates.
+
+    ``prepare_data`` writes the index to the ``.npz`` cache and ``setup`` reads it back.
+    A unit mismatch (e.g. microseconds saved, nanoseconds read) shifts every timestamp
+    to 1970 and turns the calendar features into near-constant columns.
+    """
+
+    @staticmethod
+    def _build_module(name: str, csv_path: Path, cache_dir: Path) -> object:
+        """Build one forecasting module that caches into ``cache_dir``."""
+        from chronocratic.datasets.modules.electricity import ElectricityLoadDataModule
+        from chronocratic.datasets.modules.ett import ETTDataModule
+        from chronocratic.datasets.modules.weather import WeatherDataModule
+
+        modules = {
+            "ett": lambda: ETTDataModule(
+                dataset_file_path=csv_path,
+                variant="ETTh1",
+                seq_len=16,
+                mode=ForecastingMode.MULTIVARIATE,
+            ),
+            "weather": lambda: WeatherDataModule(
+                dataset_file_path=csv_path, seq_len=16, mode=ForecastingMode.MULTIVARIATE
+            ),
+            "electricity": lambda: ElectricityLoadDataModule(
+                dataset_file_path=csv_path, seq_len=16, mode=ForecastingMode.MULTIVARIATE
+            ),
+        }
+        module = modules[name]()
+        module._cache_dir = cache_dir
+        return module
+
+    @pytest.fixture(params=["ett", "weather", "electricity"])
+    def case(
+        self, request: pytest.FixtureRequest, tmp_path: Path
+    ) -> tuple[str, Path, pd.Timestamp]:
+        """Write a CSV for one module and return (name, path, expected first timestamp)."""
+        rng = np.random.default_rng(0)
+        csv_path = tmp_path / f"{request.param}.csv"
+        if request.param == "electricity":
+            # Hourly from 2011; the module keeps rows from 2012 on
+            dates = pd.date_range("2011-12-01", periods=24 * 90, freq="h")
+            df = pd.DataFrame(
+                {"MT_001": rng.uniform(1, 2, len(dates)), "MT_002": rng.uniform(1, 2, len(dates))},
+                index=pd.Index(dates, name="datetime"),
+            )
+            df.to_csv(csv_path, sep=";", decimal=",")
+            return request.param, csv_path, pd.Timestamp("2012-01-01 00:00")
+        dates = pd.date_range("2016-07-01", periods=24 * 10, freq="h")
+        df = pd.DataFrame(
+            {
+                "date": dates,
+                "a": rng.standard_normal(len(dates)),
+                "OT": rng.standard_normal(len(dates)),
+            }
+        )
+        df.to_csv(csv_path, index=False)
+        return request.param, csv_path, pd.Timestamp("2016-07-01 00:00")
+
+    def test_index_after_setup_matches_csv_dates(
+        self, case: tuple[str, Path, pd.Timestamp], tmp_path: Path
+    ) -> None:
+        """``setup`` on the module that ran ``prepare_data`` keeps the CSV dates."""
+        name, csv_path, first = case
+        module = self._build_module(name, csv_path, tmp_path / "cache")
+        module.prepare_data()
+        module.setup(stage="fit")
+
+        assert module._time_index[0] == first
+        assert (module._time_index[1:] - module._time_index[:-1] == pd.Timedelta(hours=1)).all()
+
+    def test_setup_only_module_reads_csv_dates_from_cache(
+        self, case: tuple[str, Path, pd.Timestamp], tmp_path: Path
+    ) -> None:
+        """A fresh module that only runs ``setup`` (a non-zero DDP rank) reads the CSV dates."""
+        name, csv_path, first = case
+        cache_dir = tmp_path / "cache"
+        self._build_module(name, csv_path, cache_dir).prepare_data()
+
+        module = self._build_module(name, csv_path, cache_dir)
+        module.setup(stage="fit")
+
+        assert module._time_index[0] == first
+        assert (module._time_index[1:] - module._time_index[:-1] == pd.Timedelta(hours=1)).all()
+
+    def test_time_feature_channels_match_csv_dates(
+        self, case: tuple[str, Path, pd.Timestamp], tmp_path: Path
+    ) -> None:
+        """The leading time-feature channels equal the calendar features of the CSV dates."""
+        from chronocratic.datasets.utils.features import extract_time_features
+
+        name, csv_path, first = case
+        cache_dir = tmp_path / "cache"
+        self._build_module(name, csv_path, cache_dir).prepare_data()
+        module = self._build_module(name, csv_path, cache_dir)
+        module.setup(stage="fit")
+
+        n_steps = module._full_data_raw.shape[0]
+        expected_dates = pd.date_range(first, periods=n_steps, freq="h")
+        features = extract_time_features(expected_dates)
+        scaler = module._prepare_data_scaler()
+        scaler.fit(features[module._train_slice])
+        expected = scaler.transform(features)
+
+        time_channels = module._full_data_scaled[0, :, : module._num_time_series_features]
+        np.testing.assert_allclose(time_channels, expected, rtol=1e-5, atol=1e-6)
+        assert len(np.unique(time_channels[:, 1])) == 24  # hour channel
