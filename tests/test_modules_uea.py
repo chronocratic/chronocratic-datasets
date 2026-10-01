@@ -443,3 +443,55 @@ def test_cache_round_trip_restores_num_classes(synthetic_uea_folder: Path) -> No
 
     assert module._num_classes == 2
     np.testing.assert_array_equal(module._train_data_labels.to_numpy(), orig_labels.to_numpy())
+
+
+def test_scaling_maps_each_channel_with_one_train_fit_affine_map(
+    synthetic_uea_folder: Path,
+) -> None:
+    """UEA: each channel is scaled by one (a, b) fit on all its train values.
+
+    Time steps have very different spreads, so scaling per (time step,
+    channel) would give each time step its own map and change the shape of
+    every series.
+    """
+    from chronocratic.datasets.modules.uea import UEAClassificationDataModule
+
+    def _build(samples: list[np.ndarray], labels: list[bytes]) -> np.ndarray:
+        return np.array(list(zip(samples, labels, strict=True)), dtype=[("f0", "O"), ("f1", "O")])
+
+    # ARFF gives each sample as (channels, timesteps); the module stores (timesteps, channels).
+    step_spread = np.array([[0.01, 1.0, 100.0], [50.0, 0.1, 5.0]])
+    train = _build(
+        samples=[step_spread * i - 3.0 for i in range(8)],
+        labels=[b"0", b"1"] * 4,
+    )
+    test = _build(samples=[step_spread * 10.0, -step_spread], labels=[b"0", b"1"])
+
+    with patch(
+        "chronocratic.datasets.modules.uea.UEAClassificationDataModule._read_arff_data_file",
+        side_effect=[train, test],
+    ):
+        module = UEAClassificationDataModule(
+            dataset_folder_path=synthetic_uea_folder,
+            target_column_name="class",
+            valid_size=0.25,
+            data_scaling_range=(0, 1),
+        )
+        module.prepare_data()
+
+    split_names = ("_train_data_samples", "_valid_data_samples", "_test_data_samples")
+    raw = {name: np.asarray(getattr(module, name), dtype=float) for name in split_names}
+    assert raw["_train_data_samples"].shape[1:] == (3, 2)
+    module.setup(stage="fit")
+
+    train_min = raw["_train_data_samples"].min(axis=(0, 1))
+    train_max = raw["_train_data_samples"].max(axis=(0, 1))
+    for name in split_names:
+        expected = (raw[name] - train_min) / (train_max - train_min)
+        np.testing.assert_allclose(
+            np.asarray(getattr(module, name), dtype=float),
+            expected,
+            rtol=1e-5,
+            atol=1e-6,
+            err_msg=name,
+        )

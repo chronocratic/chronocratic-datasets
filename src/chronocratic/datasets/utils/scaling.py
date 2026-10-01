@@ -65,6 +65,15 @@ def create_data_scaler(
                 scaling_range=scaling_range,
             )
 
+        if data_form == DataForm.GLOBAL:
+            return _scale_all_values_together(
+                train_data=train_data,
+                valid_data=valid_data,
+                test_data=test_data,
+                scaling_method=scaling_method,
+                scaling_range=scaling_range,
+            )
+
         msg = f"Unsupported data form: {data_form}"
         raise ValueError(msg)
 
@@ -199,6 +208,44 @@ def _scale_multi_file_data(
         scaled_valid = None
 
     return scaled_train, scaled_valid, scaled_test
+
+
+def _scale_all_values_together(
+    train_data: np.ndarray | pd.DataFrame,
+    valid_data: np.ndarray | pd.DataFrame | None,
+    test_data: np.ndarray | pd.DataFrame,
+    scaling_method: ScalingMethod,
+    scaling_range: tuple[float, float],
+) -> tuple[Any, Any, Any]:
+    """Scale 2-D single-channel data with one scaler fit on all train values.
+
+    Unlike ``_scale_regular_data``, which fits one scaler per column, this
+    treats every value as the same feature, so the shape of each series
+    (row) is preserved. NaN padding is ignored by the scaler.
+
+    Args:
+        train_data: Training data, shape (samples, timesteps).
+        valid_data: Validation data (may be None).
+        test_data: Test data, shape (samples, timesteps).
+        scaling_method: Scaling algorithm to use.
+        scaling_range: Target range for min-max scaling.
+
+    Returns:
+        Scaled (train, valid, test) in the same container type as input.
+    """
+    scaler = _get_scaler(scaling_method=scaling_method, scaling_range=scaling_range)
+    scaler.fit(np.asarray(train_data, dtype=float).reshape(-1, 1))
+
+    def _transform(data: np.ndarray | pd.DataFrame | None) -> np.ndarray | pd.DataFrame | None:
+        if data is None:
+            return None
+        values = np.asarray(data, dtype=float)
+        scaled = scaler.transform(values.reshape(-1, 1)).reshape(values.shape)
+        if isinstance(data, pd.DataFrame):
+            return pd.DataFrame(scaled, columns=data.columns, index=data.index)
+        return scaled
+
+    return _transform(train_data), _transform(valid_data), _transform(test_data)
 
 
 def _scale_nested_data_all_dimensions(

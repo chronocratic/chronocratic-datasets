@@ -46,10 +46,10 @@ class TestUCRClassificationDataModule:
         assert "dataset_folder_path" in sig.parameters
         assert "target_column_name" in sig.parameters
 
-    def test_data_form_is_regular(self, module_class: type, tmp_path: Path) -> None:
-        """data_form is hardcoded to DataForm.REGULAR."""
+    def test_data_form_is_global(self, module_class: type, tmp_path: Path) -> None:
+        """data_form is hardcoded to DataForm.GLOBAL."""
         mod = module_class(dataset_folder_path=tmp_path, target_column_name="class")
-        assert mod._data_form == DataForm.REGULAR
+        assert mod._data_form == DataForm.GLOBAL
 
     def test_prepare_data_raises_for_missing_folder(self, module_class: type) -> None:
         """prepare_data() raises FileNotFoundError for non-existent folder."""
@@ -473,3 +473,42 @@ def test_cache_round_trip_restores_num_classes(tmp_path: Path) -> None:
 
     assert mod.num_classes == 2
     np.testing.assert_array_equal(mod._train_data_labels.to_numpy(), orig_labels.to_numpy())
+
+
+# --------------------------------------------------------------------------- #
+# Scaling preserves series shape                                              #
+# --------------------------------------------------------------------------- #
+
+
+def test_scaling_maps_every_split_with_one_train_fit_affine_map(tmp_path: Path) -> None:
+    """UCR: scaled data equals ``a * raw + b`` with one (a, b) fit on all train values.
+
+    Time steps have very different spreads, so per-time-step scaling would
+    give each column its own map and change the shape of every series.
+    """
+    from chronocratic.datasets.modules.ucr import UCRClassificationDataModule
+
+    train_rows = [(0.01 * i, float(i), 100.0 * i - 300.0, i % 2) for i in range(8)]
+    test_rows = [(0.5, -2.0, 900.0, 0), (0.02, 3.0, -500.0, 1)]
+    dataset_dir = tmp_path / "synthetic"
+    dataset_dir.mkdir()
+    (dataset_dir / "synthetic_TRAIN.arff").write_text(
+        _make_arff(rows=train_rows, class_values="0,1")
+    )
+    (dataset_dir / "synthetic_TEST.arff").write_text(_make_arff(rows=test_rows, class_values="0,1"))
+
+    mod = UCRClassificationDataModule(
+        dataset_folder_path=dataset_dir,
+        target_column_name="class",
+        valid_size=0.25,
+        data_scaling_range=(0, 1),
+    )
+    mod.prepare_data()
+    split_names = ("_train_data_samples", "_valid_data_samples", "_test_data_samples")
+    raw = {name: getattr(mod, name).to_numpy(dtype=float) for name in split_names}
+    mod.setup(stage="fit")
+
+    train_min, train_max = raw["_train_data_samples"].min(), raw["_train_data_samples"].max()
+    for name in split_names:
+        expected = (raw[name] - train_min) / (train_max - train_min)
+        np.testing.assert_allclose(getattr(mod, name).to_numpy(dtype=float), expected, err_msg=name)
