@@ -9,6 +9,13 @@ Entries are managed with [towncrier](https://towncrier.readthedocs.io/); see
 
 <!-- towncrier release notes start -->
 
+## v0.1.0a7 (2026-10-01)
+
+### Fixed
+
+- UCR scaling fit one scaler per time step instead of one over all values, which stretched every time step to the target range and distorted the shape of each series. UCR now uses the new `DataForm.GLOBAL`, which fits one scaler on all train values. UEA and forecasting scaling are unchanged. ([#49](https://github.com/chronocratic/chronocratic-datasets/issues/49))
+
+
 ## v0.1.0a6 (2026-09-24)
 
 ### Fixed
