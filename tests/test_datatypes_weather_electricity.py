@@ -245,3 +245,25 @@ class TestDatatypesExports:
         )
 
         assert FlexibleTimeSeriesDatasetSingleFileMultipleSeries is not None
+
+
+def test_electricity_windows_start_every_step_in_each_series() -> None:
+    """Window k of every series covers rows ``k * step`` onwards of that series."""
+    from chronocratic.datasets.datatypes.electricity import ElectricityDataset
+    from chronocratic.datasets.enums import TimeSeriesDatasetMode
+
+    n_series, n_steps = 3, 100
+    offsets = 1000 * np.arange(n_series, dtype=np.float32)[:, None, None]
+    data = np.arange(n_steps, dtype=np.float32)[None, :, None] + offsets  # (3, 100, 1)
+    ds = ElectricityDataset(
+        data=data, seq_len=20, step=20, mode=TimeSeriesDatasetMode.INPUT_OUTPUT, forecast_horizon=10
+    )
+
+    windows_per_series = 4  # starts 0, 20, 40, 60; 80 + 30 > 100
+    assert len(ds) == n_series * windows_per_series
+    for idx in range(len(ds)):
+        series, k = divmod(idx, windows_per_series)
+        inp, tgt = ds[idx]
+        start = 1000 * series + 20 * k
+        np.testing.assert_array_equal(inp.numpy()[:, 0], np.arange(start, start + 20))
+        np.testing.assert_array_equal(tgt.numpy()[:, 0], np.arange(start + 20, start + 30))

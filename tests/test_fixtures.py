@@ -6,6 +6,7 @@ Verifies that fixtures defined in conftest.py produce valid outputs.
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 from chronocratic.datasets.utils.cache import load_metadata, load_scaler
@@ -38,3 +39,11 @@ def test_synthetic_cache_dir_fixture(synthetic_cache_dir: Path) -> None:
     scaler_path = synthetic_cache_dir / "synthetic.cache_data_scaler.pt"
     scaler = load_scaler(scaler_path)
     assert isinstance(scaler, MinMaxScaler), "Scaler is not a MinMaxScaler"
+
+
+def test_synthetic_cache_index_round_trips_to_fixture_dates(synthetic_cache_dir: Path) -> None:
+    """The cached int64 index reads back as the fixture's dates (2016-01-01, hourly)."""
+    loaded = np.load(str(synthetic_cache_dir / "synthetic.cache.npz"))
+    index = pd.to_datetime(loaded["index"], unit="ns")
+    assert index[0] == pd.Timestamp("2016-01-01")
+    assert index[1] - index[0] == pd.Timedelta(hours=1)

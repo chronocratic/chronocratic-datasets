@@ -145,7 +145,7 @@ class FlexibleTimeSeriesDatasetSingleFile(FlexibleTimeSeriesDataset):
         if idx < 0 or idx >= len(self):
             msg = "Index out of range"
             raise IndexError(msg)
-        self._n = idx
+        self._n = idx * self._step
 
     def _get_current_label(self) -> np.ndarray | None:
         return self._sequence_handling_strategy.get_current_label(
@@ -219,9 +219,10 @@ class FlexibleTimeSeriesDatasetMultipleFiles(FlexibleTimeSeriesDataset):
             raise IndexError(msg)
         file_num = bisect(self._accumulated_num_sequences_per_file, idx)
         self._current_file = file_num
-        self._n = (
+        window_in_file = (
             idx - self._accumulated_num_sequences_per_file[file_num - 1] if file_num != 0 else idx
         )
+        self._n = window_in_file * self._step
 
     def _get_current_label(self) -> np.ndarray | None:
         return self._sequence_handling_strategy.get_current_label(
@@ -311,7 +312,10 @@ class FlexibleTimeSeriesDatasetSingleFileMultipleSeries(FlexibleTimeSeriesDatase
             raise IndexError(msg)
         series_num = bisect(self._accumulated_sequences, idx)
         self._current_series = series_num
-        self._n = idx - self._accumulated_sequences[series_num - 1] if series_num != 0 else idx
+        window_in_series = (
+            idx - self._accumulated_sequences[series_num - 1] if series_num != 0 else idx
+        )
+        self._n = window_in_series * self._step
 
     def _get_current_data(self) -> np.ndarray:
         """Return data window for current series position."""
