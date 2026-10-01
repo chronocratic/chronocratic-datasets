@@ -59,7 +59,8 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
     No JSON config files. ARFF file patterns are hardcoded:
     ``{dataset_name}_TRAIN.arff`` and ``{dataset_name}_TEST.arff``.
 
-    ``data_form`` is hardcoded as ``DataForm.REGULAR``.
+    ``data_form`` is hardcoded as ``DataForm.GLOBAL`` (one scaler over all
+    values; rows are series and columns are time steps).
 
     Args:
         dataset_folder_path: Path to the dataset ARFF directory.
@@ -114,7 +115,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             splitting_strategy=splitting_strategy,
             test_size=test_size,
             num_workers=num_workers,
-            data_form=DataForm.REGULAR,
+            data_form=DataForm.GLOBAL,
             loader_mode=loader_mode,
             loader_strict_batch_size=loader_strict_batch_size,
         )

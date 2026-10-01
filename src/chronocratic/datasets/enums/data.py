@@ -83,14 +83,19 @@ class DataForm(StrEnum):
     """Enum for the form (shape) of the data.
 
     Attributes:
-        REGULAR: 2-D tabular data (samples x features).
+        REGULAR: 2-D tabular data (samples x features); one scaler per
+            column. Not for samples x timesteps tables, where it would scale
+            each time step separately (use ``GLOBAL``).
         NESTED: 3-D array data (samples x timesteps x features).
         MULTI_FILES: List of 1-D arrays from multiple files.
+        GLOBAL: 2-D data (samples x timesteps) of one channel; one scaler
+            is fit over all values, so each series keeps its shape.
     """
 
     REGULAR = "regular"
     NESTED = "nested"
     MULTI_FILES = "multi_files"
+    GLOBAL = "global"
 
 
 class DataPartition(StrEnum):

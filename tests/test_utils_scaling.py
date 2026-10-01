@@ -114,6 +114,43 @@ def test_create_data_scaler_regular_dataframe() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# create_data_scaler — GLOBAL data form                                        #
+# --------------------------------------------------------------------------- #
+
+
+def test_create_data_scaler_global_preserves_series_shape() -> None:
+    """GLOBAL scales all values with one min/max, not per column."""
+    from chronocratic.datasets.utils.scaling import create_data_scaler
+
+    train = pd.DataFrame([[0.0, 0, 0, -10], [0.01, 1, 2, 0], [0.02, 2, 4, 10]])
+    scaler_fn = create_data_scaler(scale=True, scaling_range=(0, 1), data_form=DataForm.GLOBAL)
+
+    scaled_train, scaled_valid, _scaled_test = scaler_fn(
+        train_data=train, valid_data=None, test_data=train
+    )
+
+    assert isinstance(scaled_train, pd.DataFrame)
+    assert scaled_valid is None
+    np.testing.assert_allclose(scaled_train.iloc[1], [0.5005, 0.55, 0.6, 0.5])
+
+
+def test_create_data_scaler_global_fits_on_train_only_and_keeps_nan() -> None:
+    """GLOBAL fits on train, applies to test, and leaves NaN padding as NaN."""
+    from chronocratic.datasets.utils.scaling import create_data_scaler
+
+    train = np.array([[0.0, 5.0, np.nan], [10.0, 2.0, 1.0]])
+    test = np.array([[20.0, np.nan, 5.0]])
+    scaler_fn = create_data_scaler(scale=True, scaling_range=(0, 1), data_form=DataForm.GLOBAL)
+
+    scaled_train, _scaled_valid, scaled_test = scaler_fn(
+        train_data=train, valid_data=None, test_data=test
+    )
+
+    np.testing.assert_allclose(scaled_train, [[0.0, 0.5, np.nan], [1.0, 0.2, 0.1]])
+    np.testing.assert_allclose(scaled_test, [[2.0, np.nan, 0.5]])
+
+
+# --------------------------------------------------------------------------- #
 # create_data_scaler — NESTED data form                                        #
 # --------------------------------------------------------------------------- #
 

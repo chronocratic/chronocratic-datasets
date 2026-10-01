@@ -30,6 +30,11 @@ def test_dataform_multi_files_value() -> None:
     assert DataForm.MULTI_FILES == "multi_files"
 
 
+def test_dataform_global_value() -> None:
+    """DataForm.GLOBAL equals 'global' string."""
+    assert DataForm.GLOBAL == "global"
+
+
 def test_dataform_is_strenum() -> None:
     """DataForm is a StrEnum subclass."""
     from enum import StrEnum
