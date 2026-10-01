@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 from torch.utils.data import DataLoader
 
-from chronocratic.datasets.enums.data import ForecastingMode, ScalingMethod
+from chronocratic.datasets.enums.data import ForecastingLoaderMode, ForecastingMode, ScalingMethod
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -1963,3 +1963,34 @@ class TestTimeIndexCacheRoundTrip:
         time_channels = module._full_data_scaled[0, :, : module._num_time_series_features]
         np.testing.assert_allclose(time_channels, expected, rtol=1e-5, atol=1e-6)
         assert len(np.unique(time_channels[:, 1])) == 24  # hour channel
+
+
+def test_ett_input_target_windows_cover_the_split_every_step(tmp_path: Path) -> None:
+    """With the default step (``seq_len``), window k starts at row ``k * seq_len`` of the split."""
+    from chronocratic.datasets.modules.ett import ETTDataModule
+
+    csv_path = tmp_path / "ett.csv"
+    n_rows = 600
+    pd.DataFrame(
+        {"date": pd.date_range("2016-07-01", periods=n_rows, freq="h"), "OT": np.arange(n_rows)}
+    ).to_csv(csv_path, index=False)
+    module = ETTDataModule(
+        dataset_file_path=csv_path,
+        variant="ETTh1",
+        seq_len=32,
+        forecast_horizon=16,
+        mode=ForecastingMode.UNIVARIATE,
+    )
+    module._cache_dir = tmp_path / "cache"
+    module.prepare_data()
+    module.setup(stage="fit")
+
+    split = module._train_data_samples[0]  # (rows, features)
+    loader = module.train_dataloader(loader_mode=ForecastingLoaderMode.INPUT_TARGET, shuffle=False)
+    pairs = [(x, y) for xs, ys in loader for x, y in zip(xs.numpy(), ys.numpy(), strict=True)]
+
+    assert len(pairs) == (len(split) - 32 - 16) // 32 + 1
+    for k, (inputs, targets) in enumerate(pairs):
+        start = k * 32
+        np.testing.assert_array_equal(inputs, split[start : start + 32])
+        np.testing.assert_array_equal(targets, split[start + 32 : start + 48])
