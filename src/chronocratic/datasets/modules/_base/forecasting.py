@@ -318,7 +318,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                 loaded = np.load(str(cache_path))
                 self._full_data_raw = loaded["data"].astype(np.float32)
                 if "index" in loaded:
-                    self._time_index = pd.DatetimeIndex(loaded["index"])
+                    self._time_index = pd.to_datetime(loaded["index"], unit="ns")
                 else:
                     self._time_index = None
             except FileNotFoundError:

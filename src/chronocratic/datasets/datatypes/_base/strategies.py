@@ -123,13 +123,8 @@ class ForecastingStrategySingleFile(SequenceHandlingStrategySingleFile):
     ) -> int:
         """Return number of forecasting windows."""
         arr = cast("np.ndarray", data) if not isinstance(data, list) else data[0]
-        num_samples_ts = get_num_samples_from_ts(arr)
-        possible_steps = list(
-            range(num_samples_ts - seq_len - self._forecast_horizon + 1, -1, -step)
-        )
-        possible_ends = [x + seq_len for x in possible_steps]
-        valid_ends = [e for e in possible_ends if e + self._forecast_horizon <= num_samples_ts]
-        return len(valid_ends)
+        last_start = get_num_samples_from_ts(arr) - seq_len - self._forecast_horizon
+        return last_start // step + 1 if last_start >= 0 else 0
 
     def get_current_label(
         self,

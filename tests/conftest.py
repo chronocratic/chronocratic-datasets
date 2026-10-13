@@ -62,7 +62,7 @@ def synthetic_cache_dir(tmp_path: Path) -> Path:
     rng = np.random.default_rng(42)
     data = rng.standard_normal((500, 7)).astype(np.float32)
     time_index = pd.date_range("2016-01-01", periods=500, freq="h")
-    index_ns = time_index.astype(np.int64).to_numpy()
+    index_ns = time_index.as_unit("ns").asi8
 
     cache_key = "synthetic.cache"
 

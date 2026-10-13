@@ -42,3 +42,20 @@ def test_ett_forecast_horizon(synthetic_forecast_data):
     ds = ETTDataset(data=synthetic_forecast_data, seq_len=96, step=1, forecast_horizon=horizon)
     _, tgt = ds[0]
     assert tgt.shape[0] == horizon
+
+
+def test_ett_windows_start_every_step():
+    """Window k covers rows ``k * step`` onwards and its target follows it."""
+    import numpy as np
+
+    from chronocratic.datasets.datatypes.ett import ETTDataset
+
+    data = np.arange(200, dtype=np.float32).reshape(-1, 1)
+    ds = ETTDataset(data=data, seq_len=32, step=32, forecast_horizon=16)
+
+    assert len(ds) == 5  # starts 0, 32, 64, 96, 128; 160 + 48 > 200
+    for k in range(len(ds)):
+        inp, tgt = ds[k]
+        start = k * 32
+        np.testing.assert_array_equal(inp.numpy()[:, 0], np.arange(start, start + 32))
+        np.testing.assert_array_equal(tgt.numpy()[:, 0], np.arange(start + 32, start + 48))

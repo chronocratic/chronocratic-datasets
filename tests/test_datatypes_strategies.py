@@ -127,3 +127,22 @@ def test_abstract_cannot_instantiate() -> None:
     """SequenceHandlingStrategy is abstract and cannot be instantiated."""
     with pytest.raises(TypeError):
         SequenceHandlingStrategy()  # type: ignore[misc,call-arg]
+
+
+@pytest.mark.parametrize(
+    ("n_steps", "seq_len", "horizon", "step", "expected"),
+    [
+        (200, 50, 10, 10, 15),  # starts 0, 10, ..., 140
+        (205, 50, 10, 10, 15),  # last start 140; 145 + 60 > 205
+        (60, 50, 10, 10, 1),  # exactly one window fits
+        (59, 50, 10, 10, 0),  # no window fits
+        (200, 96, 24, 1, 81),
+    ],
+)
+def test_forecasting_num_sequences_counts_starts_every_step(
+    n_steps: int, seq_len: int, horizon: int, step: int, expected: int
+) -> None:
+    """One window per start ``0, step, 2*step, ...`` while input + horizon fit."""
+    strategy = ForecastingStrategySingleFile(forecast_horizon=horizon)
+    data = np.zeros((n_steps, 1), dtype=np.float32)
+    assert strategy.get_num_sequences(data=data, seq_len=seq_len, step=step) == expected
