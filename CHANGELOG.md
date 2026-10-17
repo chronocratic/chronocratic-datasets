@@ -9,6 +9,17 @@ Entries are managed with [towncrier](https://towncrier.readthedocs.io/); see
 
 <!-- towncrier release notes start -->
 
+## v0.1.0rc1 (2026-10-17)
+
+### Removed
+
+- Remove the `docs` extra; docs tooling is now the `docs` uv dependency group (`uv sync --group docs`). ([#55](https://github.com/chronocratic/chronocratic-datasets/issues/55))
+
+### Fixed
+
+- Fix crashes and truncated cache files when many processes (e.g. SLURM jobs) prepare the same dataset at the same time: each cache write now uses its own temp file before an atomic rename. ([#55](https://github.com/chronocratic/chronocratic-datasets/issues/55))
+
+
 ## v0.1.0a8 (2026-10-13)
 
 ### Fixed
