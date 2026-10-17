@@ -18,7 +18,7 @@ git clone https://github.com/chronocratic/chronocratic-datasets.git
 cd chronocratic-datasets
 
 # Install with development dependencies
-uv sync --all-extras
+uv sync --all-groups
 ```
 
 ## Code Style
