@@ -4,9 +4,10 @@ Verifies deterministic key derivation, atomic file I/O, metadata
 versioning, scaler persistence, and DatetimeIndex round-trips.
 """
 
+from concurrent.futures import ThreadPoolExecutor
 import json
-import re
 from pathlib import Path
+import re
 
 import numpy as np
 import pandas as pd
@@ -14,16 +15,15 @@ import pytest
 from sklearn.preprocessing import MinMaxScaler
 
 from chronocratic.datasets.utils.cache import (
-    CACHE_SCHEMA_VERSION,
     atomic_save_metadata,
     atomic_save_npz,
     build_cache_key,
+    CACHE_SCHEMA_VERSION,
     load_metadata,
     load_scaler,
     resolve_cache_dir,
     save_scaler,
 )
-
 
 # --------------------------------------------------------------------------- #
 # CACHE_SCHEMA_VERSION                                                         #
@@ -136,8 +136,7 @@ def test_atomic_save_npz_no_tmp_file_after_save(tmp_path: Path) -> None:
     path = tmp_path / "test.npz"
     data = np.array([1.0, 2.0, 3.0])
     atomic_save_npz(path, data=data)
-    tmp_file = tmp_path / "test_tmp.npz"
-    assert not tmp_file.exists()
+    assert [p.name for p in tmp_path.iterdir()] == ["test.npz"]
 
 
 def test_atomic_save_npz_multiple_arrays(tmp_path: Path) -> None:
@@ -151,6 +150,32 @@ def test_atomic_save_npz_multiple_arrays(tmp_path: Path) -> None:
     assert np.array_equal(loaded["b"], arr_b)
     assert loaded["a"].dtype == np.int64
     assert loaded["b"].dtype == np.float32
+
+
+def test_atomic_saves_survive_concurrent_writers(tmp_path: Path) -> None:
+    """Many writers on the same cache files neither crash nor leave partial files.
+
+    Mirrors many SLURM jobs preparing the same dataset for the first time.
+    """
+    npz_path = tmp_path / "shared.npz"
+    meta_path = tmp_path / "shared_metadata.json"
+    data = np.random.default_rng(seed=0).random((50_000, 8)).astype(np.float32)
+
+    def write_then_read(_: int) -> None:
+        atomic_save_npz(npz_path, data=data)
+        atomic_save_metadata(meta_path, {"version": CACHE_SCHEMA_VERSION})
+        save_scaler(scaler=MinMaxScaler(), path=tmp_path / "shared_scaler.pt")
+        assert np.array_equal(np.load(str(npz_path))["data"], data)
+        load_metadata(meta_path)
+
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        list(pool.map(write_then_read, range(32)))
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "shared.npz",
+        "shared_metadata.json",
+        "shared_scaler.pt",
+    ]
 
 
 # --------------------------------------------------------------------------- #
@@ -173,8 +198,7 @@ def test_atomic_save_metadata_no_tmp_file_after_save(tmp_path: Path) -> None:
     path = tmp_path / "metadata.json"
     data = {"version": 1}
     atomic_save_metadata(path, data)
-    tmp_file = tmp_path / "metadata.json.tmp"
-    assert not tmp_file.exists()
+    assert [p.name for p in tmp_path.iterdir()] == ["metadata.json"]
 
 
 # --------------------------------------------------------------------------- #
@@ -233,9 +257,7 @@ def test_scaler_file_exists_after_save(tmp_path: Path) -> None:
     path = tmp_path / "scaler.pt"
     scaler = MinMaxScaler()
     save_scaler(scaler=scaler, path=path)
-    assert path.exists()
-    tmp_file = tmp_path / "scaler.pt.tmp"
-    assert not tmp_file.exists()
+    assert [p.name for p in tmp_path.iterdir()] == ["scaler.pt"]
 
 
 # --------------------------------------------------------------------------- #

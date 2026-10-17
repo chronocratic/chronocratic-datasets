@@ -5,10 +5,13 @@ versioning, and scaler persistence for the Lightning DataModule
 cache layer used across distributed training ranks.
 """
 
+from collections.abc import Callable
 import hashlib
 import json
+import os
 from pathlib import Path
-from typing import Any
+import tempfile
+from typing import Any, IO
 
 import numpy as np
 import torch
@@ -73,42 +76,59 @@ def resolve_cache_dir(*, cache_dir: Path | None, dataset_name: str) -> Path:
     return Path.home().resolve() / ".cache" / "tsdatasets" / dataset_name
 
 
+def _atomic_write(*, path: Path, write: Callable[[IO[bytes]], object]) -> None:
+    """Write a file atomically, safe against concurrent writers.
+
+    Each call writes to its own uniquely named temp file in the target
+    directory (same filesystem, so the rename is atomic), fsyncs it, and
+    renames it over ``path``. Concurrent processes (e.g. many SLURM jobs
+    preparing the same dataset) never share a temp file, so readers see
+    either the old complete file or a new complete file, never a partial one.
+
+    Args:
+        path: Target file path.
+        write: Callable that writes the full file content to a binary handle.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    tmp = Path(tmp_name)
+    try:
+        # mkstemp creates files as 0600; keep cache files readable like a normal open() would.
+        os.fchmod(fd, 0o644)
+        with os.fdopen(fd, "wb") as f:
+            write(f)
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
 def atomic_save_npz(path: Path, **arrays: np.ndarray) -> None:
     """Save numpy arrays to a compressed ``.npz`` file atomically.
 
-    Writes to a temporary ``.npz`` file in the same directory, then
-    uses ``Path.replace()`` for POSIX atomicity.  The tmp file is
-    created in the same directory as the target to guarantee same-
-    filesystem rename.
+    Safe when several processes write the same ``path`` at once; see
+    :func:`_atomic_write`.
 
     Args:
         path: Target ``.npz`` file path.
         **arrays: Named arrays to persist.
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # np.savez_compressed appends .npz to the given path, so we
-    # write to a stem-named temp file and rename the resulting .npz.
-    tmp_stem = path.with_name(path.stem + "_tmp")
-    np.savez_compressed(str(tmp_stem), allow_pickle=True, **arrays)
-    actual_tmp = Path(str(tmp_stem) + ".npz")
-    actual_tmp.replace(path)
+    _atomic_write(path=path, write=lambda f: np.savez_compressed(f, allow_pickle=True, **arrays))
 
 
 def atomic_save_metadata(path: Path, data: dict[str, Any]) -> None:
     """Save a metadata dictionary to a JSON file atomically.
 
-    Writes to a ``.json.tmp`` intermediate file then uses
-    ``Path.replace()`` for POSIX atomicity.
+    Safe when several processes write the same ``path`` at once; see
+    :func:`_atomic_write`.
 
     Args:
         path: Target ``.json`` file path.
         data: Metadata dictionary to persist.
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w") as f:
-        json.dump(data, f, indent=2)
-    tmp.replace(path)
+    _atomic_write(path=path, write=lambda f: f.write(json.dumps(data, indent=2).encode()))
 
 
 def load_metadata(path: Path) -> dict[str, Any]:
@@ -151,29 +171,20 @@ def load_metadata(path: Path) -> dict[str, Any]:
 def save_scaler(scaler: Any, path: Path) -> None:
     """Persist a fitted sklearn scaler via ``torch.save``.
 
-    Uses ``pickle_protocol=5`` and writes atomically through a
-    ``.pt.tmp`` intermediate file.  If the target already exists
-    (DDP race condition) or the cache directory is not writable
-    (test environments with nonexistent paths), the save is
-    skipped silently since the in-memory scaler is still valid.
+    Uses ``pickle_protocol=5`` and writes atomically (safe against
+    concurrent writers; see :func:`_atomic_write`).  If the cache
+    directory is not writable, the save is skipped silently since the
+    in-memory scaler is still valid.
 
     Args:
         scaler: Fitted scaler instance (e.g. ``MinMaxScaler``).
         path: Target ``.pt`` file path.
     """
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
+        _atomic_write(path=path, write=lambda f: torch.save(scaler, f, pickle_protocol=5))
     except OSError:
-        # Cache directory not writable (e.g., test with nonexistent path).
+        # Cache directory not writable; the in-memory scaler is still valid.
         return
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    torch.save(scaler, str(tmp), pickle_protocol=5)
-    try:
-        tmp.replace(path)
-    except OSError:
-        # Another rank already wrote the scaler (DDP race).
-        # In-memory scaler is valid, so this is non-fatal.
-        tmp.unlink(missing_ok=True)
 
 
 def load_scaler(path: Path) -> Any:
