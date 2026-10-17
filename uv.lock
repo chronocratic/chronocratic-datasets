@@ -448,13 +448,6 @@ dependencies = [
     { name = "torch" },
 ]
 
-[package.optional-dependencies]
-docs = [
-    { name = "myst-parser" },
-    { name = "pydata-sphinx-theme" },
-    { name = "sphinx" },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -462,6 +455,11 @@ dev = [
     { name = "ruff" },
     { name = "towncrier" },
     { name = "ty" },
+]
+docs = [
+    { name = "myst-parser" },
+    { name = "pydata-sphinx-theme" },
+    { name = "sphinx" },
 ]
 notebooks = [
     { name = "jupyterlab" },
@@ -471,16 +469,12 @@ notebooks = [
 [package.metadata]
 requires-dist = [
     { name = "lightning", specifier = ">=2.5,<3.0" },
-    { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=3.0" },
     { name = "numpy", specifier = ">=2.1,<3.0.0" },
     { name = "pandas", specifier = ">=2.2.0" },
-    { name = "pydata-sphinx-theme", marker = "extra == 'docs'", specifier = ">=0.15" },
     { name = "scikit-learn", specifier = ">=1.6,<2.0.0" },
     { name = "scipy", specifier = ">=1.13.0" },
-    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0" },
     { name = "torch", specifier = ">=2.4,<3.0" },
 ]
-provides-extras = ["docs"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -489,6 +483,11 @@ dev = [
     { name = "ruff", specifier = ">=0.15.9" },
     { name = "towncrier", specifier = ">=24.8" },
     { name = "ty", specifier = ">=0.0.28" },
+]
+docs = [
+    { name = "myst-parser", specifier = ">=3.0" },
+    { name = "pydata-sphinx-theme", specifier = ">=0.15" },
+    { name = "sphinx", specifier = ">=7.0" },
 ]
 notebooks = [
     { name = "jupyterlab", specifier = ">=4.3" },

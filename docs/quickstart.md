@@ -10,10 +10,10 @@ Install the package from PyPI:
 pip install chronocratic-datasets
 ```
 
-For development (with docs tooling):
+For development (with docs tooling; requires `uv`):
 
 ```bash
-pip install -e ".[docs]"
+uv sync --group docs
 ```
 
 ## Basic Workflow

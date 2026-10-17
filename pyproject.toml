@@ -33,13 +33,6 @@ dependencies = [
     "torch>=2.4,<3.0",
 ]
 
-[project.optional-dependencies]
-docs = [
-    "sphinx>=7.0",
-    "pydata-sphinx-theme>=0.15",
-    "myst-parser>=3.0",
-]
-
 [project.urls]
 Homepage = "https://github.com/chronocratic/chronocratic-datasets"
 Documentation = "https://chronocratic-datasets.readthedocs.io/"
@@ -53,6 +46,12 @@ dev = [
     "ruff>=0.15.9",
     "towncrier>=24.8",
     "ty>=0.0.28",
+]
+
+docs = [
+    "sphinx>=7.0",
+    "pydata-sphinx-theme>=0.15",
+    "myst-parser>=3.0",
 ]
 
 notebooks = [

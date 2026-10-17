@@ -21,7 +21,7 @@ jobs:
       - name: Install uv
         run: pip install uv
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync
       - name: Run tests
         run: uv run pytest tests/ --cov=src/chronocratic/datasets --cov-report=xml
 
@@ -39,7 +39,7 @@ jobs:
       - name: Install uv
         run: pip install uv
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync
       - name: Run ruff check
         run: uv run ruff check src/
       - name: Run ruff format check
@@ -81,6 +81,6 @@ jobs:
       - name: Install uv
         run: pip install uv
       - name: Install dependencies
-        run: uv sync --extra docs
+        run: uv sync --group docs
       - name: Build docs
         run: uv run sphinx-build -b html docs/ docs/_build/
