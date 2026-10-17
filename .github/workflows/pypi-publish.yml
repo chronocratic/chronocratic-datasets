@@ -28,13 +28,3 @@ jobs:
         run: uv build
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-      - name: Trigger Read the Docs build
-        env:
-          RTD_WEBHOOK_URL: ${{ secrets.RTD_WEBHOOK_URL }}
-          RTD_WEBHOOK_TOKEN: ${{ secrets.RTD_WEBHOOK_TOKEN }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          curl --fail --silent --show-error -X POST \
-            --data-urlencode "token=${RTD_WEBHOOK_TOKEN}" \
-            --data-urlencode "branches=${RELEASE_TAG}" \
-            "${RTD_WEBHOOK_URL}"
