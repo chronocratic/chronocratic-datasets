@@ -15,7 +15,10 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-from torch.utils.data import DataLoader
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+
+from chronocratic.datasets.modules._base.base import BaseTimeSeriesDataModule
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -23,6 +26,13 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+
+class _ConcreteTestModule(BaseTimeSeriesDataModule):
+    """Minimal concrete subclass for base dataloader tests."""
+
+    def _do_prepare_data(self) -> None:
+        pass
 
 
 @pytest.fixture
@@ -172,6 +182,38 @@ class TestBaseLoaderStrictBatchSize:
         params = sig.parameters
         assert "loader_strict_batch_size" in params
         assert params["loader_strict_batch_size"].default is False
+
+    def test_base_helper_none_uses_instance_default(self) -> None:
+        mod = _ConcreteTestModule(
+            batch_size=6,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=False,
+            scale_data=False,
+            loader_strict_batch_size=True,
+        )
+        dataset = TensorDataset(torch.arange(20).float().unsqueeze(1))
+        batches = list(
+            mod._process_test_dataloader(dataset_object=dataset, loader_strict_batch_size=None)
+        )
+
+        assert all(batch[0].shape[0] == 6 for batch in batches)
+
+    def test_base_helper_default_arg_uses_instance_default(self) -> None:
+        mod = _ConcreteTestModule(
+            batch_size=6,
+            seq_len=None,
+            valid_size=0.2,
+            test_size=0.2,
+            shuffle=False,
+            scale_data=False,
+            loader_strict_batch_size=True,
+        )
+        dataset = TensorDataset(torch.arange(20).float().unsqueeze(1))
+        batches = list(mod._process_train_dataloader(dataset_object=dataset))
+
+        assert all(batch[0].shape[0] == 6 for batch in batches)
 
 
 # ---------------------------------------------------------------------------

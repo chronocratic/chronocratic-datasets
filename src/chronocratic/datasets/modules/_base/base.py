@@ -435,7 +435,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         *,
         dataset_object: Dataset[object],
         shuffle: bool | None = None,
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
@@ -445,7 +445,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             dataset_object: PyTorch Dataset instance.
             shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
             loader_strict_batch_size: If True, pad the last batch via
-                :func:`custom_collate_fn`.
+                :func:`custom_collate_fn`. Defaults to ``None``, which falls back
+                to :attr:`loader_strict_batch_size`.
             loader_use_stateful: Whether to return a stateful dataloader.
                 Defaults to ``None``, which falls back to
                 :attr:`loader_use_stateful`.
@@ -457,6 +458,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         """
         if shuffle is None:
             shuffle = self.shuffle
+        if loader_strict_batch_size is None:
+            loader_strict_batch_size = self.loader_strict_batch_size
         dataloader_args: dict[str, object] = {
             "dataset": dataset_object,
             "batch_size": self.batch_size,
@@ -477,7 +480,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self,
         *,
         dataset_object: Dataset[object],
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
@@ -488,7 +491,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Args:
             dataset_object: PyTorch Dataset instance.
             loader_strict_batch_size: If True, pad the last batch via
-                :func:`custom_collate_fn`.
+                :func:`custom_collate_fn`. Defaults to ``None``, which falls back
+                to :attr:`loader_strict_batch_size`.
             loader_use_stateful: Whether to return a stateful dataloader.
                 Defaults to ``None``, which falls back to
                 :attr:`loader_use_stateful`.
@@ -498,6 +502,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Returns:
             Configured DataLoader for testing.
         """
+        if loader_strict_batch_size is None:
+            loader_strict_batch_size = self.loader_strict_batch_size
         dataloader_args: dict[str, object] = {
             "dataset": dataset_object,
             "batch_size": self.batch_size,
@@ -518,7 +524,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self,
         *,
         dataset_object: Dataset[object],
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
@@ -529,7 +535,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Args:
             dataset_object: PyTorch Dataset instance.
             loader_strict_batch_size: If True, pad the last batch via
-                :func:`custom_collate_fn`.
+                :func:`custom_collate_fn`. Defaults to ``None``, which falls back
+                to :attr:`loader_strict_batch_size`.
             loader_use_stateful: Whether to return a stateful dataloader.
                 Defaults to ``None``, which falls back to
                 :attr:`loader_use_stateful`.
@@ -539,6 +546,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Returns:
             Configured DataLoader for validation, or ``None``.
         """
+        if loader_strict_batch_size is None:
+            loader_strict_batch_size = self.loader_strict_batch_size
         if self.valid_size == 0.0:
             return None
         return self._process_test_dataloader(

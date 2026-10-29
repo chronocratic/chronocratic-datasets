@@ -292,17 +292,12 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
         Returns:
             Configured DataLoader for training.
         """
-        effective_loader_strict = (
-            loader_strict_batch_size
-            if loader_strict_batch_size is not None
-            else self.loader_strict_batch_size
-        )
         result = self._build_dataloader(
             data_partition=self._train_data_samples,
             partition=DataPartition.TRAIN,
             loader_mode=loader_mode,
             shuffle=shuffle,
-            loader_strict_batch_size=effective_loader_strict,
+            loader_strict_batch_size=loader_strict_batch_size,
             loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
@@ -327,16 +322,11 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
                 :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments for DataLoader.
         """
-        effective_loader_strict = (
-            loader_strict_batch_size
-            if loader_strict_batch_size is not None
-            else self.loader_strict_batch_size
-        )
         return self._build_dataloader(
             data_partition=self._valid_data_samples,
             partition=DataPartition.VAL,
             loader_mode=loader_mode,
-            loader_strict_batch_size=effective_loader_strict,
+            loader_strict_batch_size=loader_strict_batch_size,
             loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
@@ -359,16 +349,11 @@ class ElectricityLoadDataModule(BaseForecastingTimeSeriesDataModule):
                 :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments for DataLoader.
         """
-        effective_loader_strict = (
-            loader_strict_batch_size
-            if loader_strict_batch_size is not None
-            else self.loader_strict_batch_size
-        )
         result = self._build_dataloader(
             data_partition=self._test_data_samples,
             partition=DataPartition.TEST,
             loader_mode=loader_mode,
-            loader_strict_batch_size=effective_loader_strict,
+            loader_strict_batch_size=loader_strict_batch_size,
             loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )

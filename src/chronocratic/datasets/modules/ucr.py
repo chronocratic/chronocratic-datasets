@@ -402,11 +402,6 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for training.
         """
         resolved_mode = self._resolve_loader_mode(loader_mode)
-        effective_loader_strict = (
-            loader_strict_batch_size
-            if loader_strict_batch_size is not None
-            else self.loader_strict_batch_size
-        )
         dataset = UCRClassificationUnivariateDataset(
             data=self._train_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._train_data_labels,
@@ -415,7 +410,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         return self._process_train_dataloader(
             dataset_object=dataset,
             shuffle=shuffle,
-            loader_strict_batch_size=effective_loader_strict,
+            loader_strict_batch_size=loader_strict_batch_size,
             loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
@@ -447,11 +442,6 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for validation, or ``None``.
         """
         resolved_mode = self._resolve_loader_mode(loader_mode)
-        effective_loader_strict = (
-            loader_strict_batch_size
-            if loader_strict_batch_size is not None
-            else self.loader_strict_batch_size
-        )
         if self._valid_data_samples is None or self._valid_data_labels is None:
             return None
         dataset = UCRClassificationUnivariateDataset(
@@ -461,7 +451,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         )
         return self._process_valid_dataloader(
             dataset_object=dataset,
-            loader_strict_batch_size=effective_loader_strict,
+            loader_strict_batch_size=loader_strict_batch_size,
             loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
@@ -491,11 +481,6 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
             Configured DataLoader for testing.
         """
         resolved_mode = self._resolve_loader_mode(loader_mode)
-        effective_loader_strict = (
-            loader_strict_batch_size
-            if loader_strict_batch_size is not None
-            else self.loader_strict_batch_size
-        )
         dataset = UCRClassificationUnivariateDataset(
             data=self._test_data_samples,  # ty:ignore[invalid-argument-type]
             labels=self._test_data_labels,
@@ -503,7 +488,7 @@ class UCRClassificationDataModule(BaseClassificationTimeSeriesDataModule):
         )
         return self._process_test_dataloader(
             dataset_object=dataset,
-            loader_strict_batch_size=effective_loader_strict,
+            loader_strict_batch_size=loader_strict_batch_size,
             loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )

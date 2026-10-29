@@ -483,7 +483,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         partition: DataPartition,
         loader_mode: ForecastingLoaderMode | None = None,
         shuffle: bool | None = None,
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
@@ -500,7 +500,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
                 ``None``, falls back to :attr:`loader_mode` set at init
                 time or via the property setter.
             shuffle: Whether to shuffle (train only).
-            loader_strict_batch_size: If True, pad the last batch.
+            loader_strict_batch_size: If True, pad the last batch. Defaults to
+                ``None``, which falls back to :attr:`loader_strict_batch_size`
+                in the base dataloader helper.
             loader_use_stateful: Whether to use a stateful dataloader. Defaults
                 to ``None``, which falls back to :attr:`loader_use_stateful`.
             extra_args: Additional DataLoader keyword arguments.
@@ -599,7 +601,7 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
         *,
         dataset_object: Dataset[object],
         shuffle: bool | None = None,
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
         loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
@@ -609,7 +611,9 @@ class BaseForecastingTimeSeriesDataModule(BaseTimeSeriesDataModule):
             partition: Which data partition is being processed.
             dataset_object: PyTorch Dataset instance.
             shuffle: Whether to shuffle (used only for TRAIN).
-            loader_strict_batch_size: If True, pad the last batch.
+            loader_strict_batch_size: If True, pad the last batch. Defaults to
+                ``None``, which falls back to :attr:`loader_strict_batch_size`
+                in the base dataloader helper.
             loader_use_stateful: Whether to use a stateful dataloader. Defaults
                 to ``None``, which falls back to :attr:`loader_use_stateful`.
             extra_args: Additional DataLoader keyword arguments.
