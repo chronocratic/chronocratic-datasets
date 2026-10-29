@@ -95,7 +95,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._data_form = data_form
         self._cache_dir = cache_dir
         self._loader_strict_batch_size = loader_strict_batch_size
-        self._loader_use_stateful = loader_use_stateful
+        self.loader_use_stateful = loader_use_stateful
         self._datatype_handling_functions_map: dict[str, object] | None = None
         self._initiate_datatypes_handling_functions_map()
         self._dataset_name: str | None = None
@@ -560,6 +560,9 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
 
 def _resolve_dataloader_class(*, use_stateful: bool) -> type[DataLoader]:
     """Return the requested DataLoader class, importing torchdata lazily."""
+    if not isinstance(use_stateful, bool):
+        msg = f"loader_use_stateful must be bool, got {type(use_stateful).__name__}"
+        raise TypeError(msg)
     if not use_stateful:
         return DataLoader
     try:

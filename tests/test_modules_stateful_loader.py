@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 import subprocess
 import sys
-from typing import TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import lightning.pytorch as pl
 import numpy as np
@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import BatchSampler, DataLoader, TensorDataset
 from torchdata.stateful_dataloader import StatefulDataLoader
 
 from chronocratic.datasets.enums.data import ForecastingLoaderMode
@@ -134,6 +134,24 @@ class TestBaseLoaderUseStateful:
         mod = _make_stub()
         loader = mod._process_test_dataloader(dataset_object=_dataset(), loader_use_stateful=True)
         assert isinstance(loader, StatefulDataLoader)
+
+    @pytest.mark.parametrize(("bad", "type_name"), [("false", "str"), (1, "int")])
+    def test_constructor_rejects_non_bool(self, bad: object, type_name: str) -> None:
+        with pytest.raises(TypeError) as exc:
+            _make_stub(loader_use_stateful=cast("bool", bad))
+
+        assert str(exc.value) == f"loader_use_stateful must be bool, got {type_name}"
+
+    @pytest.mark.parametrize(("bad", "type_name"), [("false", "str"), (1, "int")])
+    def test_per_call_rejects_non_bool(self, bad: object, type_name: str) -> None:
+        mod = _make_stub()
+        with pytest.raises(TypeError) as exc:
+            mod._process_train_dataloader(
+                dataset_object=_dataset(),
+                loader_use_stateful=cast("bool", bad),
+            )
+
+        assert str(exc.value) == f"loader_use_stateful must be bool, got {type_name}"
 
     def test_setter_rejects_non_bool(self) -> None:
         mod = _make_stub()
@@ -311,12 +329,15 @@ def test_lightning_reinstantiation_keeps_stateful_class(synthetic_ett_csv: Path)
     mod.prepare_data()
     mod.setup(stage="fit")
     loader = mod.train_dataloader()
+    sampler = DistributedSampler(loader.dataset, num_replicas=2, rank=0)
     new_loader = _update_dataloader(
         loader,
-        sampler=DistributedSampler(loader.dataset, num_replicas=2, rank=0),
+        sampler=sampler,
     )
 
     assert isinstance(new_loader, StatefulDataLoader)
+    assert isinstance(new_loader.batch_sampler, BatchSampler)
+    assert new_loader.batch_sampler.sampler is sampler
 
 
 class _TinyForecastingModule(pl.LightningModule):
