@@ -83,6 +83,9 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             Defaults to ``ForecastingLoaderMode.RAW_SERIES``.
         loader_strict_batch_size: Instance-level default for strict batch
             size. Falls back from ``loader_strict_batch_size=None`` in dataloader calls.
+        loader_use_stateful: Instance-level default for returning a
+            ``torchdata.StatefulDataLoader`` that can resume mid-epoch. Requires
+            the ``stateful`` extra.
 
     Raises:
         ValueError: If variant is not one of the four valid ETT variants.
@@ -107,6 +110,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         step: int | None = None,
         loader_mode: ForecastingLoaderMode = ForecastingLoaderMode.RAW_SERIES,
         loader_strict_batch_size: bool = False,
+        loader_use_stateful: bool = False,
     ) -> None:
         # Validate variant
         if variant not in VALID_ETT_VARIANTS:
@@ -127,6 +131,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             step=step,
             loader_mode=loader_mode,
             loader_strict_batch_size=loader_strict_batch_size,
+            loader_use_stateful=loader_use_stateful,
         )
         self.dataset_file_path = dataset_file_path
         self.variant = variant
@@ -274,6 +279,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         loader_mode: ForecastingLoaderMode | None = None,
         shuffle: bool | None = None,
         loader_strict_batch_size: bool | None = None,
+        loader_use_stateful: bool | None = None,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
         """Build the training DataLoader.
@@ -288,6 +294,8 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
             loader_strict_batch_size: If True, pad the last batch. Defaults to
                 ``None``, which falls back to :attr:`loader_strict_batch_size`.
+            loader_use_stateful: Defaults to ``None``, which falls back to
+                :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments for DataLoader.
 
         Returns:
@@ -304,6 +312,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             loader_mode=loader_mode,
             shuffle=shuffle,
             loader_strict_batch_size=effective_loader_strict,
+            loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
         assert result is not None  # _process_train_dataloader always returns DataLoader
@@ -314,6 +323,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         *,
         loader_mode: ForecastingLoaderMode | None = None,
         loader_strict_batch_size: bool | None = None,
+        loader_use_stateful: bool | None = None,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader | None:
         """Build the validation DataLoader.
@@ -324,6 +334,8 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             loader_mode: Per-call mode controlling output format.
             loader_strict_batch_size: If True, pad the last batch. Defaults to
                 ``None``, which falls back to :attr:`loader_strict_batch_size`.
+            loader_use_stateful: Defaults to ``None``, which falls back to
+                :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments for DataLoader.
 
         Returns:
@@ -339,6 +351,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             partition=DataPartition.VAL,
             loader_mode=loader_mode,
             loader_strict_batch_size=effective_loader_strict,
+            loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
 
@@ -347,6 +360,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
         *,
         loader_mode: ForecastingLoaderMode | None = None,
         loader_strict_batch_size: bool | None = None,
+        loader_use_stateful: bool | None = None,
         extra_args: dict[str, Any] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader.
@@ -355,6 +369,8 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             loader_mode: Per-call mode controlling output format.
             loader_strict_batch_size: If True, pad the last batch. Defaults to
                 ``None``, which falls back to :attr:`loader_strict_batch_size`.
+            loader_use_stateful: Defaults to ``None``, which falls back to
+                :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments for DataLoader.
 
         Returns:
@@ -370,6 +386,7 @@ class ETTDataModule(BaseForecastingTimeSeriesDataModule):
             partition=DataPartition.TEST,
             loader_mode=loader_mode,
             loader_strict_batch_size=effective_loader_strict,
+            loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
         assert result is not None  # _process_test_dataloader always returns DataLoader
