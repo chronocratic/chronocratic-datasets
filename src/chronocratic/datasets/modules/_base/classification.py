@@ -79,6 +79,9 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             overridden at dataloader call time or via the property setter.
         loader_strict_batch_size: Instance-level default for strict batch
             size. Falls back from ``loader_strict_batch_size=None`` in dataloader calls.
+        loader_use_stateful: Instance-level default for returning a
+            ``torchdata.StatefulDataLoader`` that can resume mid-epoch. Requires
+            the ``stateful`` extra.
     """
 
     def __init__(
@@ -98,6 +101,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
         data_form: DataForm = DataForm.REGULAR,
         loader_mode: ClassificationLoaderMode = ClassificationLoaderMode.SAMPLE_LABEL,
         loader_strict_batch_size: bool = False,
+        loader_use_stateful: bool = False,
     ) -> None:
         super().__init__(
             batch_size=batch_size,
@@ -111,6 +115,7 @@ class BaseClassificationTimeSeriesDataModule(BaseTimeSeriesDataModule):
             num_workers=num_workers,
             data_form=data_form,
             loader_strict_batch_size=loader_strict_batch_size,
+            loader_use_stateful=loader_use_stateful,
         )
         self.dataset_folder_path = dataset_folder_path
         self.target_column_name = target_column_name

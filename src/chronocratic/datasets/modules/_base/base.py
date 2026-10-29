@@ -56,6 +56,11 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         loader_strict_batch_size: Instance-level default for strict batch
             size padding. When dataloader methods are called with
             ``loader_strict_batch_size=None``, this value is used as the fallback.
+        loader_use_stateful: Instance-level default for returning a
+            ``torchdata.StatefulDataLoader``. Lightning resumes mid-epoch only
+            when checkpoints are written mid-epoch, such as with
+            ``ModelCheckpoint(every_n_train_steps=...)``. Requires the
+            ``stateful`` extra.
     """
 
     prepare_data_per_node: bool = True
@@ -75,6 +80,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         data_form: DataForm = DataForm.REGULAR,
         cache_dir: Path | None = None,
         loader_strict_batch_size: bool = False,
+        loader_use_stateful: bool = False,
     ) -> None:
         super().__init__()
         self.batch_size = batch_size
@@ -89,6 +95,7 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         self._data_form = data_form
         self._cache_dir = cache_dir
         self._loader_strict_batch_size = loader_strict_batch_size
+        self.loader_use_stateful = loader_use_stateful
         self._datatype_handling_functions_map: dict[str, object] | None = None
         self._initiate_datatypes_handling_functions_map()
         self._dataset_name: str | None = None
@@ -189,6 +196,19 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             msg = f"loader_strict_batch_size must be bool, got {type(value).__name__}"
             raise TypeError(msg)
         self._loader_strict_batch_size = value
+
+    @property
+    def loader_use_stateful(self) -> bool:
+        """Instance-level default for stateful dataloaders."""
+        return self._loader_use_stateful
+
+    @loader_use_stateful.setter
+    def loader_use_stateful(self, value: bool) -> None:
+        """Set loader_use_stateful with type validation."""
+        if not isinstance(value, bool):
+            msg = f"loader_use_stateful must be bool, got {type(value).__name__}"
+            raise TypeError(msg)
+        self._loader_use_stateful = value
 
     # ------------------------------------------------------------------
     # Abstract methods
@@ -415,7 +435,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         *,
         dataset_object: Dataset[object],
         shuffle: bool | None = None,
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
+        loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
         """Build the training DataLoader.
@@ -424,7 +445,11 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             dataset_object: PyTorch Dataset instance.
             shuffle: Whether to shuffle. Defaults to :attr:`shuffle`.
             loader_strict_batch_size: If True, pad the last batch via
-                :func:`custom_collate_fn`.
+                :func:`custom_collate_fn`. Defaults to ``None``, which falls back
+                to :attr:`loader_strict_batch_size`.
+            loader_use_stateful: Whether to return a stateful dataloader.
+                Defaults to ``None``, which falls back to
+                :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments forwarded to
                 the DataLoader constructor.
 
@@ -433,6 +458,8 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         """
         if shuffle is None:
             shuffle = self.shuffle
+        if loader_strict_batch_size is None:
+            loader_strict_batch_size = self.loader_strict_batch_size
         dataloader_args: dict[str, object] = {
             "dataset": dataset_object,
             "batch_size": self.batch_size,
@@ -444,13 +471,17 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             dataloader_args["persistent_workers"] = True
         if loader_strict_batch_size:
             dataloader_args["collate_fn"] = self._get_custom_collate_fn()
-        return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
+        use_stateful = (
+            self.loader_use_stateful if loader_use_stateful is None else loader_use_stateful
+        )
+        return _resolve_dataloader_class(use_stateful=use_stateful)(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
     def _process_test_dataloader(
         self,
         *,
         dataset_object: Dataset[object],
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
+        loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader:
         """Build the test DataLoader.
@@ -460,13 +491,19 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Args:
             dataset_object: PyTorch Dataset instance.
             loader_strict_batch_size: If True, pad the last batch via
-                :func:`custom_collate_fn`.
+                :func:`custom_collate_fn`. Defaults to ``None``, which falls back
+                to :attr:`loader_strict_batch_size`.
+            loader_use_stateful: Whether to return a stateful dataloader.
+                Defaults to ``None``, which falls back to
+                :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments forwarded to
                 the DataLoader constructor.
 
         Returns:
             Configured DataLoader for testing.
         """
+        if loader_strict_batch_size is None:
+            loader_strict_batch_size = self.loader_strict_batch_size
         dataloader_args: dict[str, object] = {
             "dataset": dataset_object,
             "batch_size": self.batch_size,
@@ -478,13 +515,17 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
             dataloader_args["persistent_workers"] = True
         if loader_strict_batch_size:
             dataloader_args["collate_fn"] = self._get_custom_collate_fn()
-        return DataLoader(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
+        use_stateful = (
+            self.loader_use_stateful if loader_use_stateful is None else loader_use_stateful
+        )
+        return _resolve_dataloader_class(use_stateful=use_stateful)(**dataloader_args)  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
 
     def _process_valid_dataloader(
         self,
         *,
         dataset_object: Dataset[object],
-        loader_strict_batch_size: bool = False,
+        loader_strict_batch_size: bool | None = None,
+        loader_use_stateful: bool | None = None,
         extra_args: dict[str, object] | None = None,
     ) -> DataLoader | None:
         """Build the validation DataLoader.
@@ -494,17 +535,42 @@ class BaseTimeSeriesDataModule(pl.LightningDataModule, ABC):
         Args:
             dataset_object: PyTorch Dataset instance.
             loader_strict_batch_size: If True, pad the last batch via
-                :func:`custom_collate_fn`.
+                :func:`custom_collate_fn`. Defaults to ``None``, which falls back
+                to :attr:`loader_strict_batch_size`.
+            loader_use_stateful: Whether to return a stateful dataloader.
+                Defaults to ``None``, which falls back to
+                :attr:`loader_use_stateful`.
             extra_args: Additional keyword arguments forwarded to
                 the DataLoader constructor.
 
         Returns:
             Configured DataLoader for validation, or ``None``.
         """
+        if loader_strict_batch_size is None:
+            loader_strict_batch_size = self.loader_strict_batch_size
         if self.valid_size == 0.0:
             return None
         return self._process_test_dataloader(
             dataset_object=dataset_object,
             loader_strict_batch_size=loader_strict_batch_size,
+            loader_use_stateful=loader_use_stateful,
             extra_args=extra_args,
         )
+
+
+def _resolve_dataloader_class(*, use_stateful: bool) -> type[DataLoader]:
+    """Return the requested DataLoader class, importing torchdata lazily."""
+    if not isinstance(use_stateful, bool):
+        msg = f"loader_use_stateful must be bool, got {type(use_stateful).__name__}"
+        raise TypeError(msg)
+    if not use_stateful:
+        return DataLoader
+    try:
+        from torchdata.stateful_dataloader import StatefulDataLoader
+    except ImportError as exc:
+        msg = (
+            "loader_use_stateful=True requires torchdata. Install it with: "
+            "pip install 'chronocratic-datasets[stateful]'"
+        )
+        raise ImportError(msg) from exc
+    return StatefulDataLoader
