@@ -9,6 +9,13 @@ Entries are managed with [towncrier](https://towncrier.readthedocs.io/); see
 
 <!-- towncrier release notes start -->
 
+## v0.1.0rc2 (2026-11-05)
+
+### Added
+
+- Add `loader_use_stateful` to all datamodules (init default and per-dataloader override). When enabled, dataloaders are torchdata `StatefulDataLoader`s that can resume mid-epoch; install with `pip install 'chronocratic-datasets[stateful]'`. ([#58](https://github.com/chronocratic/chronocratic-datasets/issues/58))
+
+
 ## v0.1.0rc1 (2026-10-17)
 
 ### Removed
