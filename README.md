@@ -26,10 +26,16 @@
 
 ## Installation
 
-Install the package via pip:
+With pip:
 
 ```bash
 pip install chronocratic-datasets
+```
+
+With uv:
+
+```bash
+uv add chronocratic-datasets
 ```
 
 > **Note:** The PyPI package name uses a hyphen (`chronocratic-datasets`), but the import uses the `chronocratic.datasets` namespace:
