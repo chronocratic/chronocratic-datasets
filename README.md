@@ -14,9 +14,13 @@
   <a href="https://github.com/astral-sh/ruff"><picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=dark" /><img alt="Code style: ruff" src="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=light" /></picture></a>
 </p>
 
+<div align="center">
+
 | Python | Docs |
 | :---: | :---: |
 | [![Python versions](https://img.shields.io/pypi/pyversions/chronocratic-datasets.svg)](https://pypi.org/project/chronocratic-datasets/) | [![Documentation status](https://readthedocs.org/projects/chronocratic-datasets/badge/?version=latest)](https://chronocratic-datasets.readthedocs.io/en/latest/) |
+
+</div>
 
 ## Installation
 
