@@ -1,15 +1,40 @@
-# chronocratic-datasets
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/header/surface.svg?title=chronocratic-datasets&subtitle=Ready-to-use+time+series+datasets+and+DataModules+for+PyTorch+Lightning.&align=center&font=jetbrains-mono&width=1200&height=600&bg=0E2A44&titleColor=F3F1EC&subtitleColor=A8D5D1&mode=dark&overlay=0&logo=https://raw.githubusercontent.com/chronocratic/chronocratic-datasets/main/.github/assets/icon-dark.png&image=https://raw.githubusercontent.com/chronocratic/chronocratic-datasets/main/.github/assets/header-bg-dark.png" />
+    <img alt="chronocratic-datasets" src="https://shieldcn.dev/header/surface.svg?title=chronocratic-datasets&subtitle=Ready-to-use+time+series+datasets+and+DataModules+for+PyTorch+Lightning.&align=center&font=jetbrains-mono&width=1200&height=600&bg=F3F1EC&titleColor=0E2A44&subtitleColor=2A6A7C&mode=light&overlay=0&logo=https://raw.githubusercontent.com/chronocratic/chronocratic-datasets/main/.github/assets/icon-light.png&image=https://raw.githubusercontent.com/chronocratic/chronocratic-datasets/main/.github/assets/header-bg-light.png" />
+  </picture>
+</p>
 
-Ready-to-use time series datasets for PyTorch Lightning.
+<p align="center">
+  <a href="https://pypi.org/project/chronocratic-datasets/"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/pypi/chronocratic-datasets.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="PyPI version" src="https://shieldcn.dev/pypi/chronocratic-datasets.svg?variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://pepy.tech/projects/chronocratic-datasets"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-datasets&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="Total downloads" src="https://shieldcn.dev/badge/dynamic/json.svg?url=https%3A%2F%2Fpepy.tech%2Fapi%2Fv2%2Fprojects%2Fchronocratic-datasets&query=%24.total_downloads&label=downloads&variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-datasets/actions/workflows/build-and-test.yml"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/ci/chronocratic/chronocratic-datasets.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="CI status" src="https://shieldcn.dev/github/ci/chronocratic/chronocratic-datasets.svg?workflow=build-and-test.yml&branch=main&variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-datasets/blob/main/LICENSE"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/license/chronocratic/chronocratic-datasets.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="License" src="https://shieldcn.dev/github/license/chronocratic/chronocratic-datasets.svg?variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/chronocratic/chronocratic-datasets/stargazers"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/github/stars/chronocratic/chronocratic-datasets.svg?variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="GitHub stars" src="https://shieldcn.dev/github/stars/chronocratic/chronocratic-datasets.svg?variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+  <a href="https://github.com/astral-sh/ruff"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=dark" />
+    <img alt="Code style: ruff" src="https://shieldcn.dev/badge/code_style-ruff-261230.svg?logo=ruff&variant=secondary&font=jetbrains-mono&mode=light" />
+  </picture></a>
+</p>
 
-[![License: BSD 3-Clause](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![PyPI version](https://img.shields.io/pypi/v/chronocratic-datasets.svg)](https://pypi.org/project/chronocratic-datasets/)
-[![Python 3.12+](https://img.shields.io/pypi/pyversions/chronocratic-datasets.svg)](https://pypi.org/project/chronocratic-datasets/)
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/chronocratic-datasets?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/chronocratic-datasets)
-[![Build and Test](https://github.com/chronocratic/chronocratic-datasets/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/chronocratic/chronocratic-datasets/actions/workflows/build-and-test.yml)
-[![Documentation Status](https://readthedocs.org/projects/chronocratic-datasets/badge/?version=latest)](https://chronocratic-datasets.readthedocs.io/)
-![code style - ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
-[![GitHub Stars](https://img.shields.io/github/stars/chronocratic/chronocratic-datasets)](https://github.com/chronocratic/chronocratic-datasets)
+| Python | Docs |
+| :---: | :---: |
+| [![Python versions](https://img.shields.io/pypi/pyversions/chronocratic-datasets.svg)](https://pypi.org/project/chronocratic-datasets/) | [![Documentation status](https://readthedocs.org/projects/chronocratic-datasets/badge/?version=latest)](https://chronocratic-datasets.readthedocs.io/en/latest/) |
 
 ## Installation
 
