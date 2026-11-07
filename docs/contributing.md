@@ -119,7 +119,7 @@ A `changelog:<type>` label, if present, overrides the inferred type.
 
 Two cases need manual action:
 
-- **Wrong type.** If the inferred type is off, rename the file's type (e.g.
+- **Wrong type.** If the inferred type is off, change the type in the file name (e.g.
   `42.changed.md` → `42.fixed.md`) or replace it with one you create yourself
   (see below).
 - **No user-facing change.** Chores, refactors, and internal docs don't belong
