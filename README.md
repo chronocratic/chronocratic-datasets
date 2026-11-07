@@ -22,6 +22,8 @@
 
 </div>
 
+> 📌 If you find this repository helpful or insightful, please consider **giving it a star ⭐**.
+
 ## Installation
 
 Install the package via pip:
