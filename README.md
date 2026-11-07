@@ -88,3 +88,5 @@ Comprehensive documentation, including API reference, quickstart guides, and con
 ## License
 
 BSD 3-Clause — see [LICENSE](LICENSE) for the full text.
+
+The Chronocratic name and logo are not covered by the license. All rights reserved.
