@@ -11,7 +11,7 @@ requires-python = ">=3.12"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 keywords = ["time-series", "pytorch", "lightning", "machine-learning", "datasets", "data-modules", "forecasting", "classification", "regression", "artificial-intelligence"]
-authors = [{name = "The Chronocratic Developers", email = "github@users.noreply.github.com"}]
+authors = [{name = "Chronocratic", email = "github@users.noreply.github.com"}]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

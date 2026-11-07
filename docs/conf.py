@@ -9,8 +9,8 @@ from chronocratic.datasets import __version__  # noqa: E402
 
 project = "chronocratic-datasets"
 html_title = "chronocratic-datasets"
-copyright = "2026-Present, The Chronocratic Developers"
-author = "The Chronocratic Developers"
+copyright = "2026-Present, Chronocratic"
+author = "Chronocratic"
 release = __version__
 
 extensions = [

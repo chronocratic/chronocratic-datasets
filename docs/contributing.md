@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing to **chronocratic-datasets**!
 
+## License of contributions
+
+**By submitting a contribution, you agree that it is licensed under the terms of the [`LICENSE`](https://github.com/chronocratic/chronocratic-datasets/blob/main/LICENSE) file of this repository.**
+
 ## Development Setup
 
 This project uses `uv` for environment management and package installation.
