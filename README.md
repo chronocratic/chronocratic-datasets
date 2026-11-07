@@ -22,7 +22,7 @@
 
 </div>
 
-> 📌 If you find this repository helpful or insightful, please consider **giving it a star ⭐**.
+> ⭐ **Found this useful? Give it a star.** chronocratic-datasets is free and open source. A star takes one click, shows us which datasets matter to you, and helps other time series researchers find the project.
 
 ## Installation
 
