@@ -22,7 +22,8 @@
 
 </div>
 
-> ⭐ **Found this useful? Give it a star.** chronocratic-datasets is free and open source. A star takes one click, tells us the work is worth continuing, and helps other time series researchers find the project.
+> [!WARNING]
+> chronocratic-datasets is under active development. Expect breaking changes between releases until the API is declared stable in v1.0.0.
 
 ## Installation
 
@@ -38,10 +39,7 @@ With uv:
 uv add chronocratic-datasets
 ```
 
-> **Note:** The PyPI package name uses a hyphen (`chronocratic-datasets`), but the import uses the `chronocratic.datasets` namespace:
-> ```python
-> from chronocratic.datasets import ...
-> ```
+> **Note:** The PyPI package name uses a hyphen (`chronocratic-datasets`), but the import uses the `chronocratic.datasets` namespace.
 
 ## Quick Start
 
@@ -58,6 +56,8 @@ weather.prepare_data()
 weather.setup()
 train_loader = weather.train_dataloader()
 ```
+
+> ⭐ **Found this useful? Give it a star.** chronocratic-datasets is free and open source. A star takes one click, tells us the work is worth continuing, and helps other time series researchers find the project.
 
 ## Datasets
 
