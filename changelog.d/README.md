@@ -17,7 +17,7 @@ Every user-facing PR should add a fragment. Filename format:
 | Type         | Section in changelog | Use for                                  |
 | ------------ | -------------------- | ---------------------------------------- |
 | `added`      | Added                | New features, datasets, public API       |
-| `changed`    | Changed              | Changes to existing behaviour/API        |
+| `changed`    | Changed              | Changes to existing behavior/API        |
 | `deprecated` | Deprecated           | Soon-to-be-removed features              |
 | `removed`    | Removed              | Removed features/API                     |
 | `fixed`      | Fixed                | Bug fixes                                |

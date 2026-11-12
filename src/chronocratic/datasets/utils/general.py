@@ -37,8 +37,8 @@ def custom_collate_fn(batch: list[Any], *, desired_batch_size: int) -> Any:
 def _centralize_variable_length_series(series_batch: np.ndarray) -> np.ndarray:
     """Center variable-length time series within a fixed-length sequence.
 
-    Shifts the valid (non-NaN) portion of each series to the centre
-    of the sequence so the model receives centred rather than right-
+    Shifts the valid (non-NaN) portion of each series to the center
+    of the sequence so the model receives centered rather than right-
     or left-padded data.
 
     Args:
@@ -47,7 +47,7 @@ def _centralize_variable_length_series(series_batch: np.ndarray) -> np.ndarray:
             must be represented as NaN.
 
     Returns:
-        3-D array of the same shape with valid data centred.
+        3-D array of the same shape with valid data centered.
     """
     first_valid_idx = np.argmax(~np.isnan(series_batch).all(axis=-1), axis=1)
     last_valid_idx = np.argmax(~np.isnan(series_batch[:, ::-1]).all(axis=-1), axis=1)
